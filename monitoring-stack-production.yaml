@@ -1,0 +1,412 @@
+# =========================================================
+# Dese EA Plan v5.0 - Production Monitoring Stack
+# =========================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: monitoring-pv
+  namespace: production
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: monitoring-storage
+  hostPath:
+    path: /data/monitoring
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: monitoring-pvc
+  namespace: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: monitoring-storage
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: production
+  labels:
+    app: prometheus
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        environment: production
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.54.0
+        ports:
+        - containerPort: 9090
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage
+          mountPath: /prometheus
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+      - name: prometheus-storage
+        persistentVolumeClaim:
+          claimName: monitoring-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: production
+  labels:
+    app: prometheus
+    environment: production
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - port: 9090
+    targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: production
+  labels:
+    environment: production
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    rule_files:
+    scrape_configs:
+    - job_name: 'prometheus'
+      static_configs:
+      - targets: ['localhost:9090']
+    - job_name: 'grafana'
+      static_configs:
+      - targets: ['grafana:3000']
+    - job_name: 'loki'
+      static_configs:
+      - targets: ['loki:3100']
+    - job_name: 'tempo'
+      static_configs:
+      - targets: ['tempo:3200']
+    - job_name: 'seo-observer'
+      static_configs:
+      - targets: ['seo-observer:8080']
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: production
+  labels:
+    app: grafana
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+        environment: production
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:11.2.0
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin123"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-piechart-panel,grafana-worldmap-panel"
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: monitoring-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: production
+  labels:
+    app: grafana
+    environment: production
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: grafana
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: production
+  labels:
+    app: loki
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+        environment: production
+    spec:
+      containers:
+      - name: loki
+        image: grafana/loki:3.2.1
+        ports:
+        - containerPort: 3100
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: loki-storage
+          mountPath: /loki
+      volumes:
+      - name: loki-storage
+        persistentVolumeClaim:
+          claimName: monitoring-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: production
+  labels:
+    app: loki
+    environment: production
+spec:
+  ports:
+  - port: 3100
+    targetPort: 3100
+  selector:
+    app: loki
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: production
+  labels:
+    app: tempo
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+        environment: production
+    spec:
+      containers:
+      - name: tempo
+        image: grafana/tempo:2.5.0
+        ports:
+        - containerPort: 3200
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: tempo-config
+          mountPath: /etc/tempo
+        - name: tempo-storage
+          mountPath: /tmp/tempo
+      volumes:
+      - name: tempo-config
+        configMap:
+          name: tempo-config
+      - name: tempo-storage
+        persistentVolumeClaim:
+          claimName: monitoring-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: production
+  labels:
+    app: tempo
+    environment: production
+spec:
+  ports:
+  - port: 3200
+    targetPort: 3200
+  selector:
+    app: tempo
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: production
+  labels:
+    environment: production
+data:
+  tempo.yaml: |
+    server:
+      http_listen_port: 3200
+    distributor:
+      receivers:
+        jaeger:
+          protocols:
+            thrift_http:
+            grpc:
+            thrift_binary:
+            thrift_compact:
+        zipkin:
+        otlp:
+          protocols:
+            grpc:
+            http:
+    ingester:
+      max_block_duration: 5m
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /tmp/tempo/traces
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seo-observer
+  namespace: production
+  labels:
+    app: seo-observer
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seo-observer
+  template:
+    metadata:
+      labels:
+        app: seo-observer
+        environment: production
+    spec:
+      containers:
+      - name: seo-observer
+        image: node:18-alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            npm install -g lighthouse
+            echo "SEO Observer started - Lighthouse available"
+            while true; do
+              echo "SEO Observer running - $(date)"
+              sleep 30
+            done
+        envFrom:
+        - configMapRef:
+            name: seo-observer-config
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seo-observer
+  namespace: production
+  labels:
+    app: seo-observer
+    environment: production
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: seo-observer
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seo-observer-config
+  namespace: production
+  labels:
+    environment: production
+data:
+  LIGHTHOUSE_ENDPOINT: "http://localhost:3000/api/lighthouse"
+  PROMETHEUS_PUSHGATEWAY: "http://prometheus-service.production:9091"
+  REFRESH_INTERVAL: "300"
+  ENVIRONMENT: "production"

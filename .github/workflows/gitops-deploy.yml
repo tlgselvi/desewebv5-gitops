@@ -5,8 +5,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      K8S_NAMESPACE: production
     steps:
       - uses: actions/checkout@v4
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f monitoring-stack-export.yaml
+          kubectl apply -f monitoring-stack-production.yaml
