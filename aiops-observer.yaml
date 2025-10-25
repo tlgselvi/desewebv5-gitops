@@ -1,0 +1,44 @@
+# =========================================================
+# Dese EA Plan v5.0 - AIOps Observer Activation (Monitoring)
+# =========================================================
+apiVersion: dese.ai/v5
+kind: AIOpsObserver
+metadata:
+  name: aiops-observer
+  namespace: monitoring
+  description: "Prometheus, Grafana, Loki, Tempo ve SEO Observer entegrasyonu"
+spec:
+  components:
+    prometheus:
+      enabled: true
+      version: "v2.54.0"
+      storage: 10Gi
+    grafana:
+      enabled: true
+      version: "v11.2.0"
+      dashboards:
+        - name: SEO Metrics
+          source: /dashboards/seo-observer.json
+        - name: System Health
+          source: /dashboards/system-health.json
+    loki:
+      enabled: true
+      version: "v3.2.1"
+      persistence: true
+    tempo:
+      enabled: true
+      version: "v2.5.0"
+      traces: enabled
+  integrations:
+    lighthouse:
+      enabled: true
+      endpoint: http://localhost:3000/api/lighthouse
+    openTelemetry:
+      enabled: true
+      traces: true
+      metrics: true
+  security:
+    networkPolicy: true
+    serviceAccount: aiops-observer
+status:
+  phase: activating

@@ -1,0 +1,364 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dese-ea-plan-v5
+  namespace: dese-ea-plan-v5
+  labels:
+    app.kubernetes.io/name: dese-ea-plan-v5
+    app.kubernetes.io/version: "5.0.0"
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: cpt-optimization
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dese-ea-plan-v5
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dese-ea-plan-v5
+        app.kubernetes.io/version: "5.0.0"
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: cpt-optimization
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: dese-ea-plan-v5
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: dese-ea-plan-v5
+        image: dese-ea-plan-v5:5.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: PORT
+        - name: API_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: API_VERSION
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: CORS_ORIGIN
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: JWT_SECRET
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: REDIS_URL
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: OPENAI_API_KEY
+        - name: GOOGLE_SEARCH_CONSOLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: GOOGLE_SEARCH_CONSOLE_API_KEY
+        - name: AHREFS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: AHREFS_API_KEY
+        - name: LIGHTHOUSE_CI_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: LIGHTHOUSE_CI_TOKEN
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: SMTP_USER
+        - name: SMTP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: SMTP_PASS
+        - name: FROM_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: FROM_EMAIL
+        - name: FROM_NAME
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: FROM_NAME
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: TWILIO_AUTH_TOKEN
+        - name: TWILIO_PHONE_NUMBER
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: TWILIO_PHONE_NUMBER
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: STRIPE_SECRET_KEY
+        - name: STRIPE_PUBLISHABLE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: STRIPE_PUBLISHABLE_KEY
+        - name: STRIPE_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: STRIPE_WEBHOOK_SECRET
+        # Copy all config map values
+        - name: TARGET_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TARGET_REGION
+        - name: TARGET_DOMAIN_AUTHORITY
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TARGET_DOMAIN_AUTHORITY
+        - name: TARGET_CTR_INCREASE
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TARGET_CTR_INCREASE
+        - name: E_E_A_T_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: E_E_A_T_ENABLED
+        - name: CONTENT_QUALITY_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: CONTENT_QUALITY_THRESHOLD
+        - name: LANDING_PAGE_TEMPLATES
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: LANDING_PAGE_TEMPLATES
+        - name: MIN_DR_THRESHOLD
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: MIN_DR_THRESHOLD
+        - name: MAX_SPAM_SCORE
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: MAX_SPAM_SCORE
+        - name: BACKLINK_TARGETS
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: BACKLINK_TARGETS
+        - name: SPRINT_DURATION_DAYS
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: SPRINT_DURATION_DAYS
+        - name: TOTAL_SPRINTS
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TOTAL_SPRINTS
+        - name: VISIBILITY_SPRINT
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: VISIBILITY_SPRINT
+        - name: AUTHORITY_SPRINT
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: AUTHORITY_SPRINT
+        - name: TOP_RANK_SPRINT
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TOP_RANK_SPRINT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: LOG_LEVEL
+        - name: LOG_FORMAT
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: LOG_FORMAT
+        - name: LOG_MAX_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: LOG_MAX_SIZE
+        - name: LOG_MAX_FILES
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: LOG_MAX_FILES
+        - name: MAX_FILE_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: MAX_FILE_SIZE
+        - name: ALLOWED_FILE_TYPES
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: ALLOWED_FILE_TYPES
+        - name: UPLOAD_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: UPLOAD_PATH
+        - name: PROMETHEUS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: PROMETHEUS_ENABLED
+        - name: GRAFANA_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: GRAFANA_ENABLED
+        - name: LOKI_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: LOKI_ENABLED
+        - name: TEMPO_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TEMPO_ENABLED
+        - name: OPENTELEMETRY_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: OPENTELEMETRY_ENABLED
+        - name: OPA_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: OPA_ENABLED
+        - name: KYVERNO_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: KYVERNO_ENABLED
+        - name: NETWORK_POLICY_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: NETWORK_POLICY_ENABLED
+        - name: EXTERNAL_SECRETS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: EXTERNAL_SECRETS_ENABLED
+        - name: COSIGN_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: COSIGN_ENABLED
+        - name: TRIVY_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: TRIVY_ENABLED
+        - name: SYFT_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: dese-ea-plan-v5-config
+              key: SYFT_ENABLED
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: uploads
+          mountPath: /app/uploads
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: uploads
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - dese-ea-plan-v5
+              topologyKey: kubernetes.io/hostname

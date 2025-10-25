@@ -1,0 +1,53 @@
+# =========================================================
+# Dese EA Plan v5.0 - SEO Observer Integration
+# =========================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seo-observer-config
+  namespace: monitoring
+data:
+  LIGHTHOUSE_ENDPOINT: "http://localhost:3000/api/lighthouse"
+  PROMETHEUS_PUSHGATEWAY: "http://prometheus.monitoring:9091"
+  REFRESH_INTERVAL: "300" # saniye cinsinden (5 dk)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seo-observer
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seo-observer
+  template:
+    metadata:
+      labels:
+        app: seo-observer
+    spec:
+      containers:
+        - name: seo-observer
+          image: node:18-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              npm install -g lighthouse
+              echo "SEO Observer started - Lighthouse available"
+              while true; do
+                echo "SEO Observer running - $(date)"
+                sleep 30
+              done
+          envFrom:
+            - configMapRef:
+                name: seo-observer-config
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30

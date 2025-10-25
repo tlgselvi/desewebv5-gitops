@@ -1,0 +1,286 @@
+# Default values for dese-ea-plan-v5
+# This is a YAML-formatted file.
+
+replicaCount: 3
+
+image:
+  repository: dese-ea-plan-v5
+  pullPolicy: IfNotPresent
+  tag: "5.0.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3000"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1001
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: api.dese.ai
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: dese.ai
+      paths:
+        - path: /api
+          pathType: Prefix
+  tls:
+    - secretName: dese-ea-plan-v5-tls
+      hosts:
+        - api.dese.ai
+        - dese.ai
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - dese-ea-plan-v5
+        topologyKey: kubernetes.io/hostname
+
+# Application configuration
+config:
+  nodeEnv: "production"
+  port: 3000
+  apiVersion: "v1"
+  corsOrigin: "https://dese.ai"
+  targetRegion: "Türkiye"
+  targetDomainAuthority: 50
+  targetCtrIncrease: 25
+  eEatEnabled: true
+  contentQualityThreshold: 0.8
+  landingPageTemplates: 5
+  minDrThreshold: 50
+  maxSpamScore: 5
+  backlinkTargets: 100
+  sprintDurationDays: 14
+  totalSprints: 3
+  visibilitySprint: 1
+  authoritySprint: 2
+  topRankSprint: 3
+  logLevel: "info"
+  logFormat: "json"
+  logMaxSize: "10m"
+  logMaxFiles: 5
+  maxFileSize: 10485760
+  allowedFileTypes: "image/jpeg,image/png,image/webp,application/pdf"
+  uploadPath: "/app/uploads"
+  prometheusEnabled: true
+  grafanaEnabled: true
+  lokiEnabled: true
+  tempoEnabled: true
+  openTelemetryEnabled: true
+  opaEnabled: true
+  kyvernoEnabled: true
+  networkPolicyEnabled: true
+  externalSecretsEnabled: true
+  cosignEnabled: true
+  trivyEnabled: true
+  syftEnabled: true
+
+# Secrets configuration
+secrets:
+  databaseUrl: "postgresql://dese:dese123@postgres:5432/dese_ea_plan_v5"
+  jwtSecret: "your-super-secret-jwt-key-here-min-32-characters"
+  redisUrl: "redis://redis:6379"
+  openaiApiKey: "your-openai-api-key"
+  googleSearchConsoleApiKey: "your-google-api-key"
+  ahrefsApiKey: "your-ahrefs-api-key"
+  lighthouseCiToken: "your-lighthouse-ci-token"
+  smtpUser: "your-email@gmail.com"
+  smtpPass: "your-app-password"
+  fromEmail: "noreply@dese.ai"
+  fromName: "Dese EA Plan v5"
+  twilioAccountSid: "your-twilio-account-sid"
+  twilioAuthToken: "your-twilio-auth-token"
+  twilioPhoneNumber: "+1234567890"
+  stripeSecretKey: "sk_test_your-stripe-secret-key"
+  stripePublishableKey: "pk_test_your-stripe-publishable-key"
+  stripeWebhookSecret: "whsec_your-webhook-secret"
+
+# Database configuration
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "dese123"
+    username: "dese"
+    password: "dese123"
+    database: "dese_ea_plan_v5"
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# Monitoring configuration
+monitoring:
+  prometheus:
+    enabled: true
+    server:
+      persistentVolume:
+        enabled: true
+        size: 10Gi
+      resources:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 250m
+          memory: 512Mi
+  grafana:
+    enabled: true
+    adminPassword: "admin123"
+    persistence:
+      enabled: true
+      size: 5Gi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  loki:
+    enabled: true
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+# Network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      ports:
+      - protocol: TCP
+        port: 3000
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: postgresql
+      ports:
+      - protocol: TCP
+        port: 5432
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: redis
+      ports:
+      - protocol: TCP
+        port: 6379
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 80
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
