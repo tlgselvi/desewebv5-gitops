@@ -75,8 +75,7 @@ spec:
         configMap:
           name: prometheus-config
       - name: prometheus-storage
-        persistentVolumeClaim:
-          claimName: monitoring-pvc
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -165,8 +164,7 @@ spec:
           value: "grafana-piechart-panel,grafana-worldmap-panel"
       volumes:
       - name: grafana-storage
-        persistentVolumeClaim:
-          claimName: monitoring-pvc
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -220,8 +218,7 @@ spec:
           mountPath: /loki
       volumes:
       - name: loki-storage
-        persistentVolumeClaim:
-          claimName: monitoring-pvc
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -270,18 +267,15 @@ spec:
           limits:
             cpu: 500m
             memory: 1Gi
+        args:
+        - -config.file=/etc/tempo/tempo.yaml
         volumeMounts:
         - name: tempo-config
           mountPath: /etc/tempo
-        - name: tempo-storage
-          mountPath: /tmp/tempo
       volumes:
       - name: tempo-config
         configMap:
           name: tempo-config
-      - name: tempo-storage
-        persistentVolumeClaim:
-          claimName: monitoring-pvc
 ---
 apiVersion: v1
 kind: Service
