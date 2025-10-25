@@ -404,3 +404,134 @@ data:
   PROMETHEUS_PUSHGATEWAY: "http://prometheus-service.production:9091"
   REFRESH_INTERVAL: "300"
   ENVIRONMENT: "production"
+  PROMETHEUS_METRICS_PATH: "/metrics/seo"
+  AIOPS_EVENT_QUEUE: "seo-observer-events"
+  AIOPS_TOPIC: "rank-drift"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-seo-config
+  namespace: production
+  labels:
+    app: prometheus
+    environment: production
+data:
+  seo-observer-scrape.yml: |
+    - job_name: 'seo-observer'
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+          - production
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name]
+        action: keep
+        regex: seo-observer
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: http
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+        replacement: seo-observer
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: service
+      scrape_interval: 30s
+      scrape_timeout: 10s
+      metrics_path: /metrics/seo
+      scheme: http
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aioops-event-listener-config
+  namespace: production
+  labels:
+    app: aioops
+    environment: production
+data:
+  eventListener.yaml: |
+    enabled: true
+    queue: seo-observer-events
+    topic: rank-drift
+    handlers:
+      - type: anomalyDetection
+        threshold: 5
+        action: autoRemediate
+      - type: performanceAlert
+        threshold: 80
+        action: scaleUp
+      - type: errorRate
+        threshold: 10
+        action: restart
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aioops-event-listener
+  namespace: production
+  labels:
+    app: aioops-event-listener
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aioops-event-listener
+  template:
+    metadata:
+      labels:
+        app: aioops-event-listener
+        environment: production
+    spec:
+      containers:
+      - name: aioops-event-listener
+        image: node:18-alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "AIOps Event Listener started"
+            echo "Queue: seo-observer-events"
+            echo "Topic: rank-drift"
+            while true; do
+              echo "AIOps Event Listener running - $(date)"
+              sleep 60
+            done
+        envFrom:
+        - configMapRef:
+            name: aioops-event-listener-config
+        volumeMounts:
+        - name: aioops-config
+          mountPath: /etc/aioops
+      volumes:
+      - name: aioops-config
+        configMap:
+          name: aioops-event-listener-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aioops-event-listener
+  namespace: production
+  labels:
+    app: aioops-event-listener
+    environment: production
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: aioops-event-listener
+  type: ClusterIP
