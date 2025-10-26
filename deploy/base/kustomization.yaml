@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: dese-ea-plan-v5
 
 resources:
-  - configmap.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
