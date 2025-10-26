@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dese-orchestrator
+  namespace: dese-ea-plan-v5
+  labels:
+    app: dese-orchestrator
+    component: mesh-coordination
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  timeZone: "UTC"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: dese-orchestrator
+            component: mesh-coordination
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: orchestrator
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/bash
+              - -c
+              - |
+                pip install prometheus-client numpy pandas && \
+                python /app/dese-orchestrator.py
+            env:
+            - name: PROMETHEUS_GATEWAY
+              value: "http://prometheus.monitoring:9091"
+            volumeMounts:
+            - name: scripts
+              mountPath: /app
+          volumes:
+          - name: scripts
+            configMap:
+              name: orchestrator-scripts
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-scripts
+  namespace: dese-ea-plan-v5
+data:
+  dese-orchestrator.py: |
+    #!/usr/bin/env python3
+    import os
+    print("DeseGPT Orchestrator - Mesh Coordination - EA Plan v5.5.3")
+    print(f"PROMETHEUS_GATEWAY: {os.getenv('PROMETHEUS_GATEWAY')}")
