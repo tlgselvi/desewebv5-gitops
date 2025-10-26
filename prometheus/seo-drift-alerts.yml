@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: seo-drift-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app: seo-rank-drift
+spec:
+  groups:
+  - name: seo_rank_drift
+    interval: 30s
+    rules:
+      # Critical Rank Drop Alert
+      - alert: CriticalRankDrift
+        expr: cpt_seo_rank_drift_score < -50
+        for: 10m
+        labels:
+          severity: critical
+          component: seo-rank-drift
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Critical SEO rank drift detected"
+          description: "Keyword {{ $labels.keyword }} dropped by {{ $value }}%"
+          runbook_url: "https://docs.cpt-digital.com/runbook/critical-rank-drift"
+      
+      # Warning Rank Drop Alert
+      - alert: WarningRankDrift
+        expr: cpt_seo_rank_drift_score < -30 and cpt_seo_rank_drift_score >= -50
+        for: 30m
+        labels:
+          severity: warning
+          component: seo-rank-drift
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Warning: SEO rank drift detected"
+          description: "Keyword {{ $labels.keyword }} dropped by {{ $value }}%"
+          runbook_url: "https://docs.cpt-digital.com/runbook/warning-rank-drift"
+      
+      # Position Delta Alert
+      - alert: HighPositionDrop
+        expr: cpt_seo_position_delta > 5
+        for: 15m
+        labels:
+          severity: warning
+          component: seo-rank-drift
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Significant position drop detected"
+          description: "Keyword {{ $labels.keyword }} dropped {{ $value }} positions"
+          runbook_url: "https://docs.cpt-digital.com/runbook/position-drop"
+      
+      # Visibility Index Alert
+      - alert: LowVisibilityIndex
+        expr: cpt_keyword_visibility_index < 20
+        for: 1h
+        labels:
+          severity: warning
+          component: seo-rank-drift
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Low keyword visibility detected"
+          description: "Keyword {{ $labels.keyword }} has visibility index {{ $value }}"
+          runbook_url: "https://docs.cpt-digital.com/runbook/low-visibility"
+      
+      # Multiple Drift Events Alert
+      - alert: MultipleDriftEvents
+        expr: rate(cpt_seo_drift_events_total{severity="critical"}[10m]) > 2
+        for: 5m
+        labels:
+          severity: critical
+          component: seo-rank-drift
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Multiple drift events detected"
+          description: "{{ $value }} critical drift events in the last 10 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/multiple-drift-events"

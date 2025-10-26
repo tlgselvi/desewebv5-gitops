@@ -1,0 +1,119 @@
+{
+  "dashboard": {
+    "title": "SEO Rank Drift Detection - EA Plan v5.3.1",
+    "tags": ["seo", "rank-drift", "ea-plan-v5"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "panels": [
+      {
+        "title": "Rank Drift Score Trend",
+        "targets": [
+          {
+            "expr": "cpt_seo_rank_drift_score",
+            "legendFormat": "{{keyword}}"
+          }
+        ],
+        "type": "graph",
+        "yaxes": [
+          {
+            "label": "Drift Score (%)",
+            "min": -100,
+            "max": 100
+          }
+        ]
+      },
+      {
+        "title": "Keyword Visibility Index",
+        "targets": [
+          {
+            "expr": "cpt_keyword_visibility_index",
+            "legendFormat": "{{keyword}}"
+          }
+        ],
+        "type": "graph",
+        "yaxes": [
+          {
+            "label": "Visibility Index",
+            "min": 0,
+            "max": 100
+          }
+        ]
+      },
+      {
+        "title": "Position Delta Heatmap",
+        "targets": [
+          {
+            "expr": "cpt_seo_position_delta",
+            "legendFormat": "{{keyword}}"
+          }
+        ],
+        "type": "heatmap"
+      },
+      {
+        "title": "Drift Events Counter",
+        "targets": [
+          {
+            "expr": "cpt_seo_drift_events_total",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "type": "stat",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 5
+                },
+                {
+                  "color": "red",
+                  "value": 10
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Average Visibility Score",
+        "targets": [
+          {
+            "expr": "avg(cpt_keyword_visibility_index)",
+            "legendFormat": "Avg Visibility"
+          }
+        ],
+        "type": "gauge",
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "yellow",
+                  "value": 50
+                },
+                {
+                  "color": "green",
+                  "value": 80
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

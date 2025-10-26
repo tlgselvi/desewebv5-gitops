@@ -1,0 +1,70 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: seo-drift-analyzer
+  namespace: dese-ea-plan-v5
+  labels:
+    app: seo-rank-drift
+    component: analyzer
+spec:
+  schedule: "0 2 * * *"  # Daily at 02:00 UTC
+  timeZone: "UTC"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: seo-rank-drift
+            component: analyzer
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: drift-analyzer
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/bash
+              - -c
+              - |
+                pip install prometheus-client requests && \
+                python /app/drift-analyzer.py
+            env:
+            - name: AHREFS_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: dese-ea-plan-v5-secrets
+                  key: AHREFS_API_TOKEN
+            - name: GSC_SERVICE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: dese-ea-plan-v5-secrets
+                  key: GSC_SERVICE_ACCOUNT_KEY
+            - name: PROMETHEUS_GATEWAY
+              value: "http://prometheus.monitoring:9091"
+            volumeMounts:
+            - name: scripts
+              mountPath: /app
+          volumes:
+          - name: scripts
+            configMap:
+              name: seo-drift-scripts
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seo-drift-scripts
+  namespace: dese-ea-plan-v5
+data:
+  drift-analyzer.py: |
+    #!/usr/bin/env python3
+    import os
+    print("SEO Rank Drift Analyzer - EA Plan v5.3.1")
+    print(f"AHREFS_TOKEN: {'SET' if os.getenv('AHREFS_API_TOKEN') else 'NOT SET'}")
+    print(f"PROMETHEUS_GATEWAY: {os.getenv('PROMETHEUS_GATEWAY')}")
