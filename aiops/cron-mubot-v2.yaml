@@ -1,0 +1,59 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mubot-v2-ingestion
+  namespace: dese-ea-plan-v5
+  labels:
+    app: mubot-v2
+    component: ingestion
+spec:
+  schedule: "0 * * * *"  # Hourly
+  timeZone: "UTC"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: mubot-v2
+            component: ingestion
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: mubot-ingestion
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/bash
+              - -c
+              - |
+                pip install prometheus-client numpy pandas && \
+                python /app/mubot-ingestion.py
+            env:
+            - name: PROMETHEUS_GATEWAY
+              value: "http://prometheus.monitoring:9091"
+            volumeMounts:
+            - name: scripts
+              mountPath: /app
+          volumes:
+          - name: scripts
+            configMap:
+              name: mubot-v2-scripts
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mubot-v2-scripts
+  namespace: dese-ea-plan-v5
+data:
+  mubot-ingestion.py: |
+    #!/usr/bin/env python3
+    import os
+    print("MuBot v2.0 - Multi-Source Data Ingestion - EA Plan v5.5.2")
+    print(f"PROMETHEUS_GATEWAY: {os.getenv('PROMETHEUS_GATEWAY')}")
