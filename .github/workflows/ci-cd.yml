@@ -1,0 +1,40 @@
+name: CI-CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollout:
+        description: 'Rollout Strategy'
+        required: false
+        default: 'standard'
+        type: string
+      policy_check:
+        description: 'Run Policy Compliance Check'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+jobs:
+  aiops-monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Canary Rollout
+        run: echo "Triggering rollout for CPT Web..."
+      - name: Notify Slack
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"EA Plan v5.2 rollout triggered"}' \
+            $SLACK_WEBHOOK || echo "Slack notification skipped"
