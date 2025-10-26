@@ -1,0 +1,286 @@
+name: 🚀 Automated Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment Environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      strategy:
+        description: 'Deployment Strategy'
+        required: true
+        default: 'rolling'
+        type: choice
+        options:
+          - rolling
+          - canary
+          - blue-green
+
+env:
+  NODE_VERSION: '20.19'
+  PNPM_VERSION: '8.15.0'
+
+jobs:
+  # ===================================
+  # PRE-FLIGHT CHECKS
+  # ===================================
+  preflight:
+    name: ✈️ Pre-flight Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Setup kubectl & helm
+        uses: azure/setup-kubectl@v3
+      - uses: azure/setup-helm@v3
+
+      - name: 🔐 Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+
+      - name: ✅ Check cluster connectivity
+        run: kubectl cluster-info
+
+      - name: 📊 Check cluster resources
+        run: |
+          echo "Nodes:"
+          kubectl get nodes
+          echo "`nNamespaces:"
+          kubectl get ns
+
+      - name: 🔍 Check existing deployment
+        id: check-deployment
+        run: |
+          DEPLOYMENT_EXISTS=$(kubectl get deployment dese-ea-plan-v5 -n dese-ea-plan-v5 --no-headers 2>&1 || echo "NOT_FOUND")
+          echo "exists=$DEPLOYMENT_EXISTS" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+  # ===================================
+  # CANARY DEPLOYMENT
+  # ===================================
+  deploy-canary:
+    name: 🐦 Canary Deployment
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: github.event.inputs.strategy == 'canary'
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+
+      - name: 🐦 Create canary deployment
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: dese-ea-plan-v5-canary
+            namespace: dese-ea-plan-v5
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: dese-ea-plan-v5-canary
+            template:
+              metadata:
+                labels:
+                  app: dese-ea-plan-v5-canary
+                  version: canary
+              spec:
+                containers:
+                - name: dese-ea-plan-v5
+                  image: ghcr.io/${{ github.repository }}/dese-ea-plan-v5:${{ github.sha }}
+                  ports:
+                  - containerPort: 3000
+          EOF
+
+      - name: ✅ Wait for canary
+        run: |
+          kubectl rollout status deployment/dese-ea-plan-v5-canary -n dese-ea-plan-v5 --timeout=5m
+
+      - name: 🧪 Test canary
+        run: |
+          CANARY_POD=$(kubectl get pod -n dese-ea-plan-v5 -l app=dese-ea-plan-v5-canary -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec -n dese-ea-plan-v5 $CANARY_POD -- curl -f http://localhost:3000/health
+          echo "✅ Canary health check passed"
+
+      - name: 🔍 Monitor metrics (60s)
+        run: |
+          echo "Monitoring canary metrics for 60 seconds..."
+          sleep 60
+          kubectl top pod -n dese-ea-plan-v5 -l app=dese-ea-plan-v5-canary
+
+      - name: ✅ Promote canary
+        run: |
+          # Scale up canary to full deployment
+          kubectl scale deployment dese-ea-plan-v5-canary -n dese-ea-plan-v5 --replicas=3
+          kubectl label deployment dese-ea-plan-v5-canary -n dese-ea-plan-v5 app=dese-ea-plan-v5 --overwrite
+          
+          # Annotate rollout
+          kubectl annotate deployment dese-ea-plan-v5-canary -n dese-ea-plan-v5 \
+            deployment.kubernetes.io/revision="$(date +%s)" \
+            deployment.kubernetes.io/revision-reason="Canary promoted"
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          # Keep only promoted deployment
+          echo "Canary deployment completed"
+
+  # ===================================
+  # ROLLING DEPLOYMENT
+  # ===================================
+  deploy-rolling:
+    name: 🔄 Rolling Deployment
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: github.event.inputs.strategy == 'rolling'
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+
+      - name: 🔄 Rolling update
+        run: |
+          kubectl set image deployment/dese-ea-plan-v5 \
+            dese-ea-plan-v5=ghcr.io/${{ github.repository }}/dese-ea-plan-v5:${{ github.sha }} \
+            -n dese-ea-plan-v5 \
+            --record
+
+      - name: ✅ Wait for rollout
+        run: |
+          kubectl rollout status deployment/dese-ea-plan-v5 -n dese-ea-plan-v5 --timeout=10m
+
+      - name: 🧪 Smoke test
+        run: |
+          SERVICE_URL=$(kubectl get svc dese-ea-plan-v5 -n dese-ea-plan-v5 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          for i in {1..5}; do
+            if curl -f https://$SERVICE_URL/health; then
+              echo "✅ Health check passed (attempt $i)"
+              break
+            fi
+            echo "⏳ Waiting for service to be ready (attempt $i)..."
+            sleep 10
+          done
+
+  # ===================================
+  # POST-DEPLOYMENT VALIDATION
+  # ===================================
+  validate-deployment:
+    name: ✅ Validate Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-canary, deploy-rolling]
+    if: always()
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+
+      - name: 📊 Deployment status
+        run: |
+          echo "📊 Current Deployment Status:"
+          kubectl get deployments -n dese-ea-plan-v5
+          echo ""
+          kubectl get pods -n dese-ea-plan-v5
+          echo ""
+          kubectl get svc -n dese-ea-plan-v5
+
+      - name: 🏥 Health checks
+        run: |
+          PODS=$(kubectl get pods -n dese-ea-plan-v5 -l app.kubernetes.io/name=dese-ea-plan-v5 -o json | jq -r '.items[].metadata.name')
+          
+          for POD in $PODS; do
+            echo "Checking health of pod: $POD"
+            kubectl exec -n dese-ea-plan-v5 $POD -- curl -sf http://localhost:3000/health
+            echo "✅ $POD is healthy"
+          done
+
+      - name: 📈 Performance metrics
+        run: |
+          kubectl top pods -n dese-ea-plan-v5 --containers
+
+      - name: 📋 Pod logs (last 50 lines)
+        if: failure()
+        run: |
+          kubectl logs -n dese-ea-plan-v5 -l app.kubernetes.io/name=dese-ea-plan-v5 --tail=50
+
+      - name: 📊 Resource usage
+        run: |
+          kubectl top nodes
+          kubectl top pods -n dese-ea-plan-v5
+
+  # ===================================
+  # ROLLBACK TRIGGER
+  # ===================================
+  rollback:
+    name: ⏪ Rollback
+    runs-on: ubuntu-latest
+    needs: [validate-deployment]
+    if: failure() && github.event_name == 'workflow_dispatch'
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+
+      - name: ⏪ Rollback deployment
+        run: |
+          echo "⏪ Rolling back deployment..."
+          kubectl rollout undo deployment/dese-ea-plan-v5 -n dese-ea-plan-v5
+          kubectl rollout status deployment/dese-ea-plan-v5 -n dese-ea-plan-v5 --timeout=5m
+
+      - name: ✅ Verify rollback
+        run: |
+          kubectl get deployment dese-ea-plan-v5 -n dese-ea-plan-v5
+          PODS=$(kubectl get pods -n dese-ea-plan-v5 -l app.kubernetes.io/name=dese-ea-plan-v5)
+          if [[ -n "$PODS" ]]; then
+            echo "✅ Rollback successful"
+          else
+            echo "❌ Rollback failed"
+            exit 1
+          fi
+
+      - name: 📧 Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Deployment failed, automatic rollback initiated 🔄'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+

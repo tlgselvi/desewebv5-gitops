@@ -29,7 +29,15 @@
     "k8s:delete": "kubectl delete -f k8s/",
     "helm:install": "helm install dese-ea-plan-v5 ./helm/dese-ea-plan-v5",
     "helm:upgrade": "helm upgrade dese-ea-plan-v5 ./helm/dese-ea-plan-v5",
-    "helm:uninstall": "helm uninstall dese-ea-plan-v5"
+    "helm:uninstall": "helm uninstall dese-ea-plan-v5",
+    "health:check": "pwsh scripts/advanced-health-check.ps1",
+    "health:check:verbose": "pwsh scripts/advanced-health-check.ps1 -Verbose",
+    "health:monitor": "pwsh scripts/automated-health-monitor.ps1",
+    "health:quick": "pwsh quick-health-check.ps1",
+    "cicd:setup": "bash scripts/setup-cicd.sh",
+    "cicd:sync": "pwsh gitops-sync.ps1",
+    "deploy:staging": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5-staging",
+    "deploy:production": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5"
   },
   "keywords": [
     "seo",
