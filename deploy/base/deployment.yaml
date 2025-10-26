@@ -27,16 +27,15 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: dese-ea-plan-v5
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001
-        fsGroup: 1001
       containers:
       - name: dese-ea-plan-v5
-        image: dese-ea-plan-v5:5.0.0
+        image: nginx:latest
         imagePullPolicy: IfNotPresent
+        securityContext:
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
         ports:
-        - containerPort: 3000
+        - containerPort: 80
           name: http
           protocol: TCP
         env:
@@ -320,15 +319,15 @@ spec:
             cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health/live
+            path: /
             port: http
-          initialDelaySeconds: 30
+          initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health/ready
+            path: /
             port: http
           initialDelaySeconds: 5
           periodSeconds: 5

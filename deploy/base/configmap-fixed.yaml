@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dese-ea-plan-v5-config
+  namespace: dese-ea-plan-v5
+  labels:
+    app.kubernetes.io/name: dese-ea-plan-v5
+    app.kubernetes.io/version: "5.0.0"
+data:
+  NODE_ENV: "development"
+  PORT: "3000"
+  API_VERSION: "v1"
+  CORS_ORIGIN: "http://localhost:3000"
+  TARGET_REGION: "Türkiye"
+  TARGET_DOMAIN_AUTHORITY: "50"
+  TARGET_CTR_INCREASE: "25"
+  E_E_A_T_ENABLED: "true"
+  CONTENT_QUALITY_THRESHOLD: "0.8"
+  LANDING_PAGE_TEMPLATES: "5"
+  MIN_DR_THRESHOLD: "50"
+  MAX_SPAM_SCORE: "5"
+  BACKLINK_TARGETS: "100"
+  SPRINT_DURATION_DAYS: "14"
+  TOTAL_SPRINTS: "3"
+  VISIBILITY_SPRINT: "1"
+  AUTHORITY_SPRINT: "2"
+  TOP_RANK_SPRINT: "3"
+  LOG_LEVEL: "info"
+  LOG_FORMAT: "json"
+  LOG_MAX_SIZE: "10m"
+  LOG_MAX_FILES: "5"
+  MAX_FILE_SIZE: "10485760"
+  ALLOWED_FILE_TYPES: "image/jpeg,image/png,image/webp,application/pdf"
+  UPLOAD_PATH: "/app/uploads"
+  PROMETHEUS_ENABLED: "true"
+  GRAFANA_ENABLED: "true"
+  LOKI_ENABLED: "true"
+  TEMPO_ENABLED: "true"
+  OPENTELEMETRY_ENABLED: "true"
+  OPA_ENABLED: "true"
+  KYVERNO_ENABLED: "true"
+  NETWORK_POLICY_ENABLED: "true"
+  EXTERNAL_SECRETS_ENABLED: "true"
+  COSIGN_ENABLED: "true"
+  TRIVY_ENABLED: "true"
+  SYFT_ENABLED: "true"
