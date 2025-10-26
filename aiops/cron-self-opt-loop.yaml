@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: self-optimization-loop
+  namespace: dese-ea-plan-v5
+  labels:
+    app: self-optimization-loop
+    component: learning-engine
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  timeZone: "UTC"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: self-optimization-loop
+            component: learning-engine
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: optimization-loop
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/bash
+              - -c
+              - |
+                pip install prometheus-client numpy pandas scikit-learn && \
+                python /app/self-optimization-loop.py
+            env:
+            - name: PROMETHEUS_GATEWAY
+              value: "http://prometheus.monitoring:9091"
+            - name: SELF_OPT_RETRAIN_HOURS
+              value: "6"
+            volumeMounts:
+            - name: scripts
+              mountPath: /app
+          volumes:
+          - name: scripts
+            configMap:
+              name: self-opt-scripts
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: self-opt-scripts
+  namespace: dese-ea-plan-v5
+data:
+  self-optimization-loop.py: |
+    #!/usr/bin/env python3
+    import os
+    print("Self-Optimization Loop - EA Plan v5.5.4")
+    print(f"PROMETHEUS_GATEWAY: {os.getenv('PROMETHEUS_GATEWAY')}")
+    print(f"SELF_OPT_RETRAIN_HOURS: {os.getenv('SELF_OPT_RETRAIN_HOURS')}")
