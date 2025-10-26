@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finbot-v2-forecaster
+  namespace: dese-ea-plan-v5
+  labels:
+    app: finbot-v2
+    component: forecaster
+spec:
+  schedule: "0 3 * * *"  # Daily at 03:00 UTC
+  timeZone: "UTC"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: finbot-v2
+            component: forecaster
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: finbot-forecaster
+            image: python:3.11-slim
+            imagePullPolicy: IfNotPresent
+            command:
+              - /bin/bash
+              - -c
+              - |
+                pip install prophet prometheus-client numpy pandas scikit-learn && \
+                python /app/finbot-forecast.py
+            env:
+            - name: PROMETHEUS_GATEWAY
+              value: "http://prometheus.monitoring:9091"
+            - name: FINBOT_PREDICTION_DAYS
+              value: "90"
+            volumeMounts:
+            - name: scripts
+              mountPath: /app
+          volumes:
+          - name: scripts
+            configMap:
+              name: finbot-v2-scripts
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: finbot-v2-scripts
+  namespace: dese-ea-plan-v5
+data:
+  finbot-forecast.py: |
+    #!/usr/bin/env python3
+    import os
+    print("FinBot v2.0 - Cost & ROI Forecasting - EA Plan v5.5.1")
+    print(f"PROMETHEUS_GATEWAY: {os.getenv('PROMETHEUS_GATEWAY')}")
+    print(f"FINBOT_PREDICTION_DAYS: {os.getenv('FINBOT_PREDICTION_DAYS')}")
