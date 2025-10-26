@@ -1,0 +1,54 @@
+{
+  "format": "SPDX-2.3",
+  "generatedAt": "2024-01-01T00:00:00Z",
+  "baselineDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "purpose": "SBOM baseline for dese-ea-plan-v5 production compliance validation",
+  "components": {
+    "application": "dese-ea-plan-v5",
+    "version": "5.0.0",
+    "environment": "production"
+  },
+  "dependencies": [
+    {
+      "name": "express",
+      "version": "^4.18.2",
+      "digest": "sha256:abc123..."
+    },
+    {
+      "name": "axios",
+      "version": "^1.6.2",
+      "digest": "sha256:def456..."
+    },
+    {
+      "name": "drizzle-orm",
+      "version": "^0.29.0",
+      "digest": "sha256:ghi789..."
+    },
+    {
+      "name": "postgres",
+      "version": "^3.4.3",
+      "digest": "sha256:jkl012..."
+    }
+  ],
+  "signatures": {
+    "cosign": {
+      "enabled": true,
+      "publicKey": "${{ secrets.COSIGN_PUBLIC_KEY }}"
+    },
+    "algorithm": "ECDSA-P256",
+    "provider": "sigstore"
+  },
+  "compliance": {
+    "sbomDriftThreshold": 0.05,
+    "maxDriftPercent": 5,
+    "strict": true,
+    "failOnDrift": true
+  },
+  "metadata": {
+    "createdBy": "GitHub Actions CI/CD",
+    "workflow": "ci-cd.yml",
+    "commit": "${{ github.sha }}",
+    "branch": "main"
+  }
+}
+

@@ -1,0 +1,176 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policy-sync
+  namespace: argocd
+  labels:
+    app: policy-sync
+    component: compliance
+    environment: production
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+  
+  # Sync policies from Git repository
+  sources:
+    - repoURL: https://github.com/your-org/dese-web-v5.git
+      targetRevision: main
+      path: policies
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: policy-monitoring
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+      syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - PruneLast=true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+  
+  # Priority: Deploy after main application
+  syncWaves:
+    - wave: 6
+  
+  healthChecks:
+    - apiVersion: v1
+      kind: ConfigMap
+      name: kyverno-policies
+      namespace: policy-monitoring
+    - apiVersion: v1
+      kind: ConfigMap
+      name: opa-policies
+      namespace: policy-monitoring
+  
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /data
+
+---
+# Sync SBOM baseline and compliance files
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: compliance-sync
+  namespace: argocd
+  labels:
+    app: compliance-sync
+    component: compliance
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/your-org/dese-web-v5.git
+    targetRevision: main
+    path: compliance
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: policy-monitoring
+  
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  
+  syncWaves:
+    - wave: 7
+
+---
+# Kyverno policy application
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kyverno-policies
+  namespace: policy-monitoring
+data:
+  require-signed-images.yaml: |
+    apiVersion: kyverno.io/v1
+    kind: Policy
+    metadata:
+      name: require-signed-images
+    spec:
+      validationFailureAction: enforce
+      background: true
+      rules:
+        - name: check-signature
+          match:
+            any:
+              - resources:
+                  kinds:
+                    - Pod
+          validate:
+            message: "All container images must be signed with Cosign"
+            pattern:
+              metadata:
+                annotations:
+                  "cosign.sigstore.dev/signature": "?*"
+  
+  require-resource-limits.yaml: |
+    apiVersion: kyverno.io/v1
+    kind: Policy
+    metadata:
+      name: require-resource-limits
+    spec:
+      validationFailureAction: enforce
+      background: true
+      rules:
+        - name: check-resource-limits
+          match:
+            any:
+              - resources:
+                  kinds:
+                    - Pod
+          validate:
+            message: "All containers must have CPU and memory limits"
+            pattern:
+              spec:
+                containers:
+                  - name: "*"
+                    resources:
+                      limits:
+                        memory: "?*"
+                        cpu: "?*"
+
+---
+# OPA policy application
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  namespace: policy-monitoring
+data:
+  deny-privileged.rego: |
+    package kubernetes.admission
+    
+    deny[msg] {
+      input.request.kind.kind == "Pod"
+      container := input.request.object.spec.containers[_]
+      container.securityContext.privileged == true
+      msg := sprintf("Privileged container '%v' is not allowed.", [container.name])
+    }
+  
+  enforce-namespace.rego: |
+    package kubernetes.namespace
+    
+    allowed_namespaces := {"production", "dese-ea-plan-v5", "monitoring"}
+    
+    deny[msg] {
+      namespace := input.request.object.metadata.namespace
+      not contains(allowed_namespaces, namespace)
+      msg := sprintf("Namespace '%v' is not allowed.", [namespace])
+    }
+

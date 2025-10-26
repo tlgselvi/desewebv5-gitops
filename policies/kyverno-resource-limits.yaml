@@ -1,0 +1,100 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: "Require Resource Limits"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "medium"
+    policies.kyverno.io/subject: "Pod, Deployment"
+    policies.kyverno.io/description: >-
+      Requires all containers to have CPU and memory limits defined.
+      This prevents resource starvation and ensures predictable performance.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+    - name: check-resource-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+              namespaces:
+                - "dese-ea-plan-v5"
+                - "dese-ea-plan-v5-staging"
+      validate:
+        message: "All containers must have CPU and memory limits"
+        pattern:
+          spec:
+            =(initContainers):
+              - name: "*"
+                resources:
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"
+            containers:
+              - name: "*"
+                resources:
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"
+      # Alternative validation using deny rules for better error messages
+      - name: check-containers-have-limits
+        match:
+          any:
+            - resources:
+                kinds:
+                  - Pod
+                namespaces:
+                  - "dese-ea-plan-v5"
+                  - "dese-ea-plan-v5-staging"
+        validate:
+          message: "Container '{{request.object.spec.containers[{{element.index}}].name}}' is missing resource limits"
+          foreach:
+            - list: request.object.spec.containers
+              deny:
+                conditions:
+                  all:
+                    - key: "{{element.resources.limits.memory}}"
+                      operator: AnyNotIn
+                      value: ["?*"]
+                    - key: "{{element.resources.limits.cpu}}"
+                      operator: AnyNotIn
+                      value: ["?*"]
+
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: require-resource-limits-ns
+  namespace: dese-ea-plan-v5
+  annotations:
+    policies.kyverno.io/title: "Require Resource Limits (Namespace)"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "medium"
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+    - name: check-containers-have-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: "Container '{{request.object.spec.containers[{{element.index}}].name}}' is missing resource limits"
+        foreach:
+          - list: request.object.spec.containers
+            deny:
+              conditions:
+                all:
+                  - key: "{{element.resources.limits.memory}}"
+                    operator: AnyNotIn
+                    value: ["?*"]
+                  - key: "{{element.resources.limits.cpu}}"
+                    operator: AnyNotIn
+                    value: ["?*"]
+

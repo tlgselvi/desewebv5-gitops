@@ -1,0 +1,116 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aiops-monitor
+  namespace: argocd
+  labels:
+    app: aiops-monitor
+    environment: production
+    component: monitoring
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/your-org/dese-web-v5.git
+    targetRevision: main
+    path: monitoring-stack
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: prometheus.enabled
+          value: "true"
+        - name: grafana.enabled
+          value: "true"
+        - name: alertmanager.enabled
+          value: "true"
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+      syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - PruneLast=true
+  
+  syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+  
+  # Priority sync wave (deploy after main application)
+  syncWaves:
+    - wave: 5
+  
+  healthChecks:
+    - apiVersion: v1
+      kind: Service
+      name: prometheus-service
+      namespace: monitoring
+    - apiVersion: v1
+      kind: Service
+      name: grafana
+      namespace: monitoring
+    - apiVersion: v1
+      kind: Service
+      name: alertmanager
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: StatefulSet
+      name: prometheus
+      namespace: monitoring
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: grafana
+      namespace: monitoring
+
+---
+# Prometheus AlertManager configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: monitoring
+data:
+  aiops-alerts.yml: |
+    # Prometheus alert rules
+    # See: prometheus/aiops-alerts.yml
+
+---
+# ArgoCD Application for Alert Rules Sync
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aiops-alert-rules
+  namespace: argocd
+  labels:
+    app: alert-rules
+    component: monitoring
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/your-org/dese-web-v5.git
+    targetRevision: main
+    path: prometheus
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  
+  syncWaves:
+    - wave: 6
+

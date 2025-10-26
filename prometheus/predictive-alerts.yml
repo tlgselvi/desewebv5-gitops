@@ -1,0 +1,91 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: predictive-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app: predictive-resilience
+spec:
+  groups:
+  - name: predictive-risk
+    interval: 30s
+    rules:
+      # High Predicted Risk Alert
+      - alert: HighPredictedRisk
+        expr: aiops_risk_score > 0.8
+        for: 5m
+        labels:
+          severity: critical
+          component: predictive-resilience
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Predicted deployment instability detected"
+          description: "Risk score is {{ $value }} (threshold: 0.8). Rollback recommended."
+          runbook_url: "https://docs.cpt-digital.com/runbook/predictive-risk"
+          rollback_action: "bash scripts/auto_rollback.sh"
+      
+      # Medium Predicted Risk Alert
+      - alert: MediumPredictedRisk
+        expr: aiops_risk_score > 0.6 and aiops_risk_score <= 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: predictive-resilience
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Medium predicted risk detected"
+          description: "Risk score is {{ $value }} (threshold: 0.6-0.8). Monitor closely."
+          runbook_url: "https://docs.cpt-digital.com/runbook/medium-risk"
+      
+      # Anomaly Score Alert
+      - alert: HighAnomalyScore
+        expr: aiops_anomaly_score < -0.5
+        for: 5m
+        labels:
+          severity: critical
+          component: predictive-resilience
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High anomaly score detected"
+          description: "Anomaly score is {{ $value }} (negative values indicate anomalies)."
+          runbook_url: "https://docs.cpt-digital.com/runbook/anomaly-detection"
+      
+      # Model Accuracy Alert
+      - alert: LowModelAccuracy
+        expr: aiops_model_accuracy < 0.85
+        for: 1h
+        labels:
+          severity: warning
+          component: predictive-resilience
+          namespace: monitoring
+        annotations:
+          summary: "ML model accuracy below threshold"
+          description: "Model accuracy is {{ $value }} (threshold: 0.85). Retrain recommended."
+          runbook_url: "https://docs.cpt-digital.com/runbook/model-retraining"
+      
+      # Rollback Execution Alert
+      - alert: RollbackExecuted
+        expr: aiops_rollback_executed_total > 0
+        labels:
+          severity: warning
+          component: predictive-resilience
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Predictive rollback executed"
+          description: "{{ $value }} rollback(s) executed due to predicted risk."
+          runbook_url: "https://docs.cpt-digital.com/runbook/predictive-rollback"
+      
+      # Deployment Risk Trends
+      - alert: IncreasingRiskTrend
+        expr: (aiops_risk_score - aiops_risk_score offset 1h) > 0.2
+        for: 30m
+        labels:
+          severity: warning
+          component: predictive-resilience
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Deployment risk trending upward"
+          description: "Risk score increased by {{ $value }} over the last hour."
+          runbook_url: "https://docs.cpt-digital.com/runbook/risk-trending"
+

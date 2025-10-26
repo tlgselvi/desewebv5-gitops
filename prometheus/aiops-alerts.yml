@@ -1,0 +1,120 @@
+groups:
+  - name: aiops_alerts
+    interval: 30s
+    rules:
+      # HTTP Latency Alert: Average latency >300ms for 5 minutes
+      - alert: HighLatency
+        expr: avg(http_request_duration_seconds{service="dese-ea-plan-v5"}) > 0.3
+        for: 5m
+        labels:
+          severity: critical
+          component: application
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High latency detected"
+          description: "Average HTTP latency is {{ $value }}s (threshold: 0.3s) for 5 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/high-latency"
+      
+      # Pod Restart Alert: More than 5 restarts in 10 minutes
+      - alert: PodRestartThreshold
+        expr: increase(kube_pod_container_status_restarts_total{namespace="dese-ea-plan-v5"}[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: kubernetes
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Pod restart threshold exceeded"
+          description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in 10 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/pod-restarts"
+      
+      # CPU Anomaly: CPU usage >90% for 5 minutes
+      - alert: HighCPUUsage
+        expr: avg(rate(container_cpu_usage_seconds_total{namespace="dese-ea-plan-v5"}[5m])) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High CPU usage detected"
+          description: "Average CPU usage is {{ $value }}% (threshold: 90%) for 5 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/high-cpu"
+      
+      # Memory Pressure: Memory usage >90% for 5 minutes
+      - alert: HighMemoryUsage
+        expr: avg(container_memory_working_set_bytes{namespace="dese-ea-plan-v5"}) / avg(container_spec_memory_limit_bytes{namespace="dese-ea-plan-v5"}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% (threshold: 90%) for 5 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/high-memory"
+      
+      # Error Rate: Error rate >5% for 10 minutes
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5..",service="dese-ea-plan-v5"}[10m]) / rate(http_requests_total{service="dese-ea-plan-v5"}[10m]) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+          component: application
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }}% (threshold: 5%) for 10 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/high-error-rate"
+      
+      # Database Connection Pool Exhaustion
+      - alert: DatabasePoolExhausted
+        expr: pg_stat_database_numbackends{namespace="dese-ea-plan-v5"} > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database has {{ $value }} active connections (threshold: 90)"
+          runbook_url: "https://docs.cpt-digital.com/runbook/db-pool-exhaustion"
+      
+      # CrashLoopBackOff Detection
+      - alert: CrashLoopBackOff
+        expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="dese-ea-plan-v5"} > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: kubernetes
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Pod in CrashLoopBackOff state"
+          description: "Pod {{ $labels.pod }} is in CrashLoopBackOff state"
+          runbook_url: "https://docs.cpt-digital.com/runbook/crashloopbackoff"
+      
+      # No HTTP Traffic (Application Down)
+      - alert: NoTraffic
+        expr: rate(http_requests_total{service="dese-ea-plan-v5"}[10m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          component: application
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "No HTTP traffic detected"
+          description: "No HTTP requests received in the last 10 minutes"
+          runbook_url: "https://docs.cpt-digital.com/runbook/no-traffic"
+      
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space on {{ $labels.device }} is below 10%"
+          runbook_url: "https://docs.cpt-digital.com/runbook/disk-space"
+

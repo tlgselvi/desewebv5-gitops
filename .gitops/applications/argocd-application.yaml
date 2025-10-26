@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dese-ea-plan-v5
+  namespace: argocd
+  labels:
+    app: dese-ea-plan-v5
+    environment: production
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/your-org/dese-web-v5.git
+    targetRevision: main
+    path: helm/dese-ea-plan-v5
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: latest
+        - name: replicaCount
+          value: "3"
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dese-ea-plan-v5
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+  
+  healthChecks:
+    - apiVersion: v1
+      kind: Service
+      name: dese-ea-plan-v5
+      namespace: dese-ea-plan-v5
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: dese-ea-plan-v5
+      namespace: dese-ea-plan-v5
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dese-ea-plan-v5-staging
+  namespace: argocd
+  labels:
+    app: dese-ea-plan-v5
+    environment: staging
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/your-org/dese-web-v5.git
+    targetRevision: dev
+    path: helm/dese-ea-plan-v5
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: dev
+        - name: replicaCount
+          value: "2"
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dese-ea-plan-v5-staging
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+

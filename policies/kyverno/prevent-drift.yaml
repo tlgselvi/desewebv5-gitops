@@ -1,0 +1,154 @@
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: prevent-configuration-drift
+  namespace: dese-ea-plan-v5
+  labels:
+    app.kubernetes.io/name: drift-prevention
+    app.kubernetes.io/part-of: cpt-optimization
+    policy.kyverno.io/category: Configuration Management
+    policy.kyverno.io/severity: high
+spec:
+  description: "Prevents configuration drift by blocking unauthorized modifications to production deployments"
+  validationFailureAction: enforce
+  background: true
+  rules:
+    # Rule 1: Prevent manual replica count changes
+    - name: block-unauthorized-replica-changes
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - dese-ea-plan-v5
+      validate:
+        message: "Manual replica changes blocked. Use GitOps workflow."
+        pattern:
+          spec:
+            replicas: "{{request.oldObject.spec.replicas}}"
+
+    # Rule 2: Prevent resource limit modifications
+    - name: block-resource-limit-changes
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - dese-ea-plan-v5
+      validate:
+        message: "Resource limits cannot be modified without GitOps approval."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - resources:
+                      limits: "{{request.oldObject.spec.template.spec.containers[0].resources.limits}}"
+
+    # Rule 3: Enforce image signature verification
+    - name: require-signed-images
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - dese-ea-plan-v5
+      validate:
+        message: "Only signed container images are allowed."
+        pattern:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  "cosign.sigstore.dev/signature": "?"
+
+    # Rule 4: Prevent environment variable changes
+    - name: block-env-var-changes
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - dese-ea-plan-v5
+      validate:
+        message: "Environment variable changes must go through GitOps."
+        deny:
+          conditions:
+            any:
+              - key: "{{keys(request.object.spec.template.spec.containers[?env])}}"
+                operator: NotEquals
+                value: "{{keys(request.oldObject.spec.template.spec.containers[?env])}}"
+
+    # Rule 5: Require self-healing annotation
+    - name: require-self-healing-annotation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - dese-ea-plan-v5
+      validate:
+        message: "Self-healing annotation required for production."
+        pattern:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  "self-healing": "enabled"
+
+    # Rule 6: Enforce namespace isolation
+    - name: enforce-namespace-isolation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - dese-ea-plan-v5
+      validate:
+        message: "Deployments must stay in designated namespace."
+        pattern:
+          metadata:
+            namespace: "dese-ea-plan-v5"
+
+# Generate ClusterPolicy for cross-cutting concerns
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: prevent-drift-cluster-wide
+  labels:
+    app.kubernetes.io/name: drift-prevention-cluster
+    policy.kyverno.io/category: Configuration Management
+spec:
+  description: "Cluster-wide policy to prevent configuration drift in production namespaces"
+  validationFailureAction: enforce
+  background: true
+  rules:
+    - name: audit-all-deployments
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - "dese-ea-plan-v5"
+                - "monitoring"
+      validate:
+        message: "All deployments must have resource limits and health probes."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - resources:
+                      requests: "?"
+                      limits: "?"
+                    livenessProbe: "?"
+                    readinessProbe: "?"
+

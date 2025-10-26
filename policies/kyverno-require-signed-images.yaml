@@ -1,0 +1,59 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-signed-images
+  annotations:
+    policies.kyverno.io/title: "Require Cosign Signed Images"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "high"
+    policies.kyverno.io/subject: "Pod"
+    policies.kyverno.io/description: >-
+      Requires all container images to be signed with Cosign.
+      This policy checks for the `cosign.sigstore.dev/signature` annotation.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+    - name: check-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - "dese-ea-plan-v5"
+                - "dese-ea-plan-v5-staging"
+      validate:
+        message: "All container images must be signed with Cosign"
+        pattern:
+          metadata:
+            annotations:
+              "cosign.sigstore.dev/signature": "?*"
+
+---
+apiVersion: kyverno.io/v1
+kind: Policy
+metadata:
+  name: require-signed-images-ns
+  namespace: dese-ea-plan-v5
+  annotations:
+    policies.kyverno.io/title: "Require Cosign Signed Images (Namespace)"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "high"
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+    - name: check-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: "All container images must be signed with Cosign"
+        pattern:
+          metadata:
+            annotations:
+              "cosign.sigstore.dev/signature": "?*"
+

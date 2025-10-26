@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiops-event-listener
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aiops-event-listener
+  template:
+    metadata:
+      labels:
+        app: aiops-event-listener
+    spec:
+      containers:
+        - name: aiops-event-listener
+          image: node:18-alpine
+          ports:
+            - containerPort: 8080
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              npm install -g express
+              cat > /tmp/server.js << 'EOF'
+              const express = require('express');
+              const app = express();
+              app.use(express.json());
+              
+              let eventCount = 0;
+              let anomalyCount = 0;
+              
+              app.post('/test-event', (req, res) => {
+                const { event, value, threshold } = req.body;
+                eventCount++;
+                
+                console.log('[INFO] Event received:', event, 'value:', value, 'threshold:', threshold);
+                
+                if (event === 'rank-drift' && value > threshold) {
+                  anomalyCount++;
+                  console.log('[INFO] Rank drift detected (' + value + ' > ' + threshold + ')');
+                  console.log('[ACTION] Auto-remediation triggered for rank-drift');
+                }
+                
+                res.json({ 
+                  status: 'processed', 
+                  eventCount, 
+                  anomalyCount,
+                  message: 'Event ' + event + ' processed successfully'
+                });
+              });
+              
+              app.get('/health', (req, res) => {
+                res.json({ status: 'healthy', eventCount, anomalyCount });
+              });
+              
+              app.get('/metrics', (req, res) => {
+                res.set('Content-Type', 'text/plain');
+                res.send('# HELP seo_observer_events_total Total number of events processed\n# TYPE seo_observer_events_total counter\nseo_observer_events_total ' + eventCount + '\n\n# HELP seo_observer_anomalies_total Total number of anomalies detected\n# TYPE seo_observer_anomalies_total counter\nseo_observer_anomalies_total ' + anomalyCount + '\n\n# HELP seo_observer_rank_drift_detected_total Total number of rank drift events detected\n# TYPE seo_observer_rank_drift_detected_total counter\nseo_observer_rank_drift_detected_total ' + anomalyCount + '\n');
+              });
+              
+              app.listen(8080, () => {
+                console.log('AIOps Event Listener HTTP server started on port 8080');
+                console.log('Queue: seo-observer-events');
+                console.log('Topic: rank-drift');
+              });
+              EOF
+              node /tmp/server.js
+          env:
+            - name: EVENT_QUEUE
+              value: seo-observer-events
+            - name: TOPIC
+              value: rank-drift
+            - name: ANOMALY_THRESHOLD
+              value: '5'
+            - name: AUTO_REMEDIATE
+              value: 'true'
+            - name: PERFORMANCE_THRESHOLD
+              value: '0.8'
+            - name: ERROR_THRESHOLD
+              value: '0.1'

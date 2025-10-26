@@ -1,0 +1,91 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: compliance-loop-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app: compliance-monitoring
+spec:
+  groups:
+  - name: compliance-loop
+    interval: 30s
+    rules:
+      # SBOM Drift Alert: Exceeds 10% for 10 minutes
+      - alert: SBOMDriftHigh
+        expr: SBOMDriftPercentage > 10
+        for: 10m
+        labels:
+          severity: critical
+          component: compliance
+          namespace: policy-monitoring
+        annotations:
+          summary: "SBOM drift exceeds 10% threshold"
+          description: "Current SBOM drift is {{ $value }}% (threshold: 10%) for 10 minutes. Baseline update required."
+          runbook_url: "https://docs.cpt-digital.com/runbook/sbom-drift"
+          rebaseline_action: "Run: gh workflow run ci-cd.yml --ref main"
+      
+      # Kyverno Non-Compliant Resources Alert
+      - alert: KyvernoNonCompliant
+        expr: KyvernoNonCompliantResources > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: compliance
+          namespace: policy-monitoring
+        annotations:
+          summary: "Kyverno non-compliant resources detected"
+          description: "{{ $value }} resources are non-compliant with Kyverno policies"
+          runbook_url: "https://docs.cpt-digital.com/runbook/kyverno-violations"
+      
+      # OPA Violations Alert
+      - alert: OPAViolationsDetected
+        expr: OPAViolationsTotal > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: compliance
+          namespace: policy-monitoring
+        annotations:
+          summary: "OPA policy violations detected"
+          description: "{{ $value }} OPA policy violations found in cluster"
+          runbook_url: "https://docs.cpt-digital.com/runbook/opa-violations"
+      
+      # Compliance Score Low
+      - alert: ComplianceScoreLow
+        expr: (ComplianceScorePercentage) < 95
+        for: 15m
+        labels:
+          severity: warning
+          component: compliance
+          namespace: policy-monitoring
+        annotations:
+          summary: "Compliance score below threshold"
+          description: "Overall compliance score is {{ $value }}% (minimum: 95%)"
+          runbook_url: "https://docs.cpt-digital.com/runbook/compliance-score"
+      
+      # Rebaseline Required (5-10% drift)
+      - alert: RebaselineRecommended
+        expr: SBOMDriftPercentage > 5 and SBOMDriftPercentage <= 10
+        for: 30m
+        labels:
+          severity: info
+          component: compliance
+          namespace: policy-monitoring
+        annotations:
+          summary: "SBOM rebaseline recommended"
+          description: "SBOM drift is {{ $value }}% (within tolerance). Auto-rebaseline will run."
+          action: "Monitoring continuous compliance loop"
+      
+      # Policy Sync Failure
+      - alert: PolicySyncFailure
+        expr: ArgoCDAppSyncStatus{app="policy-sync"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: argocd
+          namespace: argocd
+        annotations:
+          summary: "Policy sync application failed"
+          description: "ArgoCD application 'policy-sync' is not in sync state"
+          runbook_url: "https://docs.cpt-digital.com/runbook/argocd-sync"

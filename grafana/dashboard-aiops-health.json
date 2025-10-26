@@ -1,0 +1,193 @@
+{
+  "dashboard": {
+    "title": "AIOps Health Dashboard",
+    "tags": ["aiops", "production", "health"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "HTTP Latency Over Time",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "avg(http_request_duration_seconds{service=\"dese-ea-plan-v5\"})",
+            "legendFormat": "Avg Latency",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Latency (seconds)"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [0.3], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "for": "5m",
+          "frequency": "30s",
+          "name": "High Latency",
+          "noDataState": "no_data",
+          "notifications": [],
+          "state": "alerting"
+        }
+      },
+      {
+        "id": 2,
+        "title": "CPU Anomaly Score",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{namespace=\"dese-ea-plan-v5\"}[5m])",
+            "legendFormat": "CPU Usage",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percentunit", "label": "CPU Usage"},
+          {"format": "short"}
+        ],
+        "thresholds": [
+          {"value": 0, "color": "green"},
+          {"value": 70, "color": "yellow"},
+          {"value": 90, "color": "red"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "SEO Rank Drift",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 8, "h": 8},
+        "targets": [
+          {
+            "expr": "seo_keyword_rank{keyword=~\".+\"}",
+            "legendFormat": "{{keyword}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Rank", "reverse": true},
+          {"format": "short"}
+        ],
+        "legend": {"show": true}
+      },
+      {
+        "id": 4,
+        "title": "Error Rate",
+        "type": "singlestat",
+        "gridPos": {"x": 8, "y": 8, "w": 8, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\",service=\"dese-ea-plan-v5\"}[10m]) / rate(http_requests_total{service=\"dese-ea-plan-v5\"}[10m])",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "valueFontSize": "48px",
+          "unit": "percentunit"
+        },
+        "thresholds": "50,90"
+      },
+      {
+        "id": 5,
+        "title": "Pod Restart Count",
+        "type": "singlestat",
+        "gridPos": {"x": 16, "y": 8, "w": 8, "h": 4},
+        "targets": [
+          {
+            "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"dese-ea-plan-v5\"}[10m])",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "valueFontSize": "48px",
+          "unit": "short"
+        },
+        "color": {"mode": "thresholds"}
+      },
+      {
+        "id": 6,
+        "title": "HTTP Request Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{service=\"dese-ea-plan-v5\"}[5m])",
+            "legendFormat": "Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "reqps"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "avg(container_memory_working_set_bytes{namespace=\"dese-ea-plan-v5\"})",
+            "legendFormat": "Memory Usage",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes"},
+          {"format": "short"}
+        ],
+        "thresholds": [
+          {"value": 0},
+          {"value": 512000000, "color": "yellow"},
+          {"value": 1024000000, "color": "red"}
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "name": "Alert Events",
+          "datasource": "Prometheus",
+          "enable": true,
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "limit": 20,
+          "query": "ALERTS{state=\"firing\"}",
+          "step": "30s",
+          "titleFormat": "Alert",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "templating": {
+      "list": []
+    },
+    "links": [
+      {
+        "icon": "external link",
+        "tags": [],
+        "title": "Runbook",
+        "tooltip": "View runbook documentation",
+        "type": "link",
+        "url": "https://docs.cpt-digital.com/runbook"
+      }
+    ],
+    "time": {"from": "now-6h", "to": "now"},
+    "timepicker": {
+      "refresh_intervals": ["10s", "30s", "1m", "5m", "15m", "30m", "1h"],
+      "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    }
+  }
+}
+

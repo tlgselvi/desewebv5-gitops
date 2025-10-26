@@ -1,0 +1,172 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: self-healing-monitoring
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app.kubernetes.io/name: self-healing-monitoring
+    app.kubernetes.io/part-of: cpt-optimization
+spec:
+  groups:
+    # Self-Healing Deployment Status
+    - name: self-healing-deployment
+      interval: 30s
+      rules:
+        # Alert: Deployment replica mismatch (drift detected)
+        - alert: DeploymentReplicaDrift
+          expr: |
+            kube_deployment_spec_replicas{namespace="dese-ea-plan-v5"} 
+            != kube_deployment_status_replicas{namespace="dese-ea-plan-v5"}
+          for: 5m
+          labels:
+            severity: warning
+            category: configuration-drift
+          annotations:
+            summary: "Deployment replica drift detected in {{ $labels.deployment }}"
+            description: "Expected {{ $value }} replicas but got {{ $labels.replicas }}. Self-healing initiated."
+
+        # Alert: Pod crash loop
+        - alert: PodCrashLoopBackOff
+          expr: |
+            kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="dese-ea-plan-v5"}
+          for: 5m
+          labels:
+            severity: critical
+            category: self-healing
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash looping"
+            description: "Self-healing job triggered. Auto-restart initiated."
+
+        # Alert: High CPU usage (triggers HPA scale-up)
+        - alert: HighCPUUsage
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{namespace="dese-ea-plan-v5"}[5m])) 
+            by (pod) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            category: resource-exhaustion
+          annotations:
+            summary: "High CPU usage in {{ $labels.pod }}"
+            description: "CPU usage is {{ $value | humanizePercentage }}. HPA scaling up."
+
+        # Alert: High memory usage
+        - alert: HighMemoryUsage
+          expr: |
+            sum(container_memory_working_set_bytes{namespace="dese-ea-plan-v5"}) 
+            by (pod) > 450000000
+          for: 5m
+          labels:
+            severity: warning
+            category: resource-exhaustion
+          annotations:
+            summary: "High memory usage in {{ $labels.pod }}"
+            description: "Memory usage is {{ $value | humanizeBytes }}. HPA scaling up."
+
+    # Configuration Drift Detection
+    - name: configuration-drift
+      interval: 60s
+      rules:
+        # Track configuration hash drift
+        - alert: ConfigurationHashDrift
+          expr: |
+            increase(config_drift_detected_total{namespace="dese-ea-plan-v5"}[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+            category: drift-detection
+          annotations:
+            summary: "Configuration drift detected"
+            description: "GitOps detected manual configuration changes."
+
+        # Image signature verification
+        - alert: ImageSignatureMismatch
+          expr: |
+            cosign_signature_verification_failures_total{namespace="dese-ea-plan-v5"} > 0
+          for: 1m
+          labels:
+            severity: critical
+            category: security
+          annotations:
+            summary: "Image signature verification failed"
+            description: "Deployment blocked due to unsigned container image."
+
+    # Self-Healing Execution Metrics
+    - name: self-healing-metrics
+      interval: 30s
+      rules:
+        # Track successful self-healing actions
+        - record: self_healing_actions_total
+          expr: |
+            increase(self_healing_actions_total{namespace="dese-ea-plan-v5",status="success"}[5m])
+          labels:
+            component: self-healing
+
+        # Track self-healing failure rate
+        - alert: SelfHealingFailureRate
+          expr: |
+            rate(self_healing_actions_total{status="failed"}[5m]) / 
+            rate(self_healing_actions_total[5m]) > 0.2
+          for: 10m
+          labels:
+            severity: warning
+            category: self-healing
+          annotations:
+            summary: "Self-healing failure rate high"
+            description: "{{ $value | humanizePercentage }} of healing actions failed."
+
+    # Canary Rollout Metrics
+    - name: canary-rollout
+      interval: 30s
+      rules:
+        # Track canary traffic percentage
+        - record: canary_traffic_percentage
+          expr: |
+            sum(rate(http_requests_total{deployment="dese-ea-plan-v5-canary"}[5m])) / 
+            sum(rate(http_requests_total{deployment="dese-ea-plan-v5"}[5m])) * 100
+          labels:
+            component: canary
+
+        # Alert: High error rate in canary
+        - alert: CanaryHighErrorRate
+          expr: |
+            rate(http_requests_total{deployment="dese-ea-plan-v5-canary",status=~"5.."}[5m]) / 
+            rate(http_requests_total{deployment="dese-ea-plan-v5-canary"}[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+            category: canary-rollout
+          annotations:
+            summary: "High error rate in canary deployment"
+            description: "{{ $value | humanizePercentage }} error rate. Rollback recommended."
+
+    # SLO Compliance Metrics
+    - name: slo-compliance
+      interval: 60s
+      rules:
+        # Alert: Latency SLO violation
+        - alert: LatencySLOViolation
+          expr: |
+            histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{namespace="dese-ea-plan-v5"}[5m])) > 1.0
+          for: 10m
+          labels:
+            severity: critical
+            category: slo-violation
+          annotations:
+            summary: "P99 latency exceeds SLO"
+            description: "P99 latency is {{ $value }}s. Target: <1.0s."
+
+        # Alert: Availability SLO violation
+        - alert: AvailabilitySLOViolation
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m])) / 
+            sum(rate(http_requests_total[5m])) > 0.001
+          for: 15m
+          labels:
+            severity: critical
+            category: slo-violation
+          annotations:
+            summary: "Availability SLO violation detected"
+            description: "Error rate {{ $value | humanizePercentage }} exceeds 0.1% target."
+

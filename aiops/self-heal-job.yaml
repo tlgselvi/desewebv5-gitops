@@ -1,0 +1,305 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: self-heal-cpt
+  namespace: dese-ea-plan-v5
+  labels:
+    app.kubernetes.io/name: self-healing
+    app.kubernetes.io/component: aiops
+    app.kubernetes.io/part-of: cpt-optimization
+spec:
+  # Run every 5 minutes
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: self-healing
+            app.kubernetes.io/component: aiops
+        spec:
+          serviceAccountName: dese-ea-plan-v5
+          restartPolicy: OnFailure
+          containers:
+            - name: self-healing-analyzer
+              image: python:3.11-slim
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/bash
+              args:
+                - -c
+                - |
+                  set -e
+                  echo "🔧 Self-Healing Job Started at $(date)"
+                  
+                  # Install dependencies
+                  pip install -q kubernetes prometheus-client requests pyyaml numpy pandas
+                  
+                  # Run self-healing script
+                  python3 /app/self-heal.py
+                  
+                  echo "✅ Self-Healing Job Completed"
+              
+              env:
+                - name: NAMESPACE
+                  value: "dese-ea-plan-v5"
+                - name: APP_NAME
+                  value: "dese-ea-plan-v5"
+                - name: PROMETHEUS_URL
+                  value: "http://prometheus:9090"
+                - name: SLACK_WEBHOOK
+                  valueFrom:
+                    secretKeyRef:
+                      name: dese-ea-plan-v5-secrets
+                      key: SLACK_WEBHOOK
+              
+              volumeMounts:
+                - name: self-healing-script
+                  mountPath: /app
+                - name: kube-config
+                  mountPath: /root/.kube
+                  readOnly: true
+          
+          volumes:
+            - name: self-healing-script
+              configMap:
+                name: self-healing-script
+            - name: kube-config
+              secret:
+                secretName: kubeconfig
+                defaultMode: 0600
+          nodeSelector:
+            kubernetes.io/os: linux
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              operator: Exists
+              effect: NoSchedule
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: self-healing-script
+  namespace: dese-ea-plan-v5
+  labels:
+    app.kubernetes.io/name: self-healing
+    app.kubernetes.io/component: aiops
+data:
+  self-heal.py: |
+    #!/usr/bin/env python3
+    """
+    AIOps Self-Healing Script for EA Plan v5.2
+    Detects anomalies, enforces drift prevention, and triggers automatic remediation
+    """
+    
+    import os
+    import json
+    import time
+    import sys
+    from datetime import datetime
+    from kubernetes import client, config
+    from kubernetes.client.rest import ApiException
+    import requests
+    import yaml
+    
+    # Configuration
+    NAMESPACE = os.getenv("NAMESPACE", "dese-ea-plan-v5")
+    APP_NAME = os.getenv("APP_NAME", "dese-ea-plan-v5")
+    PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://prometheus:9090")
+    SLACK_WEBHOOK = os.getenv("SLACK_WEBHOOK")
+    LOG_FILE = "/var/log/self-healing.log"
+    
+    # Initialize Kubernetes client
+    try:
+        config.load_incluster_config()
+    except:
+        config.load_kube_config()
+    
+    v1 = client.CoreV1Api()
+    apps_v1 = client.AppsV1Api()
+    
+    def log(message):
+        """Log with timestamp"""
+        timestamp = datetime.utcnow().isoformat()
+        print(f"[{timestamp}] {message}")
+        with open(LOG_FILE, "a") as f:
+            f.write(f"[{timestamp}] {message}\n")
+    
+    def fetch_prometheus_metric(query):
+        """Fetch metric from Prometheus"""
+        try:
+            response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={"query": query}, timeout=5)
+            data = response.json()
+            if data["status"] == "success" and data["data"]["result"]:
+                return float(data["data"]["result"][0]["value"][1])
+            return None
+        except Exception as e:
+            log(f"⚠️  Prometheus query failed: {e}")
+            return None
+    
+    def get_deployment_status():
+        """Get deployment status and replica information"""
+        try:
+            deployment = apps_v1.read_namespaced_deployment(APP_NAME, NAMESPACE)
+            return {
+                "replicas": deployment.spec.replicas,
+                "ready_replicas": deployment.status.ready_replicas or 0,
+                "available_replicas": deployment.status.available_replicas or 0,
+                "updated_replicas": deployment.status.updated_replicas or 0
+            }
+        except ApiException as e:
+            log(f"❌ Failed to fetch deployment: {e}")
+            return None
+    
+    def check_configuration_drift():
+        """Detect configuration drift"""
+        try:
+            deployment = apps_v1.read_namespaced_deployment(APP_NAME, NAMESPACE)
+            current_replicas = deployment.spec.replicas
+            ready_replicas = deployment.status.ready_replicas or 0
+            
+            # Check for replica drift
+            if current_replicas != ready_replicas:
+                log(f"⚠️  Drift detected: {current_replicas} desired vs {ready_replicas} ready")
+                return True
+            
+            # Check annotations for drift markers
+            annotations = deployment.metadata.annotations or {}
+            if annotations.get("drift-detected") == "true":
+                log("⚠️  Configuration drift detected via annotation")
+                return True
+            
+            return False
+        except Exception as e:
+            log(f"❌ Drift check failed: {e}")
+            return False
+    
+    def heal_replica_drift():
+        """Self-heal replica drift by scaling deployment"""
+        try:
+            status = get_deployment_status()
+            if not status:
+                return False
+            
+            desired = status["replicas"]
+            ready = status["ready_replicas"]
+            
+            # If drift detected, force update
+            if desired != ready and ready > 0:
+                log(f"🔧 Healing replica drift: {ready}/{desired} ready")
+                
+                # Trigger rolling update
+                deployment = apps_v1.read_namespaced_deployment(APP_NAME, NAMESPACE)
+                deployment.spec.template.metadata.annotations = deployment.spec.template.metadata.annotations or {}
+                deployment.spec.template.metadata.annotations["healed-at"] = datetime.utcnow().isoformat()
+                apps_v1.patch_namespaced_deployment(APP_NAME, NAMESPACE, deployment)
+                
+                log(f"✅ Rolling update triggered for drift healing")
+                return True
+            
+            return False
+        except Exception as e:
+            log(f"❌ Replica healing failed: {e}")
+            return False
+    
+    def heal_pod_failures():
+        """Detect and heal pod failures"""
+        try:
+            pods = v1.list_namespaced_pod(NAMESPACE, label_selector=f"app.kubernetes.io/name={APP_NAME}")
+            
+            crashloops = []
+            image_pulls = []
+            pending = []
+            
+            for pod in pods.items:
+                if pod.status.phase == "Pending":
+                    pending.append(pod.metadata.name)
+                
+                if pod.status.container_statuses:
+                    for container in pod.status.container_statuses:
+                        if container.state.waiting:
+                            reason = container.state.waiting.reason
+                            if "CrashLoopBackOff" in reason:
+                                crashloops.append(pod.metadata.name)
+                            elif "ImagePull" in reason:
+                                image_pulls.append(pod.metadata.name)
+            
+            # Heal crash loop pods
+            if crashloops:
+                log(f"🚨 Crash loop detected in pods: {crashloops}")
+                for pod_name in crashloops[:1]:  # Heal one at a time
+                    try:
+                        v1.delete_namespaced_pod(pod_name, NAMESPACE)
+                        log(f"🗑️  Deleted crash looping pod: {pod_name}")
+                    except Exception as e:
+                        log(f"⚠️  Failed to delete pod {pod_name}: {e}")
+            
+            # Heal image pull issues
+            if image_pulls:
+                log(f"⚠️  Image pull issues in pods: {image_pulls}")
+                # Image pull issues require manual intervention
+                return False
+            
+            return len(crashloops) > 0 or len(image_pulls) > 0
+        except Exception as e:
+            log(f"❌ Pod healing failed: {e}")
+            return False
+    
+    def send_slack_notification(message):
+        """Send Slack notification"""
+        if not SLACK_WEBHOOK:
+            return
+        
+        try:
+            payload = {"text": f"🔧 Self-Healing Alert: {message}"}
+            requests.post(SLACK_WEBHOOK, json=payload, timeout=5)
+        except Exception as e:
+            log(f"⚠️  Slack notification failed: {e}")
+    
+    def main():
+        """Main self-healing loop"""
+        log("🚀 Starting AIOps Self-Healing Job")
+        
+        actions_taken = []
+        
+        # 1. Check configuration drift
+        drift_detected = check_configuration_drift()
+        if drift_detected:
+            log("🔍 Configuration drift detected, initiating healing...")
+            healed = heal_replica_drift()
+            if healed:
+                actions_taken.append("Replica drift healed")
+                send_slack_notification("Deployment replica drift detected and healed")
+        
+        # 2. Heal pod failures
+        pods_healed = heal_pod_failures()
+        if pods_healed:
+            actions_taken.append("Pod failures healed")
+            send_slack_notification("Pod failures detected and remediated")
+        
+        # 3. Fetch deployment status
+        status = get_deployment_status()
+        if status:
+            log(f"📊 Deployment Status: {status['ready_replicas']}/{status['replicas']} ready")
+        
+        # 4. Monitor metrics
+        cpu_usage = fetch_prometheus_metric(f'sum(rate(container_cpu_usage_seconds_total{{namespace="{NAMESPACE}"}}[5m])) by (pod)')
+        if cpu_usage and cpu_usage > 0.8:
+            log(f"⚠️  High CPU usage detected: {cpu_usage}")
+            actions_taken.append("High CPU usage detected")
+        
+        # Summary
+        if actions_taken:
+            log(f"✅ Self-healing complete. Actions: {', '.join(actions_taken)}")
+        else:
+            log("✅ No healing actions required. System healthy.")
+        
+        return 0
+    
+    if __name__ == "__main__":
+        sys.exit(main())
+
