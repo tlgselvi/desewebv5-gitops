@@ -1,27 +1,19 @@
 import { Router, Request, Response } from 'express';
 import { logger } from '../utils/logger.js';
+import { FeedbackStore } from '../services/storage/redisClient.js';
+import { recordFeedback } from '../middleware/aiopsMetrics.js';
 
 const router = Router();
-
-interface FeedbackEntry {
-  timestamp: number;
-  metric: string;
-  anomaly: boolean;
-  verdict: boolean;
-  comment: string;
-}
-
-let feedbackLog: FeedbackEntry[] = [];
 
 /**
  * POST /api/v1/aiops/feedback
  * Submit AIOps feedback
  */
-router.post('/aiops/feedback', (req: Request, res: Response): void => {
+router.post('/aiops/feedback', async (req: Request, res: Response): Promise<void> => {
   try {
     const { metric, anomaly, verdict, comment } = req.body;
 
-    const entry: FeedbackEntry = {
+    const entry = {
       timestamp: Date.now(),
       metric: metric || 'unknown',
       anomaly: anomaly || false,
@@ -29,9 +21,12 @@ router.post('/aiops/feedback', (req: Request, res: Response): void => {
       comment: comment || '',
     };
 
-    feedbackLog.push(entry);
+    await FeedbackStore.save(entry);
+    
+    // Record metric
+    recordFeedback(entry.metric, entry.anomaly);
 
-    logger.info('Feedback entry saved', {
+    logger.info('Feedback entry saved to Redis', {
       metric: entry.metric,
       anomaly: entry.anomaly,
       verdict: entry.verdict,
@@ -55,12 +50,14 @@ router.post('/aiops/feedback', (req: Request, res: Response): void => {
  * GET /api/v1/aiops/feedback
  * Get all feedback entries
  */
-router.get('/aiops/feedback', (_req: Request, res: Response): void => {
+router.get('/aiops/feedback', async (_req: Request, res: Response): Promise<void> => {
   try {
+    const data = await FeedbackStore.getAll();
+    
     res.status(200).json({
       success: true,
-      count: feedbackLog.length,
-      feedback: feedbackLog,
+      count: data.length,
+      feedback: data,
     });
   } catch (error) {
     logger.error('Error retrieving feedback', { error });
@@ -75,16 +72,15 @@ router.get('/aiops/feedback', (_req: Request, res: Response): void => {
  * DELETE /api/v1/aiops/feedback
  * Clear feedback log
  */
-router.delete('/aiops/feedback', (_req: Request, res: Response): void => {
+router.delete('/aiops/feedback', async (_req: Request, res: Response): Promise<void> => {
   try {
-    const count = feedbackLog.length;
-    feedbackLog = [];
+    const deleted = await FeedbackStore.clear();
 
-    logger.info('Feedback log cleared', { count });
+    logger.info('Feedback log cleared', { deleted });
 
     res.status(200).json({
       success: true,
-      message: `Cleared ${count} feedback entries`,
+      message: `Cleared ${deleted} feedback entries`,
     });
   } catch (error) {
     logger.error('Error clearing feedback', { error });

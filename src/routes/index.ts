@@ -8,6 +8,7 @@ import { metricsRoutes } from './metrics.js';
 import { aiopsRoutes } from './aiops.js';
 import { feedbackRoutes } from './feedback.js';
 import { autoRemediationRoutes } from './autoRemediation.js';
+import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {
@@ -18,6 +19,9 @@ export function setupRoutes(app: Express): void {
 
   // Metrics endpoint
   app.use('/metrics', metricsRoutes);
+
+  // AIOps metrics endpoint
+  app.get('/metrics/aiops', aiopsMetrics);
 
   // AIOps routes
   app.use(`${apiPrefix}/aiops`, aiopsRoutes);
@@ -49,6 +53,7 @@ export function setupRoutes(app: Express): void {
         analytics: `${apiPrefix}/analytics`,
         aiops: `${apiPrefix}/aiops`,
         metrics: '/metrics',
+        aiopsMetrics: '/metrics/aiops',
         health: '/health',
         docs: '/api-docs',
       },
