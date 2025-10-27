@@ -7,6 +7,7 @@ import { healthRoutes } from './health.js';
 import { metricsRoutes } from './metrics.js';
 import { aiopsRoutes } from './aiops.js';
 import { feedbackRoutes } from './feedback.js';
+import { autoRemediationRoutes } from './autoRemediation.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {
@@ -23,6 +24,9 @@ export function setupRoutes(app: Express): void {
 
   // Feedback routes
   app.use(`${apiPrefix}`, feedbackRoutes);
+
+  // Auto-Remediation routes
+  app.use(`${apiPrefix}`, autoRemediationRoutes);
 
   // API routes
   app.use(`${apiPrefix}/projects`, projectRoutes);

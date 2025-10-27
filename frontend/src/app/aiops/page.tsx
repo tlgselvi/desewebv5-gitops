@@ -1,5 +1,6 @@
 import DriftPanel from "@/components/aiops/DriftPanel";
 import InsightsPanel from "@/components/aiops/InsightsPanel";
+import ReplayTimeline from "@/components/aiops/ReplayTimeline";
 
 export default function AIOpsPage() {
   return (
@@ -31,6 +32,11 @@ export default function AIOpsPage() {
         {/* Insights Panel */}
         <div className="mt-6">
           <InsightsPanel />
+        </div>
+
+        {/* Replay Timeline */}
+        <div className="mt-6">
+          <ReplayTimeline />
         </div>
       </div>
     </main>

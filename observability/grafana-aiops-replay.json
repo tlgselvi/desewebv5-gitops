@@ -1,0 +1,103 @@
+{
+  "dashboard": {
+    "title": "Dese EA Plan - AIOps Replay Timeline",
+    "description": "Auto-Remediation event stream and replay timeline",
+    "tags": ["aiops", "remediation", "automation"],
+    "panels": [
+      {
+        "id": 1,
+        "type": "logs",
+        "title": "Auto-Remediation Log Stream",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "expr": "aiops_remediation_events_total"
+          }
+        ],
+        "options": {
+          "dedupStrategy": "none",
+          "showTime": true,
+          "showCommonLabels": false,
+          "showLogsVolume": true,
+          "sortOrder": "Descending"
+        }
+      },
+      {
+        "id": 2,
+        "type": "graph",
+        "title": "Remediation Events by Severity",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (severity) (aiops_remediation_events_total)"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "Total Remediation Actions",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "count(aiops_remediation_events_total)"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "High Severity Events",
+        "gridPos": {
+          "x": 18,
+          "y": 8,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "count(aiops_remediation_events_total{severity=\"high\"})"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "type": "table",
+        "title": "Recent Remediation Events",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "aiops_remediation_events_total"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
+
