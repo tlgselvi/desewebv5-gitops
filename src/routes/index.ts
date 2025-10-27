@@ -4,6 +4,7 @@ import { contentRoutes } from './content.js';
 import { projectRoutes } from './projects.js';
 import { analyticsRoutes } from './analytics.js';
 import { healthRoutes } from './health.js';
+import { metricsRoutes } from './metrics.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {
@@ -11,6 +12,9 @@ export function setupRoutes(app: Express): void {
 
   // Health check routes
   app.use('/health', healthRoutes);
+
+  // Metrics endpoint
+  app.use('/metrics', metricsRoutes);
 
   // API routes
   app.use(`${apiPrefix}/projects`, projectRoutes);

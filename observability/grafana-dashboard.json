@@ -1,0 +1,10 @@
+{
+  "dashboard": {
+    "title": "Dese Web v5.6 - Security & Validation",
+    "panels": [
+      { "type": "graph", "title": "User Actions", "targets": [{ "expr": "cpt_user_action_total" }] },
+      { "type": "graph", "title": "JWT Rotations", "targets": [{ "expr": "cpt_token_rotation_total" }] }
+    ]
+  }
+}
+

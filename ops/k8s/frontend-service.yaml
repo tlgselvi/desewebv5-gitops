@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cpt-ajan-frontend
+  namespace: dese-ea-plan-v5
+  labels:
+    app: cpt-ajan-frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: cpt-ajan-frontend
+

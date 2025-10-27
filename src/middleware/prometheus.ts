@@ -57,6 +57,18 @@ const seoAlertsTotal = new client.Counter({
   labelNames: ['project_id', 'alert_type', 'severity'],
 });
 
+// Security metrics
+const userActionTotal = new client.Counter({
+  name: 'cpt_user_action_total',
+  help: 'User actions',
+  labelNames: ['action'],
+});
+
+const tokenRotationTotal = new client.Counter({
+  name: 'cpt_token_rotation_total',
+  help: 'JWT token rotations',
+});
+
 // Register metrics
 register.registerMetric(httpRequestDuration);
 register.registerMetric(httpRequestTotal);
@@ -66,6 +78,8 @@ register.registerMetric(seoAnalysisTotal);
 register.registerMetric(contentGenerationTotal);
 register.registerMetric(backlinkCampaignsActive);
 register.registerMetric(seoAlertsTotal);
+register.registerMetric(userActionTotal);
+register.registerMetric(tokenRotationTotal);
 
 // Prometheus middleware
 export const prometheusMiddleware = (req: Request, res: Response, next: NextFunction): void => {
@@ -77,7 +91,7 @@ export const prometheusMiddleware = (req: Request, res: Response, next: NextFunc
 
   // Override res.end to capture metrics
   const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function(chunk?: any, encoding?: any): Response {
     const duration = (Date.now() - start) / 1000;
     const statusCode = res.statusCode.toString();
 
@@ -93,7 +107,7 @@ export const prometheusMiddleware = (req: Request, res: Response, next: NextFunc
     httpRequestInProgress.dec({ method: req.method, route });
 
     // Call original end method
-    originalEnd.call(this, chunk, encoding);
+    return originalEnd.call(this, chunk, encoding);
   };
 
   next();
@@ -129,6 +143,14 @@ export const recordSeoAlert = (projectId: string, alertType: string, severity: s
 
 export const updateDatabaseConnections = (count: number): void => {
   databaseConnections.set(count);
+};
+
+export const recordUserAction = (action: string): void => {
+  userActionTotal.inc({ action });
+};
+
+export const recordTokenRotation = (): void => {
+  tokenRotationTotal.inc();
 };
 
 // Export register for use in other modules

@@ -1,0 +1,3 @@
+module.exports=[36399,a=>{a.n(a.i(35829))},45232,a=>{a.n(a.i(28613))},58260,a=>{a.n(a.i(12070))},37440,a=>{a.n(a.i(90307))},73148,a=>{a.n(a.i(39257))},89577,a=>{"use strict";var b=a.i(18332);function c(){return(0,b.jsx)("main",{className:"flex min-h-screen flex-col items-center justify-center p-24",children:(0,b.jsxs)("div",{className:"z-10 max-w-5xl w-full items-center justify-center font-mono text-sm",children:[(0,b.jsx)("h1",{className:"text-4xl font-bold text-center mb-8",children:"Dese Web v5.6"}),(0,b.jsx)("p",{className:"text-center text-gray-600",children:"Welcome to Next.js 14 with App Router, TypeScript, and Tailwind CSS"})]})})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=frontend_0592994b._.js.map
