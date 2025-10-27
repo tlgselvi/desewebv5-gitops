@@ -5,6 +5,7 @@ import { projectRoutes } from './projects.js';
 import { analyticsRoutes } from './analytics.js';
 import { healthRoutes } from './health.js';
 import { metricsRoutes } from './metrics.js';
+import { aiopsRoutes } from './aiops.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {
@@ -15,6 +16,9 @@ export function setupRoutes(app: Express): void {
 
   // Metrics endpoint
   app.use('/metrics', metricsRoutes);
+
+  // AIOps routes
+  app.use(`${apiPrefix}/aiops`, aiopsRoutes);
 
   // API routes
   app.use(`${apiPrefix}/projects`, projectRoutes);
@@ -35,6 +39,8 @@ export function setupRoutes(app: Express): void {
         seo: `${apiPrefix}/seo`,
         content: `${apiPrefix}/content`,
         analytics: `${apiPrefix}/analytics`,
+        aiops: `${apiPrefix}/aiops`,
+        metrics: '/metrics',
         health: '/health',
         docs: '/api-docs',
       },

@@ -1,0 +1,14 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/aiops/layout,_N_T_/aiops/page,_N_T_/aiops"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/aiops/__PAGE__",
+    "/aiops",
+    "/_index"
+  ]
+}
