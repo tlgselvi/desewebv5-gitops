@@ -1,4 +1,5 @@
 import DriftPanel from "@/components/aiops/DriftPanel";
+import InsightsPanel from "@/components/aiops/InsightsPanel";
 
 export default function AIOpsPage() {
   return (
@@ -16,7 +17,6 @@ export default function AIOpsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <DriftPanel />
 
-          {/* Placeholder for future panels */}
           <div className="p-4 rounded bg-white border-2 border-gray-200">
             <h2 className="font-bold text-lg mb-2">System Health</h2>
             <p className="text-gray-600">Coming soon</p>
@@ -26,6 +26,11 @@ export default function AIOpsPage() {
             <h2 className="font-bold text-lg mb-2">Performance Metrics</h2>
             <p className="text-gray-600">Coming soon</p>
           </div>
+        </div>
+
+        {/* Insights Panel */}
+        <div className="mt-6">
+          <InsightsPanel />
         </div>
       </div>
     </main>
