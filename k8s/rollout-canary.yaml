@@ -1,0 +1,154 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: cpt-ajan-backend
+  namespace: dese-ea-plan-v5
+spec:
+  replicas: 3
+  strategy:
+    canary:
+      steps:
+        # Step 1: 10% canary traffic
+        - setWeight: 10
+        - pause:
+            duration: 5m
+        # Step 2: Analyze and go to 30%
+        - setWeight: 30
+        # Step 3: Analyze and go to 100%
+        - setWeight: 100
+        - pause:
+            duration: 10m
+      
+      analysis:
+        templates:
+          - templateName: feedback-error-rate
+          - templateName: feedback-latency
+          - templateName: redis-health
+        
+        args:
+          - name: service-name
+            value: cpt-ajan-backend
+        
+        startingStep: 2
+        
+        interval: 2m
+        
+        # Auto rollback if 2 consecutive analyses fail
+        maxFailed: 2
+
+  selector:
+    matchLabels:
+      app: cpt-ajan-backend
+  
+  template:
+    metadata:
+      labels:
+        app: cpt-ajan-backend
+        version: v5.7.1
+    spec:
+      serviceAccountName: dese-ea-plan-v5
+      containers:
+      - name: backend
+        image: ghcr.io/your-org/cpt-ajan-backend:v5.7.1
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: dese-ea-plan-v5-secrets
+              key: REDIS_URL
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: feedback-error-rate
+  namespace: dese-ea-plan-v5
+spec:
+  metrics:
+    - name: feedback-error-rate
+      interval: 30s
+      provider:
+        prometheus:
+          address: http://prometheus-service.monitoring:9090
+          query: |
+            sum(rate(http_requests_total{
+              app="cpt-ajan-backend",
+              route="/api/v1/aiops/feedback",
+              status=~"5.."
+            }[2m])) /
+            sum(rate(http_requests_total{
+              app="cpt-ajan-backend",
+              route="/api/v1/aiops/feedback"
+            }[2m]))
+      successCondition: result[0] <= 0.005 # < 0.5% error rate
+      failureCondition: result[0] > 0.005
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: feedback-latency
+  namespace: dese-ea-plan-v5
+spec:
+  metrics:
+    - name: feedback-p95-latency
+      interval: 30s
+      provider:
+        prometheus:
+          address: http://prometheus-service.monitoring:9090
+          query: |
+            histogram_quantile(0.95,
+              sum by (le) (rate(http_request_duration_seconds_bucket{
+                app="cpt-ajan-backend",
+                route="/api/v1/aiops/feedback"
+              }[5m]))
+            )
+      successCondition: result[0] <= 0.15 # < 150ms
+      failureCondition: result[0] > 0.15
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: redis-health
+  namespace: dese-ea-plan-v5
+spec:
+  metrics:
+    - name: redis-connections
+      interval: 30s
+      provider:
+        prometheus:
+          address: http://prometheus-service.monitoring:9090
+          query: redis_connected_clients
+      successCondition: result[0] > 0
+      failureCondition: result[0] == 0
+

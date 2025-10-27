@@ -1,0 +1,75 @@
+groups:
+  - name: aiops_feedback
+    interval: 30s
+    rules:
+      # P95 latency alert for feedback endpoint
+      - record: feedback_p95_latency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{
+              route="/api/v1/aiops/feedback"
+            }[5m]))
+          )
+
+      # Error rate alert
+      - record: feedback_error_rate
+        expr: |
+          sum(rate(http_requests_total{
+            route="/api/v1/aiops/feedback",
+            status=~"5.."
+          }[5m])) /
+          sum(rate(http_requests_total{
+            route="/api/v1/aiops/feedback"
+          }[5m]))
+
+      # Alert: High latency
+      - alert: FeedbackHighLatency
+        expr: feedback_p95_latency > 0.150
+        for: 5m
+        labels:
+          severity: warning
+          component: aiops
+          action: investigate
+        annotations:
+          summary: "Feedback endpoint p95 latency exceeds 150ms"
+          description: "P95 latency is {{ $value }}s for /api/v1/aiops/feedback"
+
+      # Alert: High error rate
+      - alert: FeedbackHighErrorRate
+        expr: feedback_error_rate > 0.005
+        for: 5m
+        labels:
+          severity: critical
+          component: aiops
+          action: page
+        annotations:
+          summary: "Feedback endpoint error rate > 0.5%"
+          description: "Error rate is {{ $value }} for /api/v1/aiops/feedback"
+
+      # Alert: Redis connection issue
+      - alert: RedisConnectionFailure
+        expr: increase(redis_connection_errors_total[5m]) > 5
+        for: 3m
+        labels:
+          severity: critical
+          component: redis
+          action: page
+        annotations:
+          summary: "Redis connection failures detected"
+          description: "{{ $value }} connection errors in the last 5 minutes"
+
+      # Alert: Feedback storage issues
+      - alert: FeedbackStorageFailure
+        expr: |
+          rate(aiops_feedback_total[5m]) == 0
+          and
+          rate(http_requests_total{route="/api/v1/aiops/feedback"}[5m]) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: aiops
+          action: investigate
+        annotations:
+          summary: "Feedback not being recorded"
+          description: "Requests to feedback endpoint but metrics not increasing"
+

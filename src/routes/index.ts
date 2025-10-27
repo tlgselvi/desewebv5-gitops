@@ -8,6 +8,7 @@ import { metricsRoutes } from './metrics.js';
 import { aiopsRoutes } from './aiops.js';
 import { feedbackRoutes } from './feedback.js';
 import { autoRemediationRoutes } from './autoRemediation.js';
+import { jwksRoutes } from './jwks.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -16,6 +17,9 @@ export function setupRoutes(app: Express): void {
 
   // Health check routes
   app.use('/health', healthRoutes);
+
+  // JWKS endpoint
+  app.use('/', jwksRoutes);
 
   // Metrics endpoint
   app.use('/metrics', metricsRoutes);

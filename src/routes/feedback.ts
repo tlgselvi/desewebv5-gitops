@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { logger } from '../utils/logger.js';
 import { FeedbackStore } from '../services/storage/redisClient.js';
 import { recordFeedback } from '../middleware/aiopsMetrics.js';
+import { FeedbackSchema } from '../schemas/feedback.js';
 
 const router = Router();
 
@@ -11,14 +12,29 @@ const router = Router();
  */
 router.post('/aiops/feedback', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { metric, anomaly, verdict, comment } = req.body;
+    // Validate request with Zod schema
+    const validationResult = FeedbackSchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid request data',
+        details: validationResult.error.errors,
+      });
+      return;
+    }
 
+    const data = validationResult.data;
+    
     const entry = {
       timestamp: Date.now(),
-      metric: metric || 'unknown',
-      anomaly: anomaly || false,
-      verdict: verdict || false,
-      comment: comment || '',
+      metric: data.metric,
+      anomaly: data.anomaly,
+      verdict: data.verdict,
+      comment: data.comment || '',
+      source: data.source,
+      type: data.type,
+      severity: data.severity,
     };
 
     await FeedbackStore.save(entry);
