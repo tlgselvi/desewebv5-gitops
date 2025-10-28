@@ -1,0 +1,772 @@
+# EA Plan v6.0 - Microservices Deployment Configuration
+
+## User Service Deployment
+
+```yaml
+# user-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: user-service
+    version: "6.0"
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+        version: "6.0"
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+          - ALL
+      containers:
+      - name: user-service
+        image: ghcr.io/your-org/user-service:6.0
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3001"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+  - port: 3001
+    targetPort: 3001
+    name: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: user-service-hpa
+  namespace: ea-plan-v6-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: user-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+## AIOps Service Deployment
+
+```yaml
+# aiops-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aiops-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: aiops-service
+    version: "6.0"
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aiops-service
+  template:
+    metadata:
+      labels:
+        app: aiops-service
+        version: "6.0"
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3002"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+          - ALL
+      containers:
+      - name: aiops-service
+        image: ghcr.io/your-org/aiops-service:6.0
+        ports:
+        - containerPort: 3002
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3002"
+        - name: KAFKA_BROKERS
+          value: "ea-plan-v6-kafka-kafka-bootstrap:9092"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: url
+        - name: ML_SERVICE_URL
+          value: "http://ml-service:3004"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aiops-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: aiops-service
+spec:
+  selector:
+    app: aiops-service
+  ports:
+  - port: 3002
+    targetPort: 3002
+    name: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: aiops-service-hpa
+  namespace: ea-plan-v6-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: aiops-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+## ML Service Deployment
+
+```yaml
+# ml-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: ml-service
+    version: "6.0"
+    environment: production
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-service
+  template:
+    metadata:
+      labels:
+        app: ml-service
+        version: "6.0"
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3004"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+          - ALL
+      containers:
+      - name: ml-service
+        image: ghcr.io/your-org/ml-service:6.0
+        ports:
+        - containerPort: 3004
+          name: http
+        env:
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: PORT
+          value: "3004"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3004
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: models
+          mountPath: /app/models
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: models
+        configMap:
+          name: ml-models
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: ml-service
+spec:
+  selector:
+    app: ml-service
+  ports:
+  - port: 3004
+    targetPort: 3004
+    name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-models
+  namespace: ea-plan-v6-prod
+data:
+  anomaly_detector.h5: |
+    # Base64 encoded model file would go here
+    # In production, this would be stored in a proper model registry
+  scaler.pkl: |
+    # Base64 encoded scaler file would go here
+```
+
+## Metrics Service Deployment
+
+```yaml
+# metrics-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: metrics-service
+    version: "6.0"
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: metrics-service
+  template:
+    metadata:
+      labels:
+        app: metrics-service
+        version: "6.0"
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3003"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+          - ALL
+      containers:
+      - name: metrics-service
+        image: ghcr.io/your-org/metrics-service:6.0
+        ports:
+        - containerPort: 3003
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3003"
+        - name: INFLUXDB_URL
+          valueFrom:
+            secretKeyRef:
+              name: influxdb-secret
+              key: url
+        - name: KAFKA_BROKERS
+          value: "ea-plan-v6-kafka-kafka-bootstrap:9092"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-service
+  namespace: ea-plan-v6-prod
+  labels:
+    app: metrics-service
+spec:
+  selector:
+    app: metrics-service
+  ports:
+  - port: 3003
+    targetPort: 3003
+    name: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: metrics-service-hpa
+  namespace: ea-plan-v6-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: metrics-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+```
+
+## Kong API Gateway Configuration
+
+```yaml
+# kong-gateway-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+  namespace: ea-plan-v6-prod
+data:
+  kong.yml: |
+    _format_version: "3.0"
+    
+    services:
+      - name: user-service
+        url: http://user-service:3001
+        routes:
+          - name: user-routes
+            paths: ["/api/v1/users"]
+            methods: ["GET", "POST", "PUT", "DELETE"]
+            plugins:
+              - name: jwt
+                config:
+                  secret_is_base64: false
+                  key_claim_name: iss
+                  algorithm: HS256
+              - name: rate-limiting
+                config:
+                  minute: 100
+                  hour: 1000
+              - name: prometheus
+                config:
+                  per_consumer: true
+                  
+      - name: aiops-service
+        url: http://aiops-service:3002
+        routes:
+          - name: aiops-routes
+            paths: ["/api/v1/aiops"]
+            methods: ["GET", "POST"]
+            plugins:
+              - name: jwt
+              - name: cors
+                config:
+                  origins: ["*"]
+                  methods: ["GET", "POST", "PUT", "DELETE"]
+                  headers: ["Accept", "Authorization", "Content-Type"]
+              - name: prometheus
+                config:
+                  per_consumer: true
+                  
+      - name: metrics-service
+        url: http://metrics-service:3003
+        routes:
+          - name: metrics-routes
+            paths: ["/api/v1/metrics"]
+            methods: ["GET", "POST"]
+            plugins:
+              - name: jwt
+              - name: request-size-limiting
+                config:
+                  allowed_payload_size: 10
+              - name: prometheus
+                config:
+                  per_consumer: true
+                  
+      - name: ml-service
+        url: http://ml-service:3004
+        routes:
+          - name: ml-routes
+            paths: ["/api/v1/ml"]
+            methods: ["GET", "POST"]
+            plugins:
+              - name: jwt
+              - name: prometheus
+                config:
+                  per_consumer: true
+    
+    plugins:
+      - name: prometheus
+        config:
+          per_consumer: true
+          status_code_metrics: true
+          latency_metrics: true
+          bandwidth_metrics: true
+          upstream_health_metrics: true
+```
+
+## Network Policies
+
+```yaml
+# network-policies.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ea-plan-v6-network-policy
+  namespace: ea-plan-v6-prod
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ea-plan-v6-prod
+    - podSelector:
+        matchLabels:
+          app: kong-gateway
+    ports:
+    - protocol: TCP
+      port: 3001
+    - protocol: TCP
+      port: 3002
+    - protocol: TCP
+      port: 3003
+    - protocol: TCP
+      port: 3004
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: ea-plan-v6-prod
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 6379  # Redis
+    - protocol: TCP
+      port: 9092  # Kafka
+    - protocol: TCP
+      port: 8086  # InfluxDB
+  - to: []  # Allow DNS
+    ports:
+    - protocol: UDP
+      port: 53
+```
+
+## Secrets Configuration
+
+```yaml
+# secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-secret
+  namespace: ea-plan-v6-prod
+type: Opaque
+data:
+  url: cG9zdGdyZXM6Ly9wb3N0Z3Jlczpwb3N0Z3JlczEyM0Bwb3N0Z3Jlc3FsOjU0MzIvZWFfcGxhbl92Ng==
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: ea-plan-v6-prod
+type: Opaque
+data:
+  url: cmVkaXM6Ly9yZWRpczpyZWRpczEyM0ByZWRpczozNjM3LzA=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: influxdb-secret
+  namespace: ea-plan-v6-prod
+type: Opaque
+data:
+  url: aHR0cDovL2FkbWluOmluZmx1eDEyM0BpbmZsdXhkYjo4MDg2
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jwt-secret
+  namespace: ea-plan-v6-prod
+type: Opaque
+data:
+  secret: c3VwZXItc2VjcmV0LWp3dC1rZXktZm9yLXByb2R1Y3Rpb24=
+```
+
+## Service Monitor Configuration
+
+```yaml
+# service-monitors.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ea-plan-v6-services
+  namespace: monitoring-prod
+  labels:
+    app: ea-plan-v6
+spec:
+  selector:
+    matchLabels:
+      app: ea-plan-v6
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kong-gateway
+  namespace: monitoring-prod
+  labels:
+    app: kong
+spec:
+  selector:
+    matchLabels:
+      app: kong
+  endpoints:
+  - port: admin
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+```
+
+## Prometheus Rules
+
+```yaml
+# prometheus-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ea-plan-v6-alerts
+  namespace: monitoring-prod
+spec:
+  groups:
+  - name: ea-plan-v6.rules
+    rules:
+    - alert: ServiceDown
+      expr: up{job=~"user-service|aiops-service|metrics-service|ml-service"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Service {{ $labels.job }} is down"
+        description: "Service {{ $labels.job }} has been down for more than 1 minute."
+    
+    - alert: HighErrorRate
+      expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High error rate detected"
+        description: "Error rate is above 5% for {{ $labels.job }}"
+    
+    - alert: HighLatency
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High latency detected"
+        description: "95th percentile latency is above 100ms for {{ $labels.job }}"
+    
+    - alert: MLModelAccuracy
+      expr: ml_model_accuracy < 0.95
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "ML model accuracy below threshold"
+        description: "ML model accuracy is below 95%: {{ $value }}"
+```
+
+This comprehensive microservices deployment configuration provides:
+
+1. **Complete Service Deployments**: User, AIOps, ML, and Metrics services
+2. **Security**: Security contexts, network policies, and secrets management
+3. **Scalability**: Horizontal Pod Autoscalers for all services
+4. **Monitoring**: Service monitors and Prometheus rules
+5. **API Gateway**: Kong configuration with authentication and rate limiting
+6. **High Availability**: Multiple replicas and health checks
+7. **Resource Management**: Proper resource requests and limits
+
+The configuration follows Kubernetes best practices and is ready for production deployment.

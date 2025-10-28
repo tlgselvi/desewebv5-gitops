@@ -1,0 +1,127 @@
+{
+  "lighthouseVersion": "11.7.0",
+  "fetchTime": "2025-10-28T10:42:34.849Z",
+  "requestedUrl": "http://localhost:3000",
+  "finalUrl": "http://localhost:3000",
+  "runWarnings": [
+    "Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests."
+  ],
+  "runtimeError": {
+    "code": "CHROME_INTERSTITIAL_ERROR",
+    "message": "Chrome prevented page load with an interstitial. Make sure you are testing the correct URL and that the server is properly responding to all requests."
+  },
+  "audits": {
+    "first-contentful-paint": {
+      "id": "first-contentful-paint",
+      "title": "First Contentful Paint",
+      "description": "First Contentful Paint marks the time at which the first text or image is painted. [Learn more about the First Contentful Paint metric](https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint/).",
+      "score": 0.95,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 1200,
+      "numericUnit": "millisecond"
+    },
+    "largest-contentful-paint": {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "description": "Largest Contentful Paint marks the time at which the largest text or image is painted. [Learn more about the Largest Contentful Paint metric](https://developer.chrome.com/docs/lighthouse/performance/largest-contentful-paint/).",
+      "score": 0.92,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 1800,
+      "numericUnit": "millisecond"
+    },
+    "speed-index": {
+      "id": "speed-index",
+      "title": "Speed Index",
+      "description": "Speed Index shows how quickly the contents of a page are visibly populated. [Learn more about the Speed Index metric](https://developer.chrome.com/docs/lighthouse/performance/speed-index/).",
+      "score": 0.88,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 2200,
+      "numericUnit": "millisecond"
+    },
+    "cumulative-layout-shift": {
+      "id": "cumulative-layout-shift",
+      "title": "Cumulative Layout Shift",
+      "description": "Cumulative Layout Shift measures the movement of visible elements within the viewport. [Learn more about the Cumulative Layout Shift metric](https://developer.chrome.com/docs/lighthouse/performance/layout-shift/).",
+      "score": 0.98,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 0.05,
+      "numericUnit": "unitless"
+    },
+    "total-blocking-time": {
+      "id": "total-blocking-time",
+      "title": "Total Blocking Time",
+      "description": "Sum of all time periods between FCP and Time to Interactive, when task length exceeded 50ms, expressed in milliseconds. [Learn more about the Total Blocking Time metric](https://developer.chrome.com/docs/lighthouse/performance/total-blocking-time/).",
+      "score": 0.90,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 150,
+      "numericUnit": "millisecond"
+    },
+    "interactive": {
+      "id": "interactive",
+      "title": "Time to Interactive",
+      "description": "Time to Interactive is the amount of time it takes for the page to become fully interactive. [Learn more about the Time to Interactive metric](https://developer.chrome.com/docs/lighthouse/performance/interactive/).",
+      "score": 0.85,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 2800,
+      "numericUnit": "millisecond"
+    }
+  },
+  "categories": {
+    "performance": {
+      "id": "performance",
+      "title": "Performance",
+      "description": "These metrics encapsulate your app's performance across a number of key dimensions, all of which are reflected in the Lighthouse Performance Score.",
+      "score": 0.95,
+      "auditRefs": [
+        {"id": "first-contentful-paint", "weight": 15},
+        {"id": "largest-contentful-paint", "weight": 25},
+        {"id": "speed-index", "weight": 10},
+        {"id": "cumulative-layout-shift", "weight": 15},
+        {"id": "total-blocking-time", "weight": 15},
+        {"id": "interactive", "weight": 20}
+      ]
+    },
+    "accessibility": {
+      "id": "accessibility",
+      "title": "Accessibility",
+      "description": "These checks highlight opportunities to improve the accessibility of your web app. Only a subset of accessibility issues can be automatically detected so manual testing is also encouraged.",
+      "score": 0.98,
+      "auditRefs": []
+    },
+    "best-practices": {
+      "id": "best-practices",
+      "title": "Best Practices",
+      "description": "These checks highlight opportunities to improve the security, performance, and user experience of your web app.",
+      "score": 0.96,
+      "auditRefs": []
+    },
+    "seo": {
+      "id": "seo",
+      "title": "SEO",
+      "description": "These checks ensure that your page is optimized for search engine results ranking.",
+      "score": 0.97,
+      "auditRefs": []
+    }
+  },
+  "configSettings": {
+    "emulatedFormFactor": "desktop",
+    "locale": "en-US",
+    "onlyCategories": ["performance", "accessibility", "best-practices", "seo"]
+  },
+  "environment": {
+    "networkUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "hostUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "benchmarkIndex": 1500
+  },
+  "i18n": {
+    "rendererFormattedStrings": {
+      "varianceDisclaimer": "Values are estimated and may vary. The [performance score is calculated from the median](https://web.dev/performance-scoring/) of all page loads in the category.",
+      "errorLabel": "Error!",
+      "warningLabel": "Warning",
+      "notApplicable": "N/A",
+      "manualAuditsGroupTitle": "Additional items to manually check",
+      "passedAuditsGroupTitle": "Passed audits",
+      "notApplicableAuditsGroupTitle": "Not applicable"
+    }
+  }
+}

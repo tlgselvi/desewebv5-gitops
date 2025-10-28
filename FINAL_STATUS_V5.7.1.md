@@ -90,6 +90,20 @@
 - `ops/post-deployment-validation.sh` - Post-deployment validation
 - `ops/AUDIT_SUMMARY.md` - Audit summary
 
+## Day 4 CEO Mode Özeti (Placeholder)
+
+**Karar:** Integration & Testing aşaması tamamlandığında doldurulacaktır.  
+**Etki:** Correlation + Remediation + Anomaly modülleri birleşik test sonuçları raporlanacak.  
+**Risk:** E2E test başarısızlığı, latency artışı, false-positive alarm oranı.  
+**Aksiyon:** Test sonuçları eklendikten sonra CEO Mode özeti güncellenecek.  
+
+## Ek Teknik Bilgiler
+
+### Kod ve API Referansları
+
+- [`src/services/aiops/anomalyDetector.ts`](../src/services/aiops/anomalyDetector.ts)
+- [`/api/v1/aiops/anomalies/*`](../src/routes/anomalies.ts)
+
 ## Commands for Production
 
 ### Validation

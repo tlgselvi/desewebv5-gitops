@@ -1,0 +1,221 @@
+version: '3.8'
+
+services:
+  # Kafka Cluster
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      KAFKA_CONFLUENT_METRICS_ENABLE: 'true'
+      KAFKA_CONFLUENT_SUPPORT_CUSTOMER_ID: anonymous
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    hostname: postgres
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ea_plan_v6
+      POSTGRES_USER: ea_plan_v6
+      POSTGRES_PASSWORD: ea_plan_v6_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    hostname: auth-service
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      LOG_LEVEL: debug
+      JWT_SECRET: dev-secret-key
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+    volumes:
+      - ./auth-service:/app
+      - /app/node_modules
+
+  # Metrics Service
+  metrics-service:
+    build:
+      context: ./metrics-service
+      dockerfile: Dockerfile
+    hostname: metrics-service
+    container_name: metrics-service
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      LOG_LEVEL: debug
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    volumes:
+      - ./metrics-service:/app
+      - /app/node_modules
+
+  # Events Service
+  events-service:
+    build:
+      context: ./events-service
+      dockerfile: Dockerfile
+    hostname: events-service
+    container_name: events-service
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      LOG_LEVEL: debug
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    volumes:
+      - ./events-service:/app
+      - /app/node_modules
+
+  # Alerts Service
+  alerts-service:
+    build:
+      context: ./alerts-service
+      dockerfile: Dockerfile
+    hostname: alerts-service
+    container_name: alerts-service
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      LOG_LEVEL: debug
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: localhost
+      SMTP_PORT: 587
+      SMTP_USER: alerts@ea-plan-v6.local
+      SMTP_PASS: password
+    depends_on:
+      - kafka
+      - redis
+    volumes:
+      - ./alerts-service:/app
+      - /app/node_modules
+
+  # ML Service
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    hostname: ml-service
+    container_name: ml-service
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: development
+      PORT: 3005
+      LOG_LEVEL: debug
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    volumes:
+      - ./ml-service:/app
+      - /app/node_modules
+
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    hostname: prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.2.0
+    hostname: grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:

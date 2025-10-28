@@ -1,0 +1,22 @@
+apiVersion: v2
+name: auth-service
+description: Authentication and Authorization Service for EA Plan v6.0
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: redis
+    version: 17.15.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+
+maintainers:
+  - name: EA Plan v6.0 Team
+    email: team@ea-plan-v6.local
+
+keywords:
+  - auth
+  - microservice
+  - fastify
+  - jwt

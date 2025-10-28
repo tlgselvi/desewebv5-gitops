@@ -1,0 +1,110 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CPT AIOps - Web Vitals Dashboard",
+    "tags": ["aiops", "web-vitals", "performance"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Core Web Vitals Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.75, rate(web_vitals_lcp_bucket[5m]))",
+            "legendFormat": "LCP p75"
+          },
+          {
+            "expr": "histogram_quantile(0.75, rate(web_vitals_fcp_bucket[5m]))",
+            "legendFormat": "FCP p75"
+          },
+          {
+            "expr": "histogram_quantile(0.75, rate(web_vitals_cls_bucket[5m]))",
+            "legendFormat": "CLS p75"
+          },
+          {
+            "expr": "histogram_quantile(0.75, rate(web_vitals_inp_bucket[5m]))",
+            "legendFormat": "INP p75"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 2500},
+                {"color": "red", "value": 4000}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Web Vitals Trends",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(web_vitals_lcp_bucket[5m]))",
+            "legendFormat": "LCP p50"
+          },
+          {
+            "expr": "histogram_quantile(0.75, rate(web_vitals_lcp_bucket[5m]))",
+            "legendFormat": "LCP p75"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(web_vitals_lcp_bucket[5m]))",
+            "legendFormat": "LCP p95"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "color": {"mode": "palette-classic"}
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Page Performance by Route",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "topk(10, sum by (page) (rate(web_vitals_lcp_count[5m])))",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Web Vitals Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(web_vitals_lcp_bucket[5m])) by (le)",
+            "format": "heatmap"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "Performance Alerts",
+        "type": "alertlist",
+        "targets": [],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

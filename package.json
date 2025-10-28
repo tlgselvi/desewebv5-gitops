@@ -6,8 +6,10 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && tsc-alias",
-    "start": "node dist/index.js",
+    "dev:ops": "tsx watch src/ops-server.ts",
+    "build": "tsc-alias -p tsconfig.json",
+    "start": "tsx src/index.ts",
+    "start:ops": "tsx src/ops-server.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -37,7 +39,10 @@
     "cicd:setup": "bash scripts/setup-cicd.sh",
     "cicd:sync": "pwsh gitops-sync.ps1",
     "deploy:staging": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5-staging",
-    "deploy:production": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5"
+    "deploy:production": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5",
+    "watchdog": "bash ops/watchdog.sh",
+    "watchdog:win": "powershell -ExecutionPolicy Bypass -File ops/watchdog.ps1",
+    "watchdog:cron": "bash ops/watchdog-cron.sh"
   },
   "keywords": [
     "seo",

@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seo-observer-config
+  namespace: aiops
+data:
+  config.yaml: |
+    observer:
+      name: "CPT AIOps SEO Observer"
+      version: "5.8.0"
+      
+    targets:
+      - name: "CPT AIOps Dashboard"
+        url: "https://cpt.aiops"
+        frequency: "5m"
+        
+    metrics:
+      lighthouse:
+        enabled: true
+        thresholds:
+          performance: 95
+          accessibility: 95
+          best_practices: 95
+          seo: 95
+          
+      rank_drift:
+        enabled: true
+        threshold: 10  # 10% drift threshold
+        monitoring_interval: "1h"
+        baseline_period: "7d"
+        keywords:
+          - "aiops dashboard"
+          - "anomaly detection"
+          - "predictive remediation"
+          - "observability platform"
+          - "performance monitoring"
+          - "incident response"
+          - "devops automation"
+          - "site reliability"
+        search_engines:
+          - "google"
+          - "bing"
+          - "duckduckgo"
+        tracking_methods:
+          - "serp_api"
+          - "google_search_console"
+          - "manual_verification"
+          
+    alerts:
+      pagerduty:
+        enabled: true
+        integration_key: "${PAGERDUTY_INTEGRATION_KEY}"
+        rules:
+          - name: "Performance Alert"
+            condition: "vitals_INP > 200"
+            severity: "critical"
+            message: "INP exceeded 200ms threshold"
+            
+          - name: "SEO Rank Drift"
+            condition: "rank_drift > 10"
+            severity: "warning"
+            message: "SEO rank drift exceeded 10% threshold"
+            
+          - name: "Lighthouse Score Drop"
+            condition: "lighthouse_performance < 95"
+            severity: "warning"
+            message: "Lighthouse performance score below 95"
+            
+    exporters:
+      prometheus:
+        enabled: true
+        port: 9090
+        
+      otel:
+        enabled: true
+        endpoint: "http://jaeger:14268/api/traces"

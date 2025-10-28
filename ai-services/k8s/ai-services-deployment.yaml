@@ -1,0 +1,422 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-services
+  labels:
+    name: ai-services
+    environment: production
+    tier: intelligence
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: computer-vision-service
+  namespace: ai-services
+  labels:
+    app: computer-vision-service
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: computer-vision-service
+  template:
+    metadata:
+      labels:
+        app: computer-vision-service
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: computer-vision-service
+        image: ghcr.io/your-org/computer-vision-service:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: "1"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ai-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: computer-vision-service
+  namespace: ai-services
+spec:
+  selector:
+    app: computer-vision-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: computer-vision-service-hpa
+  namespace: ai-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: computer-vision-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlp-service
+  namespace: ai-services
+  labels:
+    app: nlp-service
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nlp-service
+  template:
+    metadata:
+      labels:
+        app: nlp-service
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: nlp-service
+        image: ghcr.io/your-org/nlp-service:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ai-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nlp-service
+  namespace: ai-services
+spec:
+  selector:
+    app: nlp-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nlp-service-hpa
+  namespace: ai-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nlp-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-engine
+  namespace: ai-services
+  labels:
+    app: recommendation-engine
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: recommendation-engine
+  template:
+    metadata:
+      labels:
+        app: recommendation-engine
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: recommendation-engine
+        image: ghcr.io/your-org/recommendation-engine:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "/app/models"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ai-services-secrets
+              key: database-url
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ai-models-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-engine
+  namespace: ai-services
+spec:
+  selector:
+    app: recommendation-engine
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: recommendation-engine-hpa
+  namespace: ai-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: recommendation-engine
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knowledge-graph
+  namespace: ai-services
+  labels:
+    app: knowledge-graph
+    version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: knowledge-graph
+  template:
+    metadata:
+      labels:
+        app: knowledge-graph
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: knowledge-graph
+        image: ghcr.io/your-org/knowledge-graph:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: GRAPH_DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ai-services-secrets
+              key: graph-database-url
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: knowledge-graph
+  namespace: ai-services
+spec:
+  selector:
+    app: knowledge-graph
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: knowledge-graph-hpa
+  namespace: ai-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: knowledge-graph
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conversational-ai
+  namespace: ai-services
+  labels:
+    app: conversational-ai
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: conversational-ai
+  template:
+    metadata:
+      labels:
+        app: conversational-ai
+        version: "1.0.0"
+    spec:
+      containers:
+      - name: conversational-ai
+        image: ghcr.io/your-org/conversational-ai:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-services-secrets
+              key: openai-api-key
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: ai-services-secrets
+              key: redis-url
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conversational-ai
+  namespace: ai-services
+spec:
+  selector:
+    app: conversational-ai
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: conversational-ai-hpa
+  namespace: ai-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: conversational-ai
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-models-pvc
+  namespace: ai-services
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ai-services-secrets
+  namespace: ai-services
+type: Opaque
+data:
+  database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzc0BkYi5leGFtcGxlLmNvbS9haV9zZXJ2aWNlcw==
+  graph-database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzc0BkYi5leGFtcGxlLmNvbS9rbm93bGVkZ2VfZ3JhcGg=
+  redis-url: cmVkaXM6Ly9yZWRpcy5leGFtcGxlLmNvbTo2Mzc5LzBkYXRhYmFzZS11cmw=
+  openai-api-key: c2stZXhhbXBsZS1vcGVuYWktYXBpLWtleQ==
