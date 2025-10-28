@@ -1,0 +1,108 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "EA_PLAN_V6.2 - Ops Intelligence Dashboard",
+    "tags": ["aiops", "v6.2", "continuous-optimization"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "AIOps Engine Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"aiops-engine\"}",
+            "legendFormat": "AIOps Engine"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Anomaly Detection Learning Progress",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "aiops_learning_progress",
+            "legendFormat": "Learning Progress %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "SEO Observer Performance Trend",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "lighthouse_performance_score",
+            "legendFormat": "Performance Score"
+          },
+          {
+            "expr": "lighthouse_accessibility_score",
+            "legendFormat": "Accessibility Score"
+          },
+          {
+            "expr": "lighthouse_seo_score",
+            "legendFormat": "SEO Score"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "ArgoCD Sync Status Monitoring",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "argocd_app_sync_status",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "Cost Efficiency Metrics",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "kube_pod_container_resource_requests_cpu_cores",
+            "legendFormat": "CPU Requests"
+          },
+          {
+            "expr": "kube_pod_container_resource_requests_memory_bytes",
+            "legendFormat": "Memory Requests"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

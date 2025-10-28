@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cpt-ajan-backend
+  namespace: ea-web
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cpt-ajan-k8s-reader
+  namespace: ea-web
+rules:
+- apiGroups: ["", "apps", "batch", "metrics.k8s.io"]
+  resources: ["pods", "deployments", "cronjobs", "pods/log", "services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["argoproj.io"]
+  resources: ["applications"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: cpt-ajan-reader-binding
+  namespace: ea-web
+subjects:
+- kind: ServiceAccount
+  name: cpt-ajan-backend
+  namespace: ea-web
+roleRef:
+  kind: Role
+  name: cpt-ajan-k8s-reader
+  apiGroup: rbac.authorization.k8s.io

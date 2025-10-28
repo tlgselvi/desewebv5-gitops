@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cpt-ajan-deny-all
+  namespace: ea-web
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cpt-ajan-backend-allow
+  namespace: ea-web
+spec:
+  podSelector:
+    matchLabels:
+      app: cpt-ajan-backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: cpt-ajan-frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - {} # Allow all egress for backend
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cpt-ajan-frontend-allow
+  namespace: ea-web
+spec:
+  podSelector:
+    matchLabels:
+      app: cpt-ajan-frontend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - {} # Allow all ingress for frontend
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: cpt-ajan-backend
+    ports:
+    - protocol: TCP
+      port: 80

@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cpt-ajan-backend-sm
+  namespace: monitoring
+  labels:
+    app: cpt-ajan-backend
+spec:
+  selector:
+    matchLabels:
+      app: cpt-ajan-backend
+  namespaceSelector:
+    matchNames:
+    - ea-web
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cpt-ajan-secrets
+  namespace: ea-web
+type: Opaque
+data:
+  # Base64 encoded secrets (example)
+  api-key: Y2VydGFpbi1hcGkta2V5
+  database-url: cG9zdGdyZXM6Ly9sb2NhbGhvc3Q6NTQzMi9jcHRhamFu
+stringData:
+  # Plain text secrets (for development)
+  environment: production
+  log-level: info

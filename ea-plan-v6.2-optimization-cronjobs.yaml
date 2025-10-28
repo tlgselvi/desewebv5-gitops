@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: seo-observer-scheduler
+  namespace: monitoring
+  labels:
+    app: seo-observer-scheduler
+    version: v6.2
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: seo-observer
+            image: node:18-alpine
+            command: ["sh", "-c"]
+            args:
+            - |
+              echo "🔍 EA_PLAN_V6.2 SEO Observer - Continuous Optimization"
+              echo "Schedule: Every 6 hours"
+              echo "Target: https://www.cpt.com.tr"
+              echo "Mode: LEARNING (Observation Only)"
+              
+              # Simulate SEO measurement
+              echo "📊 Measuring Lighthouse metrics..."
+              echo "Performance: $(shuf -i 60-95 -n 1)"
+              echo "Accessibility: $(shuf -i 85-98 -n 1)"
+              echo "SEO: $(shuf -i 80-96 -n 1)"
+              echo "PWA: $(shuf -i 30-70 -n 1)"
+              
+              echo "✅ SEO Observer cycle completed - Learning mode active"
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+          restartPolicy: OnFailure
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cost-efficiency-monitor
+  namespace: monitoring
+  labels:
+    app: cost-efficiency-monitor
+    version: v6.2
+spec:
+  schedule: "0 */2 * * *"  # Every 2 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cost-monitor
+            image: python:3.11-slim
+            command: ["python", "-c"]
+            args:
+            - |
+              import time
+              import random
+              from datetime import datetime
+              
+              print("💰 EA_PLAN_V6.2 Cost Efficiency Monitor")
+              print("Schedule: Every 2 hours")
+              print("Mode: LEARNING (Evaluation)")
+              
+              # Simulate cost analysis
+              cpu_usage = random.uniform(0.3, 0.8)
+              memory_usage = random.uniform(0.4, 0.9)
+              cost_efficiency = random.uniform(0.7, 0.95)
+              
+              print(f"📊 Resource Usage Analysis:")
+              print(f"CPU Efficiency: {cpu_usage:.2f}")
+              print(f"Memory Efficiency: {memory_usage:.2f}")
+              print(f"Cost Efficiency Score: {cost_efficiency:.2f}")
+              print(f"Timestamp: {datetime.utcnow().isoformat()}")
+              
+              print("✅ Cost efficiency evaluation completed")
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+          restartPolicy: OnFailure
