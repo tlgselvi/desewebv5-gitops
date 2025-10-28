@@ -9,6 +9,7 @@ import { aiopsRoutes } from './aiops.js';
 import { feedbackRoutes } from './feedback.js';
 import { autoRemediationRoutes } from './autoRemediation.js';
 import { correlationRoutes } from './correlation.js';
+import { predictiveRoutes } from './predictive.js';
 import { jwksRoutes } from './jwks.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
@@ -33,6 +34,9 @@ export function setupRoutes(app: Express): void {
 
   // Correlation routes
   app.use(`${apiPrefix}/aiops`, correlationRoutes);
+
+  // Predictive routes
+  app.use(`${apiPrefix}/aiops`, predictiveRoutes);
 
   // Feedback routes
   app.use(`${apiPrefix}`, feedbackRoutes);
@@ -61,6 +65,7 @@ export function setupRoutes(app: Express): void {
         analytics: `${apiPrefix}/analytics`,
         aiops: `${apiPrefix}/aiops`,
         correlation: `${apiPrefix}/aiops/correlation`,
+        predictive: `${apiPrefix}/aiops/predict`,
         metrics: '/metrics',
         aiopsMetrics: '/metrics/aiops',
         health: '/health',
