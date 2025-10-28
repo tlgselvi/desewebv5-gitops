@@ -38,6 +38,9 @@ export function setupRoutes(app: Express): void {
   // Predictive routes
   app.use(`${apiPrefix}/aiops`, predictiveRoutes);
 
+  // Anomaly routes
+  app.use(`${apiPrefix}/aiops`, anomalyRoutes);
+
   // Feedback routes
   app.use(`${apiPrefix}`, feedbackRoutes);
 
