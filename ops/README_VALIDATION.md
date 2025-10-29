@@ -145,12 +145,14 @@ kubectl apply -f k8s/servicemonitor.yaml
 
 ### Prometheus Metrics Gelmiyor
 ```bash
-# Backend metrics endpoint'i test et
-kubectl exec -it <backend-pod-name> -n dese-ea-plan-v5 -- curl http://localhost:3000/metrics
+# Backend metrics endpoint'i test et (non-interactive komut için -it kullanılmaz)
+kubectl exec <backend-pod-name> -n dese-ea-plan-v5 -- curl -s http://localhost:3000/metrics
 
 # Prometheus scrape config kontrolü
 kubectl get configmap prometheus-config -n monitoring -o yaml
 ```
+
+**Not:** Non-interactive komutlarda (`curl`, `wget`, vb.) `-it` kullanmayın. TTY uyarısı alırsanız komut yine çalışır, ancak uyarı olmadan çalışması için `-it` parametresini kaldırın.
 
 ### Frontend Erişilemiyor
 ```bash

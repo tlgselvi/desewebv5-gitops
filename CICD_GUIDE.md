@@ -377,6 +377,22 @@ kubectl port-forward pod/<pod-name> 3000:3000 -n dese-ea-plan-v5
 curl http://localhost:3000/health
 ```
 
+#### kubectl exec TTY Uyarıları
+
+**Problem:** `kubectl exec -it` komutları CI/CD pipeline'ında "Unable to use a TTY" uyarısı veriyor.
+
+**Çözüm:** Non-interactive komutlar için `-it` parametresi kullanmayın.
+
+```bash
+# ❌ Yanlış (TTY uyarısı verir)
+kubectl exec -it <pod-name> -n <namespace> -- curl http://localhost:8080/health
+
+# ✅ Doğru (CI/CD güvenli)
+kubectl exec <pod-name> -n <namespace> -- curl -s http://localhost:8080/health
+```
+
+**Detaylı dokümantasyon:** [`ops/KUBECTL_TROUBLESHOOTING.md`](../ops/KUBECTL_TROUBLESHOOTING.md)
+
 #### Database Connection Issues
 
 ```bash
