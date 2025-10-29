@@ -244,6 +244,26 @@ src/
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
 
+## 🔧 Troubleshooting
+
+### kubectl exec TTY Uyarıları
+
+CI/CD pipeline'larında veya script'lerde `kubectl exec -it` kullanırken "Unable to use a TTY" uyarısı alıyorsanız:
+
+**Çözüm:** Non-interactive komutlar (`curl`, `wget`, vb.) için `-it` parametresini kaldırın.
+
+```bash
+# ❌ Yanlış (TTY uyarısı verir)
+kubectl exec -it <pod-name> -n <namespace> -- curl http://localhost:8080/health
+
+# ✅ Doğru (CI/CD güvenli)
+kubectl exec <pod-name> -n <namespace> -- curl -s http://localhost:8080/health
+```
+
+**Detaylı kılavuz:** [`ops/KUBECTL_TROUBLESHOOTING.md`](ops/KUBECTL_TROUBLESHOOTING.md)
+
+**CI/CD Dokümantasyonu:** [`CICD_GUIDE.md`](CICD_GUIDE.md)
+
 ## 📞 İletişim
 
 - **CPT Digital Team**: dev@dese.ai
