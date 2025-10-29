@@ -23,28 +23,28 @@
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │              Full-Stack Developers (3 People)           │    │
 │  │                                                         │    │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐      │      │
-│  │  │   Frontend  │ │   Backend   │ │   Full-Stack│      │      │
-│  │  │   Specialist│ │   Specialist│ │   Generalist│      │      │
-│  │  │             │ │             │ │             │      │      │
-│  │  │ • Next.js 17│ │ • Fastify   │ │ • Both      │      │      │
-│  │  │ • React 18  │ │ • Node.js 22│ │ • Integration│      │     │
-│  │  │ • TypeScript│ │ • TypeScript│ │ • Testing   │      │      │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌───────────── ┐       │    │
+│  │  │   Frontend  │ │   Backend   │ │   Full-Stack │       │    │
+│  │  │   Specialist│ │   Specialist│ │   Generalist │       │    │
+│  │  │             │ │             │ │              │       │    │
+│  │  │ • Next.js 17│ │ • Fastify   │ │ • Both       │       │    │
+│  │  │ • React 18  │ │ • Node.js 22│ │ • Integration│       │    │
+│  │  │ • TypeScript│ │ • TypeScript│ │ • Testing    │       │    │
 │  │  └─────────────┘ └─────────────┘ └─────────────┘        │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │              DevOps Engineers (2 People)                │    │
-│  │                                                         │   │
-│  │  ┌─────────────┐ ┌─────────────┐                        │   │
-│  │  │   Platform  │ │   Security  │                        │   │
-│  │  │   Engineer  │ │   Engineer  │                        │   │
-│  │  │             │ │             │                        │   │
-│  │  │ • Kubernetes│ │ • OPA + Kyverno│                     │   │
-│  │  │ • ArgoCD    │ │ • Security   │                      │   │
-│  │  │ • Monitoring│ │ • Compliance │                      │   │
-│  │  └─────────────┘ └─────────────┘                      │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  │                                                         │    │
+│  │  ┌─────────────┐ ┌─────────────┐                        │    │
+│  │  │   Platform  │ │   Security  │                        │    │
+│  │  │   Engineer  │ │   Engineer  │                        │    │
+│  │  │             │ │             │                        │    │
+│  │  │ • Kubernetes│ │ • OPA + Kyverno│                     │    │
+│  │  │ • ArgoCD    │ │ • Security   │                       │    │
+│  │  │ • Monitoring│ │ • Compliance │                       │    │
+│  │  └─────────────┘ └─────────────┘                        │    │
+│  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

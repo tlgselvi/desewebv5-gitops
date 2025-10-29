@@ -27,3 +27,5 @@ data:
         backend: local
         local:
           path: /tmp/tempo/traces
+    usage_report:
+      reporting_enabled: false

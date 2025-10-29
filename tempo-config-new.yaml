@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  tempo.yaml: "Error from server (NotFound): pods \"tempo-6757d4bb55-cc2vw\" not found\r\n"
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: monitoring
