@@ -64,7 +64,7 @@ jobs:
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG }}
+          kubeconfig: ${{ secrets.KUBECONFIG || 'dummy-config' }}
       
       - name: 🐳 Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -147,7 +147,6 @@ jobs:
         with:
           status: ${{ job.status }}
           text: 'EA Plan v6.x deployment failed'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
