@@ -1,0 +1,367 @@
+# === Deseweb v5 + EA Plan v6.x Genel Denetim Prompt ===
+# Bu dosya Cursor veya ChatGPT ortamına direkt yapıştırılabilir.
+# Mevcut proje yapısına göre özelleştirilmiş audit template
+
+project_check:
+  metadata:
+    name: deseweb-v5_ea-plan-v6
+    version: v6.5.1
+    maintainer: "CPT Systems"
+    last_audit: "2025-01-29"
+    sprint_status: "final-optimization-complete"
+
+  sections:
+
+    configmaps:
+      - name: dese-ea-plan-v5-config
+        path: ./deploy/base/configmap.yaml
+        namespace: dese-ea-plan-v5
+        content: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: dese-ea-plan-v5-config
+            namespace: dese-ea-plan-v5
+          data:
+            NODE_ENV: "production"
+            PORT: "3000"
+            API_VERSION: "v1"
+            PROMETHEUS_ENABLED: "true"
+            GRAFANA_ENABLED: "true"
+            # ... (see deploy/base/configmap.yaml for full content)
+
+      - name: ea-plan-v6-4
+        path: kubectl get configmap ea-plan-v6-4 -n ea-web -o yaml
+        namespace: ea-web
+        purpose: "Sprint metadata ve version tracking"
+        keys:
+          - Phase
+          - Version
+          - last-sync
+          - stage
+          - tuning-status
+
+      - name: adaptive-tuning-config
+        path: kubectl get configmap adaptive-tuning-config -n ea-web -o yaml
+        namespace: ea-web
+        purpose: "Adaptive resource optimization"
+
+      - name: security-hardening-config
+        path: kubectl get configmap security-hardening-config -n ea-web -o yaml
+        namespace: ea-web
+        purpose: "Security hardening policies"
+
+      - name: self-healing-config
+        path: kubectl get configmap self-healing-config -n ea-web -o yaml
+        namespace: ea-web
+        purpose: "Self-healing automation rules"
+
+      - name: predictive-scaling-config
+        path: kubectl get configmap predictive-scaling-config -n monitoring -o yaml
+        namespace: monitoring
+        purpose: "Predictive auto-scaling configuration"
+
+      - name: final-optimization-config
+        path: kubectl get configmap final-optimization-config -n ea-web -o yaml
+        namespace: ea-web
+        purpose: "Final optimization settings"
+
+    manifests:
+      - name: dese-ea-plan-v5-deployment
+        path: ./deploy/base/deployment.yaml
+        namespace: dese-ea-plan-v5
+        replicas: 3
+        content: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: dese-ea-plan-v5
+            namespace: dese-ea-plan-v5
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app.kubernetes.io/name: dese-ea-plan-v5
+            template:
+              spec:
+                containers:
+                  - name: dese-ea-plan-v5
+                    image: nginx:latest
+                    envFrom:
+                      - configMapRef:
+                          name: dese-ea-plan-v5-config
+
+      - name: ea-web-autoscaler
+        path: kubectl get hpa ea-web-autoscaler -n ea-web -o yaml
+        namespace: ea-web
+        type: HorizontalPodAutoscaler
+        purpose: "Predictive auto-scaling (2-8 replicas)"
+
+      - name: seo-observer-cronjob
+        path: kubectl get cronjob seo-observer -n monitoring -o yaml
+        namespace: monitoring
+        type: CronJob
+        schedule: "*/30 * * * *"
+
+      - name: aiops-tuning-job
+        path: kubectl get job aiops-tuning -n monitoring -o yaml
+        namespace: monitoring
+        type: Job
+        purpose: "AIOps model tuning"
+
+    command_chains:
+      init: |
+        # EA Plan v6.x initialization
+        echo "🔧 Initializing Deseweb v5 + EA Plan v6.x"
+        kubectl get ns dese-ea-plan-v5 ea-web monitoring || echo "Namespaces may need creation"
+        
+      health_check: |
+        # Sistem sağlık kontrolü
+        echo "📊 System Health Check"
+        kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Completed
+        kubectl get deployments -A
+        kubectl top nodes || echo "Metrics server not available"
+        
+      deploy: |
+        # GitOps deployment
+        echo "🚀 Deploying via GitOps"
+        kubectl apply -k ./deploy/base/
+        kubectl apply -k ./deploy/overlays/prod/
+        argocd app sync cpt-ajan || echo "ArgoCD app sync"
+        
+      sync_ea_plan: |
+        # EA Plan sync komutları
+        ./ea-plan-master-control.ps1
+        # veya
+        bash ./ea-plan-master-control.sh
+        
+      drift_monitoring: |
+        # Drift monitoring
+        kubectl get pods -A --field-selector=status.phase=Failed
+        kubectl get configmap -A | grep ea-plan
+        kubectl get networkpolicy -A
+        
+      cleanup: |
+        # Cleanup operations
+        kubectl delete -k ./deploy/base/ --ignore-not-found
+        docker system prune -a --volumes -f || echo "Docker cleanup"
+
+    ea_plan_pipeline:
+      path: ./.github/workflows/
+      workflows:
+        - name: docs.yml
+          purpose: "Documentation validation"
+          triggers:
+            - push to main/sprint/**/feature/**
+            - paths: ops/**, docs/**, CICD_GUIDE.md
+        - name: ci-cd.yml
+          purpose: "CI/CD pipeline"
+          triggers:
+            - push to main
+            - pull_request
+        
+      content: |
+        name: EA Plan CI/CD
+        on:
+          push:
+            branches: [ "main", "sprint/**" ]
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - name: Build
+                run: pnpm install && pnpm build
+          deploy:
+            needs: build
+            runs-on: ubuntu-latest
+            steps:
+              - name: Deploy
+                run: kubectl apply -k ./deploy/overlays/prod/
+
+    observability:
+      prometheus:
+        enabled: true
+        namespace: monitoring
+        path: ./monitoring-stack-production.yaml
+        alerts:
+          cpu_threshold: 85
+          memory_threshold: 80
+          latency_p95_threshold: 500
+        rules_path: ./monitoring/prometheus-rules.yaml
+          
+      grafana:
+        enabled: true
+        namespace: monitoring
+        datasources:
+          - Prometheus
+          - Jaeger (migrated from Tempo)
+        dashboards:
+          - ops-intelligence: ./grafana-ops-intelligence-dashboard.json
+          
+      loki:
+        enabled: true
+        namespace: monitoring
+        log_policy: rotate_daily
+        retention: 7d
+        
+      jaeger:
+        enabled: true
+        namespace: monitoring
+        purpose: "Distributed tracing (Tempo migration)"
+        
+      metrics:
+        collection_interval: 30s
+        retention: 30d
+
+    security:
+      network_policies:
+        enabled: true
+        namespaces:
+          - ea-web:
+              policies:
+                - default-deny-all
+                - allow-monitoring-ingress
+          - monitoring:
+              policies:
+                - existing ArgoCD policies
+                
+      pod_security:
+        enabled: true
+        standards:
+          ea-web: baseline (enforce), restricted (audit)
+          monitoring: baseline (enforce), restricted (audit)
+          
+      rbac:
+        enabled: true
+        service_accounts: 55+
+        prevent_default_sa: true
+        
+      admission_control:
+        enabled: true
+        policies:
+          - prevent_privileged
+          - require_non_root
+          - limit_host_network
+
+    automation:
+      auto_scaling:
+        enabled: true
+        hpa:
+          - name: ea-web-autoscaler
+            namespace: ea-web
+            min_replicas: 2
+            max_replicas: 8
+            metrics: latency_p95 < 400m
+        predictive:
+          enabled: true
+          forecast_window: 30m
+          cpu_target: 65%
+          memory_target: 75%
+          
+      self_healing:
+        enabled: true
+        config: self-healing-config
+        features:
+          - auto_restart: max 5 restarts
+          - circuit_breaker: 5 failures threshold
+          - pod_replacement: on CrashLoopBackOff
+          - auto_remediation: active
+          
+      adaptive_tuning:
+        enabled: true
+        config: adaptive-tuning-config
+        thresholds:
+          cpu_usage: > 70% → increase_limit
+          memory_usage: > 80% → increase_limit
+          latency_p95: > 500ms → scale_up
+
+    version_control:
+      repo_url: https://github.com/tlgselvi/desewebv5-gitops.git
+      branch_structure:
+        - main
+        - sprint/2.6-predictive-correlation
+        - feature/**
+      tagging: semver
+      current_version: v6.5.1
+      last_commit: check via git log -1 --oneline
+      
+    sprint_status:
+      current_sprint: v6.5.1 - Final Optimization
+      completed_phases:
+        - v6.4.1: Drift Monitoring
+        - v6.4.2: Adaptive Tuning
+        - v6.4.3: Predictive Auto-Scaling
+        - v6.4.4: Self-Healing
+        - v6.5.0: Security Hardening
+        - v6.5.1: Final Optimization ✅
+      status: complete
+      production_ready: true
+
+    validation_commands:
+      kubectl_checks: |
+        # kubectl doğrulama komutları
+        kubectl get pods -A
+        kubectl get configmap -A | grep ea-plan
+        kubectl get hpa -A
+        kubectl get networkpolicy -A
+        kubectl get cronjob -A
+        kubectl get configmap ea-plan-v6-4 -n ea-web -o jsonpath='{.data}'
+        
+      health_checks: |
+        # Health check komutları
+        kubectl get pods -n monitoring -l app=prometheus
+        kubectl get pods -n monitoring -l app=grafana
+        kubectl exec -n ea-web <pod-name> -- curl -s http://localhost:3000/health
+        
+      drift_checks: |
+        # Drift monitoring komutları
+        kubectl get pods -A --field-selector=status.phase!=Running
+        kubectl get deployments -A -o json | jq '.items[] | select(.spec.replicas != .status.replicas)'
+        
+      security_checks: |
+        # Security validation
+        kubectl get networkpolicy -A
+        kubectl get ns -o jsonpath='{range .items[*]}{.metadata.name}{": "}{.metadata.labels.pod-security\.kubernetes\.io/enforce}{"\n"}{end}'
+        kubectl get pods -A -o json | jq '.items[] | select(.spec.containers[].securityContext.privileged == true)'
+
+    master_control:
+      script_path: ./ea-plan-master-control.ps1 (Windows) or ./ea-plan-master-control.sh (Linux/Mac)
+      commands:
+        - ea-master (if alias configured)
+        - ./ea-plan-master-control.ps1
+        - bash ./ea-plan-master-control.sh
+      features:
+        - GitOps sync (ArgoCD)
+        - Deploy operations (AIOps, SEO Observer, Auto-Remediation)
+        - AIOps job control
+        - SEO Observer CronJob control
+        - Observability/Security checks
+        - Git commit and push
+        - Sprint metadata update
+
+    troubleshooting:
+      kubectl_guide: ./ops/KUBECTL_TROUBLESHOOTING.md
+      validation_guide: ./ops/README_VALIDATION.md
+      cicd_guide: ./CICD_GUIDE.md
+      main_readme: ./README.md
+
+# === Kullanım Örnekleri ===
+
+# 1. Genel Denetim:
+#    Bu prompt'u Cursor veya ChatGPT'e yapıştır ve "projeyi denetle" de
+#
+# 2. Spesifik Kontrol:
+#    "configmaps bölümünü kontrol et"
+#    "observability stack durumunu göster"
+#    "security policies doğrula"
+#
+# 3. Sync İşlemleri:
+#    "ea plan v6.5.1 sync --stage=final-optimization --auto"
+#    "./ea-plan-master-control.ps1"
+#
+# 4. Health Check:
+#    "command_chains.health_check komutlarını çalıştır"
+
+# === Son ===
+
