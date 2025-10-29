@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EA Plan v6.x - FinBot & MuBot Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            flex: 1;
+        }
+        
+        .status-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .status-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2::before {
+            content: "📊";
+            font-size: 1.2em;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .metric-value {
+            font-size: 1.2em;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 EA Plan v6.x Dashboard</h1>
+            <p>FinBot & MuBot Metrics - Real-Time Monitoring</p>
+            <div class="status-bar">
+                <div class="status-card" id="finbot-status">
+                    <h3>FinBot Status</h3>
+                    <div class="value">⏳ Loading...</div>
+                </div>
+                <div class="status-card" id="mubot-status">
+                    <h3>MuBot Status</h3>
+                    <div class="value">⏳ Loading...</div>
+                </div>
+                <div class="status-card" id="last-update">
+                    <h3>Last Update</h3>
+                    <div class="value" id="update-time">-</div>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="loadMetrics()">🔄 Refresh Metrics</button>
+        </div>
+        
+        <div class="dashboard">
+            <!-- FinBot Card -->
+            <div class="card">
+                <h2>FinBot Metrics</h2>
+                <div id="finbot-metrics">
+                    <div class="loading">Loading FinBot metrics...</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="finbot-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- MuBot Card -->
+            <div class="card">
+                <h2>MuBot Metrics</h2>
+                <div id="mubot-metrics">
+                    <div class="loading">Loading MuBot metrics...</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mubot-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Connection Info -->
+        <div class="card">
+            <h2>🔌 Connection Info</h2>
+            <div class="metric-row">
+                <span class="metric-label">FinBot Endpoint</span>
+                <span class="metric-value">http://localhost:8081/metrics</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">MuBot Endpoint</span>
+                <span class="metric-value">http://localhost:8082/metrics</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Prometheus</span>
+                <span class="metric-value">http://localhost:9090</span>
+            </div>
+            <div class="metric-row">
+                <span class="metric-label">Grafana</span>
+                <span class="metric-value">http://localhost:3000</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Charts
+        let finbotChart, mubotChart;
+        
+        function initCharts() {
+            // FinBot Chart
+            const finbotCtx = document.getElementById('finbot-chart').getContext('2d');
+            finbotChart = new Chart(finbotCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Cost Prediction (30d)',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        title: { display: true, text: 'FinBot Cost Prediction Trend' }
+                    }
+                }
+            });
+            
+            // MuBot Chart
+            const mubotCtx = document.getElementById('mubot-chart').getContext('2d');
+            mubotChart = new Chart(mubotCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Data Quality',
+                        data: [],
+                        backgroundColor: '#764ba2',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        title: { display: true, text: 'MuBot Data Quality Metrics' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+        }
+        
+        async function fetchMetrics(url, name) {
+            try {
+                // Use mode: 'no-cors' for local development
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const text = await response.text();
+                return parsePrometheusMetrics(text);
+            } catch (error) {
+                console.error(`Error fetching ${name}:`, error);
+                // Try alternative method for CORS issues
+                try {
+                    const proxyUrl = `https://cors-anywhere.herokuapp.com/${url}`;
+                    const response = await fetch(proxyUrl);
+                    const text = await response.text();
+                    return parsePrometheusMetrics(text);
+                } catch (err2) {
+                    console.error(`Proxy also failed:`, err2);
+                    // Last resort: show helpful error
+                    return null;
+                }
+            }
+        }
+        
+        function parsePrometheusMetrics(text) {
+            const metrics = {};
+            const lines = text.split('\n');
+            
+            for (let line of lines) {
+                if (line.startsWith('#') || !line.trim()) continue;
+                
+                const match = line.match(/^([a-z_]+)\{?([^}]*)\}?\s+([0-9.]+)/);
+                if (match) {
+                    const [, name, labels, value] = match;
+                    const key = labels ? `${name}{${labels}}` : name;
+                    metrics[key] = parseFloat(value);
+                }
+            }
+            
+            return metrics;
+        }
+        
+        function displayFinBotMetrics(metrics) {
+            if (!metrics) {
+                document.getElementById('finbot-metrics').innerHTML = 
+                    '<div class="error">❌ FinBot'a bağlanılamadı. Port-forward çalışıyor mu?<br>Komut: kubectl port-forward svc/finbot 8081:80 -n aiops</div>';
+                document.getElementById('finbot-status').querySelector('.value').textContent = '❌ Offline';
+                return;
+            }
+            
+            const html = `
+                <div class="metric-row">
+                    <span class="metric-label">Cost Prediction (7d)</span>
+                    <span class="metric-value">$${metrics['finbot_cost_prediction{period="7d"}']?.toFixed(2) || 'N/A'}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Cost Prediction (30d)</span>
+                    <span class="metric-value">$${metrics['finbot_cost_prediction{period="30d"}']?.toFixed(2) || 'N/A'}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Cost Prediction (90d)</span>
+                    <span class="metric-value">$${metrics['finbot_cost_prediction{period="90d"}']?.toFixed(2) || 'N/A'}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Correlation Score</span>
+                    <span class="metric-value">${(metrics['finbot_cost_correlation'] * 100)?.toFixed(1) || 'N/A'}%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">ROI Score</span>
+                    <span class="metric-value">${metrics['finbot_roi_score']?.toFixed(1) || 'N/A'}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Predictive Score</span>
+                    <span class="metric-value">${metrics['finbot_predictive_score']?.toFixed(1) || 'N/A'}</span>
+                </div>
+            `;
+            
+            document.getElementById('finbot-metrics').innerHTML = html;
+            document.getElementById('finbot-status').querySelector('.value').textContent = '✅ Online';
+            
+            // Update chart
+            if (finbotChart && metrics['finbot_cost_prediction{period="30d"}']) {
+                const now = new Date().toLocaleTimeString();
+                finbotChart.data.labels.push(now);
+                finbotChart.data.datasets[0].data.push(metrics['finbot_cost_prediction{period="30d"}']);
+                if (finbotChart.data.labels.length > 20) {
+                    finbotChart.data.labels.shift();
+                    finbotChart.data.datasets[0].data.shift();
+                }
+                finbotChart.update();
+            }
+        }
+        
+        function displayMuBotMetrics(metrics) {
+            if (!metrics) {
+                document.getElementById('mubot-metrics').innerHTML = 
+                    '<div class="error">❌ MuBot'a bağlanılamadı. Port-forward çalışıyor mu?<br>Komut: kubectl port-forward svc/mubot 8082:81 -n aiops</div>';
+                document.getElementById('mubot-status').querySelector('.value').textContent = '❌ Offline';
+                return;
+            }
+            
+            const html = `
+                <div class="metric-row">
+                    <span class="metric-label">Data Sources Count</span>
+                    <span class="metric-value">${metrics['mubot_data_sources_count']?.toFixed(0) || 'N/A'}</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Data Quality</span>
+                    <span class="metric-value">${metrics['mubot_data_quality']?.toFixed(1) || 'N/A'}%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Success Rate</span>
+                    <span class="metric-value">${metrics['mubot_ingestion_success_rate']?.toFixed(1) || 'N/A'}%</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Failure Probability</span>
+                    <span class="metric-value">${(metrics['mubot_failure_probability'] * 100)?.toFixed(2) || 'N/A'}%</span>
+                </div>
+            `;
+            
+            document.getElementById('mubot-metrics').innerHTML = html;
+            document.getElementById('mubot-status').querySelector('.value').textContent = '✅ Online';
+            
+            // Update chart
+            if (mubotChart && metrics['mubot_data_quality']) {
+                const now = new Date().toLocaleTimeString();
+                mubotChart.data.labels.push(now);
+                mubotChart.data.datasets[0].data.push(metrics['mubot_data_quality']);
+                if (mubotChart.data.labels.length > 20) {
+                    mubotChart.data.labels.shift();
+                    mubotChart.data.datasets[0].data.shift();
+                }
+                mubotChart.update();
+            }
+        }
+        
+        async function loadMetrics() {
+            document.getElementById('update-time').textContent = new Date().toLocaleTimeString();
+            
+            try {
+                const finbotMetrics = await fetchMetrics('http://localhost:8081/metrics', 'FinBot');
+                const mubotMetrics = await fetchMetrics('http://localhost:8082/metrics', 'MuBot');
+                
+                displayFinBotMetrics(finbotMetrics);
+                displayMuBotMetrics(mubotMetrics);
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+                document.getElementById('finbot-metrics').innerHTML = 
+                    `<div class="error">❌ Bağlantı hatası. Port-forward'lar çalışıyor mu?<br>Terminal'lerde 'Forwarding...' mesajı görünmeli.</div>`;
+                document.getElementById('mubot-metrics').innerHTML = 
+                    `<div class="error">❌ Bağlantı hatası. Port-forward'lar çalışıyor mu?<br>Terminal'lerde 'Forwarding...' mesajı görünmeli.</div>`;
+            }
+        }
+        
+        // Initialize
+        initCharts();
+        loadMetrics();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadMetrics, 30000);
+    </script>
+</body>
+</html>
+

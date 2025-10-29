@@ -43,6 +43,9 @@ spec:
       containers:
       - name: finbot
         image: ghcr.io/cptsystems/finbot:latest
+        env:
+        - name: FINBOT_UPDATE_INTERVAL
+          value: "300"  # 5 minutes default, set to 30 for testing
         ports:
         - containerPort: 8080
         livenessProbe:
@@ -105,6 +108,9 @@ spec:
       containers:
       - name: mubot
         image: ghcr.io/cptsystems/mubot:latest
+        env:
+        - name: MUBOT_UPDATE_INTERVAL
+          value: "300"  # 5 minutes default, set to 30 for testing
         ports:
         - containerPort: 8081
         livenessProbe:
