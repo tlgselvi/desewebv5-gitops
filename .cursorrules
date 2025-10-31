@@ -1,0 +1,564 @@
+# Dese EA Plan v5.0 - Cursor AI Rules
+
+> **Geçerlilik:** Bu kurallar Dese EA Plan v5.0 projesi için geçerlidir  
+> **Versiyon:** 5.0.0  
+> **Son Güncelleme:** 2025-01-27  
+> **Uyumluluk:** Cursor AI v2.0+, TypeScript 5.3+, Node.js 20.19+
+
+---
+
+## 🎯 Proje Özeti
+
+Dese EA Plan v5.0 - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+
+**Tech Stack:**
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **Backend**: Node.js + Express + PostgreSQL (Drizzle ORM)
+- **Testing**: Vitest + Supertest + Playwright
+- **Package Manager**: pnpm 8.15.0
+- **Infrastructure**: Docker + Kubernetes + Helm
+- **Monitoring**: Prometheus + Grafana + Loki + Tempo
+
+---
+
+## 🤖 AI Asistanı için Özel Direktifler
+
+> **ÖNEMLİ:** Cursor AI asistanı kod önerirken ve üretirken **MUTLAKA** aşağıdaki kurallara uymalıdır:
+
+### Zorunlu Kurallar
+
+1. **Path Aliases**: **HER ZAMAN** `@/` prefix'ini kullanın
+   - ✅ `import { config } from '@/config/index.js'`
+   - ❌ `import { config } from '../../config/index.js'`
+
+2. **Type Safety**: **ASLA** `any` tipi önermeyin
+   - ✅ `function getUser(id: string): Promise<User | null>`
+   - ❌ `function getUser(id: any)`
+
+3. **Logging**: **ASLA** `console.log` önermeyin, **HER ZAMAN** `logger` kullanın
+   - ✅ `logger.info('User created', { userId: user.id })`
+   - ❌ `console.log('User created:', user)`
+
+4. **Error Handling**: **HER async fonksiyonda** try-catch kullanın
+   - ✅ Always wrap async operations in try-catch
+   - ❌ Never leave promises unhandled
+
+5. **Database Queries**: **ASLA** raw SQL önermeyin, **HER ZAMAN** Drizzle ORM kullanın
+   - ✅ `db.query.users.findFirst({ where: eq(users.id, id) })`
+   - ❌ `db.query('SELECT * FROM users WHERE id = ?')`
+
+### Dosya Yapısı Kuralları
+
+AI asistanı yeni dosya oluştururken şu yapıyı izlemelidir:
+
+- `src/routes/**/*.ts` → Route handlers (Express Router)
+- `src/services/**/*.ts` → Business logic
+- `src/middleware/**/*.ts` → Express middleware
+- `src/db/**/*.ts` → Database schema & connection
+- `src/utils/**/*.ts` → Utility functions
+- `src/schemas/**/*.ts` → Zod validation schemas
+
+---
+
+## 📁 Dosya/Glob Bazlı Kurallar
+
+### `src/routes/**/*.ts`
+
+```typescript
+// ✅ Doğru Route Yapısı
+import { Router } from 'express';
+import { z } from 'zod';
+import { logger } from '@/utils/logger.js';
+import { exampleService } from '@/services/exampleService.js';
+import { errorHandler } from '@/middleware/errorHandler.js';
+
+const router = Router();
+
+const createSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+router.post('/', async (req, res, next) => {
+  try {
+    const validated = createSchema.parse(req.body);
+    const result = await exampleService.create(validated);
+    logger.info('Resource created', { id: result.id });
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+export { router as exampleRoutes };
+```
+
+**Kurallar:**
+- ✅ Router export edilmeli
+- ✅ Zod validation şeması tanımlı
+- ✅ Service katmanı kullanılmalı (direct DB access ❌)
+- ✅ Swagger annotations eklenmeli
+- ✅ Error handling middleware'e gönderilmeli
+
+### `src/services/**/*.ts`
+
+```typescript
+// ✅ Doğru Service Yapısı
+import { db } from '@/db/index.js';
+import { users } from '@/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { logger } from '@/utils/logger.js';
+
+export const userService = {
+  async findById(id: string): Promise<User | null> {
+    try {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, id),
+      });
+      return user ?? null;
+    } catch (error) {
+      logger.error('Failed to find user', { id, error });
+      throw error;
+    }
+  },
+};
+```
+
+**Kurallar:**
+- ✅ Business logic burada olmalı
+- ✅ Drizzle ORM kullanılmalı
+- ✅ Error handling ve logging zorunlu
+- ✅ Type safety sağlanmalı
+
+### `src/middleware/**/*.ts`
+
+```typescript
+// ✅ Doğru Middleware Yapısı
+import { Request, Response, NextFunction } from 'express';
+import { logger } from '@/utils/logger.js';
+
+export function customMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  try {
+    // Middleware logic
+    logger.debug('Middleware executed', { path: req.path });
+    next();
+  } catch (error) {
+    logger.error('Middleware error', { error });
+    next(error);
+  }
+}
+```
+
+**Kurallar:**
+- ✅ Standard Express middleware signature
+- ✅ Error handling zorunlu
+- ✅ Logging eklenmeli
+
+### `src/db/**/*.ts`
+
+```typescript
+// ✅ Doğru Schema Yapısı
+import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+```
+
+**Kurallar:**
+- ✅ Drizzle ORM schema syntax kullanılmalı
+- ✅ Indexes ve constraints tanımlanmalı
+- ✅ Relations doğru kurulmalı
+
+---
+
+## 🎨 Frontend Kuralları (React + TypeScript + Vite)
+
+### Component Yapısı
+
+```typescript
+// ✅ Doğru Component Yapısı
+import { FC } from 'react';
+
+interface UserCardProps {
+  id: string;
+  name: string;
+  email: string;
+  onEdit?: (id: string) => void;
+}
+
+export const UserCard: FC<UserCardProps> = ({ id, name, email, onEdit }) => {
+  return (
+    <div className="p-4 bg-white rounded-lg shadow">
+      <h3 className="text-lg font-semibold">{name}</h3>
+      <p className="text-gray-600">{email}</p>
+      {onEdit && (
+        <button onClick={() => onEdit(id)}>Edit</button>
+      )}
+    </div>
+  );
+};
+```
+
+**Kurallar:**
+- ✅ TypeScript interface kullanılmalı (props için)
+- ✅ Functional components tercih edilmeli
+- ✅ Tailwind CSS class'ları kullanılmalı
+- ✅ Props optional ise `?` ile işaretlenmeli
+
+---
+
+## 🔧 Backend Kuralları (Node.js + Express)
+
+### API Endpoint Yapısı
+
+```typescript
+// ✅ Doğru Endpoint Yapısı
+import { Router } from 'express';
+import { z } from 'zod';
+import { logger } from '@/utils/logger.js';
+import { exampleService } from '@/services/exampleService.js';
+
+const router = Router();
+
+const createExampleSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  value: z.number().positive('Value must be positive'),
+});
+
+/**
+ * @swagger
+ * /api/v1/example:
+ *   post:
+ *     summary: Create a new example
+ *     tags: [Examples]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               value:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Example created successfully
+ */
+router.post('/', async (req, res, next) => {
+  try {
+    const validated = createExampleSchema.parse(req.body);
+    const result = await exampleService.create(validated);
+    
+    logger.info('Example created', { 
+      id: result.id,
+      name: validated.name,
+    });
+    
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+export { router as exampleRoutes };
+```
+
+---
+
+## 🧪 Testing Kuralları
+
+### Unit Test Yapısı
+
+```typescript
+// ✅ Doğru Test Yapısı
+import { describe, it, expect, beforeEach } from 'vitest';
+import { userService } from '@/services/userService.js';
+
+describe('userService', () => {
+  describe('findById', () => {
+    it('should return user when user exists', async () => {
+      // Arrange
+      const userId = '123';
+      
+      // Act
+      const user = await userService.findById(userId);
+      
+      // Assert
+      expect(user).toBeDefined();
+      expect(user?.id).toBe(userId);
+    });
+
+    it('should return null when user does not exist', async () => {
+      // Arrange
+      const userId = 'nonexistent';
+      
+      // Act
+      const user = await userService.findById(userId);
+      
+      // Assert
+      expect(user).toBeNull();
+    });
+  });
+});
+```
+
+**Kurallar:**
+- ✅ AAA pattern kullanılmalı (Arrange, Act, Assert)
+- ✅ Test naming: `should [expected behavior] when [condition]`
+- ✅ Her test case tek bir şeyi test etmeli
+- ✅ Test dosyası `*.test.ts` formatında olmalı
+
+---
+
+## 🔒 Security Kuralları
+
+### Input Validation
+
+```typescript
+// ✅ Doğru Validation
+import { z } from 'zod';
+
+const createUserSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain uppercase letter')
+    .regex(/[a-z]/, 'Password must contain lowercase letter')
+    .regex(/[0-9]/, 'Password must contain number'),
+});
+
+export async function createUser(data: unknown) {
+  const validated = createUserSchema.parse(data); // Throws if invalid
+  // Process validated data
+}
+```
+
+### SQL Injection Prevention
+
+```typescript
+// ✅ Doğru - Drizzle ORM (Type-safe, SQL injection proof)
+import { eq } from 'drizzle-orm';
+
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+});
+
+// ❌ YANLIŞ - Raw SQL (NEVER DO THIS)
+// const user = await db.query(`SELECT * FROM users WHERE id = '${userId}'`);
+```
+
+---
+
+## 📊 Logging Kuralları
+
+### Structured Logging
+
+```typescript
+// ✅ Doğru Logging
+logger.info('User created', {
+  userId: user.id,
+  email: user.email,
+  timestamp: new Date().toISOString(),
+  action: 'create_user',
+});
+
+logger.error('Failed to process payment', {
+  orderId,
+  userId,
+  error: error.message,
+  stack: error.stack,
+  context: { amount, currency },
+});
+
+// ❌ YANLIŞ
+console.log('User created:', user); // ❌ Never use console.log
+console.error('Error:', error);     // ❌ Never use console.error
+```
+
+**Kurallar:**
+- ✅ Structured logging (JSON format)
+- ✅ Context bilgisi eklenmeli
+- ✅ Sensitive data log'lanmamalı
+- ✅ Log levels: `debug`, `info`, `warn`, `error`
+
+---
+
+## 🚀 Performance Kuralları
+
+### Async Operations
+
+```typescript
+// ✅ Doğru - Parallel execution
+const [users, posts, comments] = await Promise.all([
+  getUserById(id),
+  getPostsByUserId(id),
+  getCommentsByUserId(id),
+]);
+
+// ❌ YANLIŞ - Sequential execution
+const users = await getUserById(id);      // ❌ Slow
+const posts = await getPostsByUserId(id); // ❌ Slow
+const comments = await getCommentsByUserId(id); // ❌ Slow
+```
+
+### Database Optimization
+
+```typescript
+// ✅ Doğru - Select only needed fields
+const projects = await db.query.seoProjects.findMany({
+  where: eq(seoProjects.status, 'active'),
+  columns: {
+    id: true,
+    name: true,
+    domain: true,
+  },
+  limit: 100,
+});
+
+// ❌ YANLIŞ - Select all fields
+const projects = await db.query.seoProjects.findMany(); // ❌ Too much data
+```
+
+---
+
+## 🗂️ Dosya Organizasyonu Kuralları
+
+```
+src/
+├── config/          # Configuration files
+│   └── index.ts     # Main config export
+├── db/              # Database
+│   ├── index.ts     # DB connection
+│   └── schema.ts    # Drizzle schema
+├── middleware/      # Express middleware
+│   ├── errorHandler.ts
+│   ├── requestLogger.ts
+│   └── prometheus.ts
+├── routes/          # API routes
+│   ├── index.ts     # Route setup
+│   ├── health.ts
+│   ├── seo.ts
+│   └── content.ts
+├── services/        # Business logic
+│   ├── seoAnalyzer.ts
+│   └── contentGenerator.ts
+├── schemas/         # Zod validation
+│   └── feedback.ts
+└── utils/           # Utilities
+    ├── logger.ts
+    └── gracefulShutdown.ts
+```
+
+**Kurallar:**
+- ✅ Her klasörün tek bir sorumluluğu olmalı
+- ✅ Services → Business logic
+- ✅ Routes → HTTP handlers
+- ✅ Middleware → Cross-cutting concerns
+- ✅ Utils → Reusable helpers
+
+---
+
+## ✅ YAPILMASI GEREKENLER
+
+### TypeScript
+
+- ✅ Her zaman explicit types kullanın
+- ✅ Null safety için null checks yapın
+- ✅ Path aliases (`@/`) kullanın
+- ✅ File extensions ekleyin (`.js`)
+- ✅ Generic types'ı uygun yerlerde kullanın
+
+### Error Handling
+
+- ✅ Her async fonksiyon için try-catch
+- ✅ Özel error class'ları kullanın
+- ✅ Error'ları log'layın
+- ✅ User-friendly messages, detayları log'da
+
+### Validation
+
+- ✅ Zod schemas kullanın
+- ✅ API endpoints'de validation
+- ✅ Drizzle ORM kullanın (SQL injection koruması)
+
+### Logging
+
+- ✅ Structured logging (logger utility)
+- ✅ Context bilgisi ekleyin
+- ✅ Sensitive data log'lamayın
+
+### Testing
+
+- ✅ Her feature için unit test
+- ✅ Test coverage %70+ (hedef %80+)
+- ✅ Integration testler için testcontainers
+- ✅ AAA pattern kullanın
+
+---
+
+## ❌ YAPILMAMASI GEREKENLER
+
+1. ❌ **`any` type kullanmayın** - Her zaman explicit types
+2. ❌ **`console.log` kullanmayın** - Logger utility kullanın
+3. ❌ **Raw SQL queries** - Drizzle ORM kullanın
+4. ❌ **Hardcoded secrets** - Environment variables
+5. ❌ **Main branch'e direkt commit** - PR açın
+6. ❌ **Büyük PR'lar** (1000+ satır) - Küçük, odaklanmış PR'lar
+7. ❌ **Test yazmadan PR** - Her feature için test
+8. ❌ **Relative imports** (`../../`) - Path aliases kullanın
+9. ❌ **Synchronous DB operations** - async/await kullanın
+10. ❌ **Unhandled promises** - Her zaman handle edin
+
+---
+
+## 🔍 Kod Review Checklist
+
+PR açmadan önce kontrol edin:
+
+- [ ] TypeScript types tanımlı (no `any`)
+- [ ] Linting geçiyor (`pnpm lint`)
+- [ ] Tests geçiyor (`pnpm test`)
+- [ ] Test coverage %70+ (`pnpm test:coverage`)
+- [ ] Error handling var (try-catch)
+- [ ] Input validation yapıldı (Zod)
+- [ ] Logging eklendi (logger, not console)
+- [ ] Dokümantasyon güncellendi (README, JSDoc)
+- [ ] Security kontrolü yapıldı
+- [ ] No hardcoded secrets
+- [ ] Path aliases kullanıldı (`@/`)
+- [ ] Drizzle ORM kullanıldı (no raw SQL)
+
+---
+
+## 📚 Referans Dokümantasyon
+
+- **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Detaylı kod standartları
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Katkıda bulunma rehberi
+- **[README.md](./README.md)** - Proje dokümantasyonu
+- **[PROJE_KONTROL_RAPORU.md](./PROJE_KONTROL_RAPORU.md)** - Proje kontrol raporu
+
+---
+
+## 🔄 Güncelleme Notları
+
+### v5.0.0 (2025-01-27)
+- ✅ İlk kapsamlı `.cursorrules` versiyonu
+- ✅ AI asistanı direktifleri eklendi
+- ✅ Dosya/glob bazlı kurallar tanımlandı
+- ✅ Örnek kod blokları genişletildi
+- ✅ Frontend ve Backend ayrı bölümler olarak düzenlendi
+
+---
+
+**Son Güncelleme:** 2025-01-27  
+**Versiyon:** 5.0.0  
+**Geçerlilik:** Dese EA Plan v5.0+

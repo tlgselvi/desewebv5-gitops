@@ -114,6 +114,19 @@ export const FeedbackStore = {
   },
 };
 
+/**
+ * Check Redis connection health
+ */
+export async function checkRedisConnection(): Promise<boolean> {
+  try {
+    const result = await redis.ping();
+    return result === 'PONG';
+  } catch (error) {
+    logger.error('Redis health check failed', { error });
+    return false;
+  }
+}
+
 // Export redis client for use in other modules
 export { redis };
 export default redis;

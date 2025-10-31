@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { checkDatabaseConnection } from '@/db/index.js';
+import { checkRedisConnection } from '@/services/storage/redisClient.js';
 import { logger } from '@/utils/logger.js';
 
 const router = Router();
@@ -27,8 +28,11 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const dbStatus = await checkDatabaseConnection();
+    const redisStatus = await checkRedisConnection();
+    const allHealthy = dbStatus && redisStatus;
+    
     const healthStatus = {
-      status: dbStatus ? 'healthy' : 'unhealthy',
+      status: allHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       version: process.env.npm_package_version || '5.0.0',
@@ -40,13 +44,13 @@ router.get('/', async (req, res) => {
       },
       services: {
         database: dbStatus,
-        redis: true, // TODO: Add Redis health check
+        redis: redisStatus,
         openai: !!process.env.OPENAI_API_KEY,
         lighthouse: true,
       },
     };
 
-    res.status(dbStatus ? 200 : 503).json(healthStatus);
+    res.status(allHealthy ? 200 : 503).json(healthStatus);
   } catch (error) {
     logger.error('Health check failed', { error });
     res.status(503).json({
@@ -72,11 +76,16 @@ router.get('/', async (req, res) => {
 router.get('/ready', async (req, res) => {
   try {
     const dbStatus = await checkDatabaseConnection();
+    const redisStatus = await checkRedisConnection();
     
-    if (dbStatus) {
+    if (dbStatus && redisStatus) {
       res.status(200).json({ status: 'ready' });
     } else {
-      res.status(503).json({ status: 'not ready' });
+      res.status(503).json({ 
+        status: 'not ready',
+        database: dbStatus,
+        redis: redisStatus,
+      });
     }
   } catch (error) {
     res.status(503).json({ status: 'not ready', error: error.message });

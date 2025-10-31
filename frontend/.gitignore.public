@@ -1,0 +1,4 @@
+# Public assets (git ignored but needed for build)
+public/**/*
+!public/.gitkeep
+

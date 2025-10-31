@@ -170,7 +170,14 @@ API dokümantasyonu Swagger UI ile erişilebilir:
 
 ### Ana Endpoints
 
-- `GET /health` - Health check
+**Health & Status:**
+- `GET /health` - Comprehensive health check (Database, Redis, Services)
+- `GET /health/ready` - Readiness probe (Database + Redis check)
+- `GET /health/live` - Liveness probe
+- `GET /metrics` - Prometheus metrics
+- `GET /metrics/aiops` - AIOps specific metrics
+
+**API Endpoints:**
 - `GET /api/v1/projects` - SEO projeleri
 - `POST /api/v1/seo/analyze` - SEO analizi
 - `POST /api/v1/content/generate` - İçerik üretimi
@@ -234,11 +241,28 @@ src/
 
 ## 🤝 Katkıda Bulunma
 
-1. Fork yapın
+Projeye katkıda bulunmak için detaylı rehberimize bakın:
+
+📖 **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Katkıda bulunma rehberi  
+📐 **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Kod standartları ve best practices
+
+### Hızlı Başlangıç
+
+1. Fork yapın ve repository'yi klonlayın
 2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
+3. Değişikliklerinizi yapın ve testlerinizi yazın
+4. Commit yapın (Conventional Commits formatında)
+5. Push yapın ve Pull Request oluşturun
+
+Detaylar için [CONTRIBUTING.md](./CONTRIBUTING.md) dosyasına bakın.
+
+## 📚 Ek Dokümantasyon
+
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Katkıda bulunma rehberi
+- **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Kod standartları ve best practices
+- **[CICD_GUIDE.md](./CICD_GUIDE.md)** - CI/CD pipeline rehberi
+- **[PROJE_KONTROL_RAPORU.md](./PROJE_KONTROL_RAPORU.md)** - Proje kontrol raporu
+- **[PROJE_DURUM_RAPORU_2025.md](./PROJE_DURUM_RAPORU_2025.md)** - Proje durum raporu
 
 ## 📄 Lisans
 

@@ -12,6 +12,7 @@ import { correlationRoutes } from './correlation.js';
 import { predictiveRoutes } from './predictive.js';
 import { anomalyRoutes } from './anomaly.js';
 import { jwksRoutes } from './jwks.js';
+import { authRoutes } from './auth.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -23,6 +24,9 @@ export function setupRoutes(app: Express): void {
 
   // JWKS endpoint
   app.use('/', jwksRoutes);
+
+  // Auth routes
+  app.use(`${apiPrefix}/auth`, authRoutes);
 
   // Metrics endpoint
   app.use('/metrics', metricsRoutes);
@@ -63,6 +67,7 @@ export function setupRoutes(app: Express): void {
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),
       endpoints: {
+        auth: `${apiPrefix}/auth`,
         projects: `${apiPrefix}/projects`,
         seo: `${apiPrefix}/seo`,
         content: `${apiPrefix}/content`,

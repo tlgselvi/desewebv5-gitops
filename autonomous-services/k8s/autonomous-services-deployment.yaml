@@ -38,11 +38,11 @@ spec:
           value: "INFO"
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "128Mi"
+            cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "256Mi"
+            cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
@@ -54,9 +54,7 @@ spec:
     app: orchestration-engine
   ports:
     - protocol: TCP
-      port:  stops the deployment file creation at this point and prompts me to complete it with:
-
-      8000
+      port: 8000
       targetPort: 8000
 ---
 apiVersion: autoscaling/v2
@@ -110,11 +108,11 @@ spec:
           value: "INFO"
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "128Mi"
+            cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "256Mi"
+            cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
@@ -180,11 +178,11 @@ spec:
           value: "INFO"
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "128Mi"
+            cpu: "250m"
           limits:
-            memory: "2Gi"
-            cpu: "1000m"
+            memory: "256Mi"
+            cpu: "500m"
 ---
 apiVersion: v1
 kind: Service
