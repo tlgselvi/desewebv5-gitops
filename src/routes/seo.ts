@@ -2,9 +2,14 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { seoAnalyzer } from '@/services/seoAnalyzer.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
+import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
 import { logger, seoLogger } from '@/utils/logger.js';
+import { requireProjectAccess } from '@/utils/projectAccess.js';
 
 const router = Router();
+
+// All SEO routes require authentication
+router.use(authenticate);
 
 // Validation schemas
 const SeoAnalysisSchema = z.object({
@@ -108,11 +113,22 @@ const TrendsQuerySchema = z.object({
  *         description: Project not found
  */
 router.post('/analyze', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as AuthenticatedRequest;
   const validatedData = SeoAnalysisSchema.parse(req.body);
+
+  // Verify project access
+  const access = await requireProjectAccess(authenticatedReq, validatedData.projectId);
+  if (!access.hasAccess) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'You do not have access to this project',
+    });
+  }
 
   seoLogger.info('Starting SEO analysis', {
     projectId: validatedData.projectId,
     urlCount: validatedData.urls.length,
+    userId: authenticatedReq.user?.id,
   });
 
   const result = await seoAnalyzer.analyzeProject(validatedData);
@@ -121,6 +137,7 @@ router.post('/analyze', asyncHandler(async (req, res) => {
     projectId: validatedData.projectId,
     successful: result.successfulAnalyses,
     failed: result.failedAnalyses,
+    userId: authenticatedReq.user?.id,
   });
 
   res.json(result);
@@ -162,7 +179,17 @@ router.post('/analyze', asyncHandler(async (req, res) => {
  *         description: Validation error
  */
 router.get('/metrics', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as AuthenticatedRequest;
   const { projectId, limit } = MetricsQuerySchema.parse(req.query);
+
+  // Verify project access
+  const access = await requireProjectAccess(authenticatedReq, projectId);
+  if (!access.hasAccess) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'You do not have access to this project',
+    });
+  }
 
   const metrics = await seoAnalyzer.getProjectMetrics(projectId, limit);
 
@@ -246,7 +273,17 @@ router.get('/metrics', asyncHandler(async (req, res) => {
  *         description: Validation error
  */
 router.get('/trends', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as AuthenticatedRequest;
   const { projectId, days } = TrendsQuerySchema.parse(req.query);
+
+  // Verify project access
+  const access = await requireProjectAccess(authenticatedReq, projectId);
+  if (!access.hasAccess) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'You do not have access to this project',
+    });
+  }
 
   const trends = await seoAnalyzer.getProjectTrends(projectId, days);
 

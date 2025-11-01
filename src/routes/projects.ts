@@ -3,9 +3,14 @@ import { z } from 'zod';
 import { db, seoProjects, users } from '@/db/index.js';
 import { eq } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
+import { authenticate, authorize } from '@/middleware/auth.js';
 import { logger } from '@/utils/logger.js';
+import { logAuditEvent, AuditActions, createAuditEntryFromRequest } from '@/utils/auditLogger.js';
 
 const router = Router();
+
+// All project routes require authentication
+router.use(authenticate);
 
 // Validation schemas
 const CreateProjectSchema = z.object({
@@ -16,7 +21,7 @@ const CreateProjectSchema = z.object({
   primaryKeywords: z.array(z.string()).min(1),
   targetDomainAuthority: z.number().min(0).max(100).default(50),
   targetCtrIncrease: z.number().min(0).max(100).default(25),
-  ownerId: z.string().uuid(),
+  ownerId: z.string().uuid().optional(), // Optional - will use authenticated user if not provided
 });
 
 const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true });
@@ -54,7 +59,13 @@ const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true }
  *                     $ref: '#/components/schemas/SeoProject'
  */
 router.get('/', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as import('@/middleware/auth.js').AuthenticatedRequest;
   const { ownerId, status } = req.query;
+
+  // Non-admin users can only see their own projects
+  const effectiveOwnerId = authenticatedReq.user?.role === 'admin' 
+    ? (ownerId as string | undefined)
+    : authenticatedReq.user?.id;
 
   let query = db
     .select({
@@ -79,8 +90,8 @@ router.get('/', asyncHandler(async (req, res) => {
     .from(seoProjects)
     .leftJoin(users, eq(seoProjects.ownerId, users.id));
 
-  if (ownerId) {
-    query = query.where(eq(seoProjects.ownerId, ownerId as string));
+  if (effectiveOwnerId) {
+    query = query.where(eq(seoProjects.ownerId, effectiveOwnerId));
   }
 
   if (status) {
@@ -212,33 +223,68 @@ router.get('/:id', asyncHandler(async (req, res) => {
  *         description: Owner not found
  */
 router.post('/', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as import('@/middleware/auth.js').AuthenticatedRequest;
   const validatedData = CreateProjectSchema.parse(req.body);
 
-  // Verify owner exists
-  const owner = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, validatedData.ownerId))
-    .limit(1);
+  // Use authenticated user's ID if ownerId not provided
+  const ownerId = validatedData.ownerId || authenticatedReq.user?.id;
 
-  if (owner.length === 0) {
-    return res.status(404).json({
-      error: 'Owner not found',
-      message: `User with ID ${validatedData.ownerId} not found`,
+  if (!ownerId) {
+    return res.status(400).json({
+      error: 'Owner ID required',
+      message: 'Owner ID must be provided or user must be authenticated',
     });
+  }
+
+  // Verify owner exists (or use authenticated user)
+  if (validatedData.ownerId && validatedData.ownerId !== authenticatedReq.user?.id) {
+    // Only admins can create projects for other users
+    if (authenticatedReq.user?.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You can only create projects for yourself',
+      });
+    }
+
+    const owner = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, validatedData.ownerId))
+      .limit(1);
+
+    if (owner.length === 0) {
+      return res.status(404).json({
+        error: 'Owner not found',
+        message: `User with ID ${validatedData.ownerId} not found`,
+      });
+    }
   }
 
   const project = await db
     .insert(seoProjects)
-    .values(validatedData)
+    .values({
+      ...validatedData,
+      ownerId,
+    })
     .returning();
 
   logger.info('Project created', {
     projectId: project[0].id,
     name: project[0].name,
     domain: project[0].domain,
-    ownerId: validatedData.ownerId,
+    ownerId,
+    createdBy: authenticatedReq.user?.id,
   });
+
+  // Audit log
+  await logAuditEvent(
+    createAuditEntryFromRequest(authenticatedReq, AuditActions.PROJECT_CREATE, {
+      resourceId: project[0].id,
+      resourceType: 'project',
+      success: true,
+      metadata: { name: project[0].name, domain: project[0].domain },
+    })
+  );
 
   res.status(201).json(project[0]);
 }));

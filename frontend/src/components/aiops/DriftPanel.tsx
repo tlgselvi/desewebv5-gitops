@@ -21,8 +21,7 @@ export default function DriftPanel() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/v1/aiops/collect");
-        const result = await res.json();
+        const result = await apiMethods.get<{ success: boolean; data?: TelemetryData }>("/aiops/collect");
         
         if (result.success && result.data) {
           const telemetryData = result.data;

@@ -1,22 +1,126 @@
 import Redis from 'ioredis';
+import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
+import { CircuitBreaker } from '@/utils/retry.js';
 
-// Redis connection
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+// Circuit breaker for Redis operations
+const redisCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 5,
+  resetTimeout: 30000, // 30 seconds
+  halfOpenMaxAttempts: 3,
+});
+
+// Redis connection with enhanced configuration
+const redis = new Redis(config.redis.url, {
   retryStrategy: (times: number) => {
     const delay = Math.min(times * 50, 2000);
+    logger.warn(`Redis retry attempt ${times}`, { delay });
     return delay;
   },
   maxRetriesPerRequest: 3,
+  enableReadyCheck: true,
+  enableOfflineQueue: true,
+  lazyConnect: false,
+  reconnectOnError: (err: Error) => {
+    const targetErrors = ['READONLY', 'ECONNREFUSED', 'ETIMEDOUT'];
+    return targetErrors.some((target) => err.message.includes(target));
+  },
+  connectTimeout: 10000, // 10 seconds
+  commandTimeout: 5000, // 5 seconds
+  keepAlive: 30000, // 30 seconds
 });
 
+// Enhanced error handling
 redis.on('error', (err) => {
-  logger.error('Redis connection error', { error: err });
+  logger.error('Redis connection error', { 
+    error: err.message,
+    code: (err as any).code,
+  });
 });
 
 redis.on('connect', () => {
-  logger.info('Redis connected successfully');
+  logger.info('Redis connecting...');
 });
+
+redis.on('ready', () => {
+  logger.info('Redis connected successfully and ready');
+});
+
+redis.on('close', () => {
+  logger.warn('Redis connection closed');
+});
+
+redis.on('reconnecting', (delay: number) => {
+  logger.info(`Redis reconnecting in ${delay}ms`);
+});
+
+// Health check with circuit breaker
+export async function checkRedisConnection(): Promise<boolean> {
+  try {
+    return await redisCircuitBreaker.execute(async () => {
+      const result = await redis.ping();
+      return result === 'PONG';
+    });
+  } catch (error) {
+    logger.error('Redis health check failed', { error });
+    return false;
+  }
+}
+
+// Enhanced Redis operations with circuit breaker
+export const SafeRedis = {
+  async get<T = string>(key: string): Promise<T | null> {
+    try {
+      return await redisCircuitBreaker.execute(async () => {
+        const value = await redis.get(key);
+        return value ? (JSON.parse(value) as T) : null;
+      });
+    } catch (error) {
+      logger.error('Redis GET error', { error, key });
+      return null;
+    }
+  },
+
+  async set(key: string, value: any, ttlSeconds?: number): Promise<boolean> {
+    try {
+      await redisCircuitBreaker.execute(async () => {
+        const serialized = JSON.stringify(value);
+        if (ttlSeconds) {
+          await redis.setex(key, ttlSeconds, serialized);
+        } else {
+          await redis.set(key, serialized);
+        }
+      });
+      return true;
+    } catch (error) {
+      logger.error('Redis SET error', { error, key });
+      return false;
+    }
+  },
+
+  async del(key: string): Promise<boolean> {
+    try {
+      await redisCircuitBreaker.execute(async () => {
+        await redis.del(key);
+      });
+      return true;
+    } catch (error) {
+      logger.error('Redis DEL error', { error, key });
+      return false;
+    }
+  },
+
+  async keys(pattern: string): Promise<string[]> {
+    try {
+      return await redisCircuitBreaker.execute(async () => {
+        return await redis.keys(pattern);
+      });
+    } catch (error) {
+      logger.error('Redis KEYS error', { error, pattern });
+      return [];
+    }
+  },
+};
 
 export interface FeedbackEntry {
   timestamp: number;
@@ -33,8 +137,11 @@ export const FeedbackStore = {
   async save(entry: FeedbackEntry): Promise<void> {
     try {
       const key = `feedback:${Date.now()}`;
-      await redis.set(key, JSON.stringify(entry));
-      await redis.expire(key, 60 * 60 * 24 * 7); // 7 days TTL
+      const success = await SafeRedis.set(key, entry, 60 * 60 * 24 * 7); // 7 days TTL
+      
+      if (!success) {
+        throw new Error('Failed to save feedback entry');
+      }
       
       logger.info('Feedback entry saved to Redis', {
         key,
@@ -51,24 +158,21 @@ export const FeedbackStore = {
    */
   async getAll(): Promise<FeedbackEntry[]> {
     try {
-      const keys = await redis.keys('feedback:*');
+      const keys = await SafeRedis.keys('feedback:*');
       
       if (keys.length === 0) {
         return [];
       }
 
-      const values = await redis.mget(...keys);
-      const data = values
-        .map((value) => {
-          try {
-            return value ? JSON.parse(value) : null;
-          } catch {
-            return null;
-          }
-        })
-        .filter((entry): entry is FeedbackEntry => entry !== null);
+      const entries: FeedbackEntry[] = [];
+      for (const key of keys) {
+        const entry = await SafeRedis.get<FeedbackEntry>(key);
+        if (entry) {
+          entries.push(entry);
+        }
+      }
 
-      return data.sort((a, b) => b.timestamp - a.timestamp);
+      return entries.sort((a, b) => b.timestamp - a.timestamp);
     } catch (error) {
       logger.error('Error retrieving feedback from Redis', { error });
       return [];
@@ -80,13 +184,19 @@ export const FeedbackStore = {
    */
   async clear(): Promise<number> {
     try {
-      const keys = await redis.keys('feedback:*');
+      const keys = await SafeRedis.keys('feedback:*');
       
       if (keys.length === 0) {
         return 0;
       }
 
-      const deleted = await redis.del(...keys);
+      let deleted = 0;
+      for (const key of keys) {
+        const success = await SafeRedis.del(key);
+        if (success) {
+          deleted++;
+        }
+      }
       
       logger.info('Feedback entries cleared from Redis', {
         count: keys.length,
@@ -105,7 +215,7 @@ export const FeedbackStore = {
    */
   async count(): Promise<number> {
     try {
-      const keys = await redis.keys('feedback:*');
+      const keys = await SafeRedis.keys('feedback:*');
       return keys.length;
     } catch (error) {
       logger.error('Error counting feedback entries', { error });
@@ -114,20 +224,7 @@ export const FeedbackStore = {
   },
 };
 
-/**
- * Check Redis connection health
- */
-export async function checkRedisConnection(): Promise<boolean> {
-  try {
-    const result = await redis.ping();
-    return result === 'PONG';
-  } catch (error) {
-    logger.error('Redis health check failed', { error });
-    return false;
-  }
-}
-
-// Export redis client for use in other modules
+// Export redis client for use in other modules (use with caution)
 export { redis };
 export default redis;
 

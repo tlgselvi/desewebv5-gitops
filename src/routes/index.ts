@@ -13,6 +13,8 @@ import { predictiveRoutes } from './predictive.js';
 import { anomalyRoutes } from './anomaly.js';
 import { jwksRoutes } from './jwks.js';
 import { authRoutes } from './auth.js';
+import { auditRoutes } from './audit.js';
+import { masterControlRoutes } from './masterControl.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -27,6 +29,12 @@ export function setupRoutes(app: Express): void {
 
   // Auth routes
   app.use(`${apiPrefix}/auth`, authRoutes);
+
+  // Audit routes (admin only)
+  app.use(`${apiPrefix}/audit`, auditRoutes);
+
+  // Master Control routes (admin only)
+  app.use(`${apiPrefix}/master-control`, masterControlRoutes);
 
   // Metrics endpoint
   app.use('/metrics', metricsRoutes);
@@ -80,6 +88,8 @@ export function setupRoutes(app: Express): void {
         aiopsMetrics: '/metrics/aiops',
         health: '/health',
         docs: '/api-docs',
+        audit: `${apiPrefix}/audit`,
+        masterControl: `${apiPrefix}/master-control`,
       },
     });
   });

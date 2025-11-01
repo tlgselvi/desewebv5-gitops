@@ -1,9 +1,80 @@
 import { Router, Request, Response } from 'express';
-import { logger } from '@/utils/logger';
-import AnomalyDetector from '../services/aiops/anomalyDetector.js';
+import { logger } from '@/utils/logger.js';
+import AnomalyDetector from '@/services/aiops/anomalyDetector.js';
 
 const router = Router();
 const anomalyDetector = new AnomalyDetector();
+
+/**
+ * POST /api/v1/aiops/anomalies/detect
+ * Detect anomalies in metric values
+ */
+router.post('/anomalies/detect', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { metric, values, timestamps } = req.body;
+
+    if (!metric) {
+      res.status(400).json({
+        success: false,
+        error: 'metric is required',
+      });
+      return;
+    }
+
+    if (!values || !Array.isArray(values)) {
+      res.status(400).json({
+        success: false,
+        error: 'values array is required',
+      });
+      return;
+    }
+
+    if (values.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'values array cannot be empty',
+      });
+      return;
+    }
+
+    // Validate timestamps length if provided
+    if (timestamps && Array.isArray(timestamps) && timestamps.length !== values.length) {
+      res.status(400).json({
+        success: false,
+        error: 'timestamps array length must match values array length',
+      });
+      return;
+    }
+
+    const data = {
+      metric,
+      values,
+      timestamps: timestamps || values.map((_, i) => Date.now() - (values.length - i) * 1000),
+    };
+
+    const anomalies = anomalyDetector.detectAnomalies(data);
+
+    logger.info('Anomalies detected', {
+      metric,
+      totalValues: values.length,
+      anomalyCount: anomalies.length,
+    });
+
+    res.status(200).json({
+      success: true,
+      metric,
+      totalValues: values.length,
+      anomalyCount: anomalies.length,
+      anomalies,
+    });
+  } catch (error) {
+    logger.error('Error detecting anomalies', { error });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to detect anomalies',
+    });
+  }
+});
 
 /**
  * POST /api/v1/aiops/anomalies/p95

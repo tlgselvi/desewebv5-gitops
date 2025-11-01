@@ -34,6 +34,47 @@ describe('Metrics Routes', () => {
       expect(response.status).toBe(200);
       expect(response.text).toMatch(/http_request/);
     });
+
+    it('should include process metrics', async () => {
+      // Act
+      const response = await request(app)
+        .get('/metrics')
+        .expect('Content-Type', /text/);
+
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.text).toMatch(/process/);
+    });
+  });
+
+  describe('POST /metrics', () => {
+    it('should return 400 when action is missing', async () => {
+      // Arrange
+      const payload = {};
+
+      // Act
+      const response = await request(app)
+        .post('/metrics')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when action is empty string', async () => {
+      // Arrange
+      const payload = { action: '' };
+
+      // Act
+      const response = await request(app)
+        .post('/metrics')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
   });
 });
 

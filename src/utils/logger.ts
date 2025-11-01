@@ -97,7 +97,7 @@ export const logError = (error: Error, context?: Record<string, any>) => {
   });
 };
 
-// Audit logging utility
+// Audit logging utility (deprecated - use auditLogger.logAuditEvent instead)
 export const logAudit = (action: string, userId?: string, metadata?: Record<string, any>) => {
   logger.info('Audit Log', {
     action,

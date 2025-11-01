@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { apiMethods, getErrorMessage } from "@/api/client";
 
 interface RemediationEvent {
   timestamp: number;
@@ -24,16 +25,12 @@ export default function ReplayTimeline() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/v1/aiops/remediation-log");
-        if (!res.ok) {
-          throw new Error("Failed to fetch remediation log");
-        }
-        const data: ReplayResponse = await res.json();
+        const data = await apiMethods.get<ReplayResponse>("/aiops/remediation-log");
         if (data.success) {
           setEvents(data.events);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }

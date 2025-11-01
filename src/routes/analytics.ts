@@ -3,9 +3,14 @@ import { z } from 'zod';
 import { db, seoMetrics, seoProjects, generatedContent, seoAlerts } from '@/db/index.js';
 import { eq, desc, gte, sql } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
+import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
 import { logger, analyticsLogger } from '@/utils/logger.js';
+import { requireProjectAccess } from '@/utils/projectAccess.js';
 
 const router = Router();
+
+// All analytics routes require authentication
+router.use(authenticate);
 
 // Validation schemas
 const AnalyticsQuerySchema = z.object({
@@ -153,7 +158,17 @@ const DashboardQuerySchema = z.object({
  *         description: Validation error
  */
 router.get('/dashboard', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as AuthenticatedRequest;
   const { projectId, period } = DashboardQuerySchema.parse(req.query);
+
+  // Verify project access
+  const access = await requireProjectAccess(authenticatedReq, projectId);
+  if (!access.hasAccess) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'You do not have access to this project',
+    });
+  }
 
   // Calculate date range
   const now = new Date();
@@ -379,7 +394,17 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
  *         description: Validation error
  */
 router.get('/metrics', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as AuthenticatedRequest;
   const { projectId, startDate, endDate, metric } = AnalyticsQuerySchema.parse(req.query);
+
+  // Verify project access
+  const access = await requireProjectAccess(authenticatedReq, projectId);
+  if (!access.hasAccess) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'You do not have access to this project',
+    });
+  }
 
   let query = db
     .select()

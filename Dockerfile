@@ -14,7 +14,9 @@ RUN corepack enable pnpm && pnpm i --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY package.json pnpm-lock.yaml* ./
+COPY tsconfig.json ./
+COPY src ./src
 
 # Build the application
 RUN corepack enable pnpm && pnpm build

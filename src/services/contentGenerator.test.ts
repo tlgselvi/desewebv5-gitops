@@ -51,6 +51,50 @@ describe('ContentGenerator Service', () => {
         contentGenerator.generateContent(invalidRequest as any)
       ).rejects.toThrow();
     });
+
+    it('should validate wordCount maximum', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        contentType: 'blog_post' as const,
+        keywords: ['test'],
+        wordCount: 10000, // More than maximum 5000
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.generateContent(invalidRequest as any)
+      ).rejects.toThrow();
+    });
+
+    it('should validate contentType enum', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        contentType: 'invalid_type' as any,
+        keywords: ['test'],
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.generateContent(invalidRequest as any)
+      ).rejects.toThrow();
+    });
+
+    it('should validate tone enum', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        contentType: 'blog_post' as const,
+        keywords: ['test'],
+        tone: 'invalid_tone' as any,
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.generateContent(invalidRequest as any)
+      ).rejects.toThrow();
+    });
   });
 
   describe('createTemplate', () => {

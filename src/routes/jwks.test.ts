@@ -48,6 +48,38 @@ describe('JWKS Routes', () => {
       expect(activeKey).toBeDefined();
       expect(nextKey).toBeDefined();
     });
+
+    it('should return keys with valid key types', async () => {
+      // Act
+      const response = await request(app)
+        .get('/.well-known/jwks.json')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      response.body.keys.forEach((key: any) => {
+        expect(['RSA', 'EC']).toContain(key.kty);
+      });
+    });
+
+    it('should return keys with algorithm property', async () => {
+      // Act
+      const response = await request(app)
+        .get('/.well-known/jwks.json')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      response.body.keys.forEach((key: any) => {
+        expect(key).toHaveProperty('alg');
+        expect(typeof key.alg).toBe('string');
+      });
+    });
+
+    it('should handle invalid HTTP methods', async () => {
+      // Act & Assert
+      await request(app)
+        .post('/.well-known/jwks.json')
+        .expect(404);
+    });
   });
 });
 

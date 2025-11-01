@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { apiMethods, getErrorMessage } from "@/api/client";
 
 interface FeedbackEntry {
   timestamp: number;
@@ -24,16 +25,12 @@ export default function InsightsPanel() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/v1/aiops/feedback");
-        if (!res.ok) {
-          throw new Error("Failed to fetch feedback");
-        }
-        const data: FeedbackResponse = await res.json();
+        const data = await apiMethods.get<FeedbackResponse>("/aiops/feedback");
         if (data.success) {
           setFeedback(data.feedback);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(getErrorMessage(err));
       } finally {
         setLoading(false);
       }

@@ -14,11 +14,19 @@ describe('RequestLogger Middleware', () => {
       path: '/test',
       ip: '127.0.0.1',
       headers: {},
+      get: vi.fn((name: string) => {
+        if (name === 'user-agent') {
+          return mockRequest.headers?.['user-agent'] || 'test-agent';
+        }
+        return mockRequest.headers?.[name.toLowerCase()];
+      }),
     };
 
     mockResponse = {
       statusCode: 200,
       on: vi.fn(),
+      get: vi.fn(),
+      end: vi.fn(),
     };
 
     mockNext = vi.fn();
@@ -50,6 +58,71 @@ describe('RequestLogger Middleware', () => {
 
     // Assert
     expect(mockNext).toHaveBeenCalled();
+  });
+
+  it('should handle PUT requests', () => {
+    // Arrange
+    mockRequest.method = 'PUT';
+    mockRequest.body = { id: '123', data: 'updated' };
+
+    // Act
+    requestLogger(mockRequest as Request, mockResponse as Response, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+  });
+
+  it('should handle DELETE requests', () => {
+    // Arrange
+    mockRequest.method = 'DELETE';
+
+    // Act
+    requestLogger(mockRequest as Request, mockResponse as Response, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+  });
+
+  it('should handle requests with query parameters', () => {
+    // Arrange
+    mockRequest.query = { page: '1', limit: '10' };
+
+    // Act
+    requestLogger(mockRequest as Request, mockResponse as Response, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+  });
+
+  it('should handle requests with user agent header', () => {
+    // Arrange
+    mockRequest.headers = { 'user-agent': 'Mozilla/5.0' };
+
+    // Act
+    requestLogger(mockRequest as Request, mockResponse as Response, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+  });
+
+  it('should log response finish event', () => {
+    // Arrange
+    const finishCallback = vi.fn();
+    (mockResponse.on as ReturnType<typeof vi.fn>).mockImplementation(
+      (event: string, callback: () => void) => {
+        if (event === 'finish') {
+          finishCallback();
+          callback();
+        }
+        return mockResponse as Response;
+      }
+    );
+
+    // Act
+    requestLogger(mockRequest as Request, mockResponse as Response, mockNext);
+
+    // Assert
+    expect(mockResponse.on).toHaveBeenCalledWith('finish', expect.any(Function));
   });
 });
 

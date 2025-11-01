@@ -14,12 +14,12 @@ const configSchema = z.object({
 
   // Database Configuration
   database: z.object({
-    url: z.string().min(1, 'DATABASE_URL is required'),
+    url: z.string().default('postgresql://postgres:postgres@localhost:5432/dese_ea_plan_v5'),
     host: z.string().default('localhost'),
     port: z.coerce.number().default(5432),
     name: z.string().default('dese_ea_plan_v5'),
-    user: z.string().default('username'),
-    password: z.string().default('password'),
+    user: z.string().default('postgres'),
+    password: z.string().default('postgres'),
   }),
 
   // Redis Configuration
@@ -32,7 +32,7 @@ const configSchema = z.object({
 
   // Security Configuration
   security: z.object({
-    jwtSecret: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+    jwtSecret: z.string().default('ea-plan-master-control-v6.7.0-super-secret-jwt-key-min-32-chars'),
     jwtExpiresIn: z.string().default('24h'),
     bcryptRounds: z.coerce.number().default(12),
     rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes

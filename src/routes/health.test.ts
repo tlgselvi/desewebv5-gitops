@@ -66,6 +66,40 @@ describe('Health Routes', () => {
       expect(response.body.status).toBe('unhealthy');
     });
 
+    it('should return 503 when both database and redis are disconnected', async () => {
+      // Arrange
+      vi.spyOn(dbModule, 'checkDatabaseConnection').mockResolvedValue(false);
+      vi.spyOn(redisModule, 'checkRedisConnection').mockResolvedValue(false);
+
+      // Act
+      const response = await request(app)
+        .get('/health')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(503);
+      expect(response.body.status).toBe('unhealthy');
+      expect(response.body.services.database).toBe(false);
+      expect(response.body.services.redis).toBe(false);
+    });
+
+    it('should handle redis connection errors gracefully', async () => {
+      // Arrange
+      vi.spyOn(dbModule, 'checkDatabaseConnection').mockResolvedValue(true);
+      vi.spyOn(redisModule, 'checkRedisConnection').mockRejectedValue(
+        new Error('Redis connection failed')
+      );
+
+      // Act
+      const response = await request(app)
+        .get('/health')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(503);
+      expect(response.body.status).toBe('unhealthy');
+    });
+
     it('should handle errors gracefully', async () => {
       // Arrange
       vi.spyOn(dbModule, 'checkDatabaseConnection').mockRejectedValue(
@@ -143,6 +177,32 @@ describe('Health Routes', () => {
       // Assert
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('alive');
+    });
+
+    it('should always return 200 regardless of service status', async () => {
+      // Arrange
+      vi.spyOn(dbModule, 'checkDatabaseConnection').mockResolvedValue(false);
+      vi.spyOn(redisModule, 'checkRedisConnection').mockResolvedValue(false);
+
+      // Act
+      const response = await request(app)
+        .get('/health/live')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe('alive');
+    });
+
+    it('should return timestamp in response', async () => {
+      // Act
+      const response = await request(app)
+        .get('/health/live')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.body).toHaveProperty('timestamp');
+      expect(typeof response.body.timestamp).toBe('string');
     });
   });
 });

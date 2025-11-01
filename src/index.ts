@@ -5,10 +5,11 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
-import { checkDatabaseConnection, closeDatabaseConnection } from '@/db/index.js';
+import { checkDatabaseConnection, closeDatabaseConnection, testDatabaseConnection } from '@/db/index.js';
 import { errorHandler } from '@/middleware/errorHandler.js';
 import { requestLogger } from '@/middleware/requestLogger.js';
 import { prometheusMiddleware } from '@/middleware/prometheus.js';
+import { sanitizeInput, cspHeaders, requestSizeLimiter } from '@/middleware/security.js';
 import { setupRoutes } from '@/routes/index.js';
 import { setupSwagger } from '@/utils/swagger.js';
 import { gracefulShutdown } from '@/utils/gracefulShutdown.js';
@@ -16,7 +17,6 @@ import { gracefulShutdown } from '@/utils/gracefulShutdown.js';
 // Create Express app
 const app = express();
 
-// Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -28,6 +28,15 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false,
 }));
+
+// Additional security headers
+app.use(cspHeaders);
+
+// Input sanitization
+app.use(sanitizeInput);
+
+// Request size limiter (10MB)
+app.use(requestSizeLimiter(10 * 1024 * 1024));
 
 // CORS configuration
 app.use(cors({
@@ -104,14 +113,23 @@ app.use('*', (req, res) => {
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Start server
-const server = app.listen(config.port, () => {
+// Start server with database connection test
+const server = app.listen(config.port, async () => {
   logger.info(`🚀 Dese EA Plan v5.0 server started`, {
     port: config.port,
     environment: config.nodeEnv,
     version: process.env.npm_package_version || '5.0.0',
     domain: 'cpt-optimization',
   });
+
+  // Test database connection on startup
+  try {
+    await testDatabaseConnection();
+    logger.info('✅ Database connection verified');
+  } catch (error) {
+    logger.error('❌ Database connection failed on startup', { error });
+    // Don't exit - let the app start but health checks will fail
+  }
 });
 
 // Graceful shutdown

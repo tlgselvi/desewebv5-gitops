@@ -48,7 +48,11 @@
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "tests/**/*"
+    "tests/**/*",
+    ".cursorrules",
+    "*.md",
+    "*.yml",
+    "*.yaml"
   ],
   "ts-node": {
     "esm": true

@@ -57,6 +57,66 @@ describe('Prometheus Middleware', () => {
         recordContentGeneration('test-project-id', 'blog_post');
       }).not.toThrow();
     });
+
+    it('should handle different content types', () => {
+      // Act & Assert
+      expect(() => {
+        recordContentGeneration('project-1', 'blog_post');
+        recordContentGeneration('project-1', 'article');
+        recordContentGeneration('project-1', 'social_media');
+      }).not.toThrow();
+    });
+  });
+
+  describe('recordSeoAnalysis', () => {
+    it('should handle different analysis types', () => {
+      // Act & Assert
+      expect(() => {
+        recordSeoAnalysis('project-1', 'lighthouse');
+        recordSeoAnalysis('project-1', 'ahrefs');
+        recordSeoAnalysis('project-1', 'gsc');
+      }).not.toThrow();
+    });
+  });
+
+  describe('recordUserAction', () => {
+    it('should handle different action types', () => {
+      // Act & Assert
+      expect(() => {
+        recordUserAction('login');
+        recordUserAction('logout');
+        recordUserAction('create_project');
+        recordUserAction('delete_project');
+      }).not.toThrow();
+    });
+  });
+
+  describe('metricsHandler', () => {
+    it('should handle requests without throwing', () => {
+      // Act & Assert
+      expect(() => {
+        metricsHandler(mockRequest as Request, mockResponse as Response);
+      }).not.toThrow();
+    });
+
+    it('should set correct content type header', () => {
+      // Act
+      metricsHandler(mockRequest as Request, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.set).toHaveBeenCalledWith(
+        'Content-Type',
+        'text/plain; version=0.0.4; charset=utf-8'
+      );
+    });
+
+    it('should end response after sending metrics', () => {
+      // Act
+      metricsHandler(mockRequest as Request, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.end).toHaveBeenCalled();
+    });
   });
 });
 

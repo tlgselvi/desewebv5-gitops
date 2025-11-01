@@ -25,6 +25,61 @@ describe('ErrorHandler Middleware', () => {
   });
 
   describe('errorHandler', () => {
+    it('should handle JsonWebTokenError with 401 status', () => {
+      // Arrange
+      const jwtError = new Error('Invalid token');
+      jwtError.name = 'JsonWebTokenError';
+
+      // Act
+      errorHandler(jwtError as AppError, mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalled();
+      const callArg = (mockResponse.json as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(callArg.message).toBe('Invalid token');
+    });
+
+    it('should handle TokenExpiredError with 401 status', () => {
+      // Arrange
+      const tokenError = new Error('Token expired');
+      tokenError.name = 'TokenExpiredError';
+
+      // Act
+      errorHandler(tokenError as AppError, mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalled();
+    });
+
+    it('should handle ValidationError with 400 status', () => {
+      // Arrange
+      const validationError = new Error('Validation failed');
+      validationError.name = 'ValidationError';
+
+      // Act
+      errorHandler(validationError as AppError, mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+
+    it('should handle CastError with 400 status', () => {
+      // Arrange
+      const castError = new Error('Invalid ID');
+      castError.name = 'CastError';
+
+      // Act
+      errorHandler(castError as AppError, mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalled();
+      const callArg = (mockResponse.json as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(callArg.message).toBe('Invalid ID format');
+    });
+
     it('should handle ZodError with 400 status', () => {
       // Arrange
       const zodError = new ZodError([

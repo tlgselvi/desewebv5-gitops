@@ -4,6 +4,10 @@
   "description": "CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama",
   "type": "module",
   "main": "dist/index.js",
+  "packageManager": "pnpm@8.15.0",
+  "bin": {
+    "master-control": "./dist/cli/masterControl.js"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:ops": "tsx watch src/ops-server.ts",

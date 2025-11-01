@@ -1,0 +1,14 @@
+# Cursor ignore file
+# Files and patterns to ignore for Cursor AI processing
+# NOTE: .cursorrules is NOT ignored - it's essential for AI behavior!
+
+*.md
+*.yml
+*.yaml
+.vscode/
+*.log
+node_modules/
+dist/
+build/
+.git/
+

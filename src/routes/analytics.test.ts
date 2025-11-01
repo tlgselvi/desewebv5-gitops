@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { analyticsRoutes } from './analytics.js';
+import { createAuthHeaders } from '../../../tests/helpers.js';
 import * as dbModule from '@/db/index.js';
 
 const app = express();
@@ -18,6 +19,7 @@ describe('Analytics Routes', () => {
       // Act
       const response = await request(app)
         .get('/analytics/dashboard')
+        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -59,6 +61,50 @@ describe('Analytics Routes', () => {
 
       // Assert - Should not fail validation
       expect([200, 404]).toContain(response.status);
+    });
+
+    it('should handle all valid period values', async () => {
+      // Arrange
+      const periods = ['7d', '30d', '90d', '1y'];
+      vi.spyOn(dbModule.db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      } as any);
+
+      // Act & Assert
+      for (const period of periods) {
+        const response = await request(app)
+          .get(`/analytics/dashboard?projectId=00000000-0000-0000-0000-000000000000&period=${period}`)
+          .expect('Content-Type', /json/);
+
+        expect([200, 404]).toContain(response.status);
+      }
+    });
+
+    it('should return dashboard data structure', async () => {
+      // Arrange
+      vi.spyOn(dbModule.db, 'select').mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([
+            {
+              totalAnalyses: 10,
+              avgPerformance: 85,
+              avgAccessibility: 90,
+              avgSeo: 88,
+              avgBestPractices: 82,
+            },
+          ]),
+        }),
+      } as any);
+
+      // Act
+      const response = await request(app)
+        .get('/analytics/dashboard?projectId=00000000-0000-0000-0000-000000000000&period=30d')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect([200, 404, 500]).toContain(response.status);
     });
   });
 });

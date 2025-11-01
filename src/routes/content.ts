@@ -2,9 +2,14 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { contentGenerator } from '@/services/contentGenerator.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
+import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
 import { logger, contentLogger } from '@/utils/logger.js';
+import { requireProjectAccess } from '@/utils/projectAccess.js';
 
 const router = Router();
+
+// All content routes require authentication
+router.use(authenticate);
 
 // Validation schemas
 const ContentGenerationSchema = z.object({
@@ -118,12 +123,23 @@ const ContentQuerySchema = z.object({
  *         description: Project not found
  */
 router.post('/generate', asyncHandler(async (req, res) => {
+  const authenticatedReq = req as AuthenticatedRequest;
   const validatedData = ContentGenerationSchema.parse(req.body);
+
+  // Verify project access
+  const access = await requireProjectAccess(authenticatedReq, validatedData.projectId);
+  if (!access.hasAccess) {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'You do not have access to this project',
+    });
+  }
 
   contentLogger.info('Starting content generation', {
     projectId: validatedData.projectId,
     contentType: validatedData.contentType,
     keywords: validatedData.keywords,
+    userId: authenticatedReq.user?.id,
   });
 
   const result = await contentGenerator.generateContent(validatedData);
@@ -132,6 +148,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
     contentId: result.id,
     eEatScore: result.eEatScore.overall,
     qualityScore: result.qualityScore,
+    userId: authenticatedReq.user?.id,
   });
 
   res.json(result);
