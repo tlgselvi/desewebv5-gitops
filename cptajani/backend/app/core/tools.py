@@ -20,11 +20,11 @@ class ToolRegistry:
         self.argo.sync("ea-web-cpt-ajan")
         return {"updated": updated, "config_version": "5.5.1"}
 
-    def query_metrics(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def query_metrics(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Prometheus metriklerini sorgula"""
         query = params.get("query", "")
         time_range = params.get("time_range", "1h")
-        return self.prom.query(query, time_range)
+        return await self.prom.query(query, time_range)
 
     def argo_sync(self, app: str) -> Dict[str, Any]:
         """ArgoCD uygulamasını senkronize et"""

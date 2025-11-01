@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '@/utils/logger.js';
 
 export interface TelemetryData {
   timestamp: number;
@@ -25,7 +26,7 @@ export class TelemetryAgent {
       });
       return response.data;
     } catch (error) {
-      console.error('Error collecting metrics from Prometheus:', error);
+      logger.error('Error collecting metrics from Prometheus', { error });
       return {};
     }
   }
@@ -49,7 +50,7 @@ export class TelemetryAgent {
       const sum = values.reduce((acc: number, val: number) => acc + val, 0);
       return sum / values.length;
     } catch (error) {
-      console.error('Error calculating average latency:', error);
+      logger.error('Error calculating average latency', { error });
       return 0;
     }
   }
@@ -73,7 +74,7 @@ export class TelemetryAgent {
       },
     };
 
-    console.log(JSON.stringify(telemetryData));
+    logger.debug('Telemetry data collected', { telemetryData });
     return telemetryData;
   }
 

@@ -1,12 +1,13 @@
 from typing import Dict, Any, List
 import random
 import time
+import asyncio
 
 class PromAdapter:
-    def query(self, promql: str, time_range: str = "1h") -> Dict[str, Any]:
+    async def query(self, promql: str, time_range: str = "1h") -> Dict[str, Any]:
         """Prometheus metriklerini sorgula (stub)"""
         # Simulate query execution
-        time.sleep(0.1)  # Simulate network delay
+        await asyncio.sleep(0.1)  # Simulate network delay
         
         return {
             "query": promql,

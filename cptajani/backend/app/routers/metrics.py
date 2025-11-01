@@ -8,11 +8,11 @@ router = APIRouter()
 prom = PromAdapter()
 
 @router.post("/metrics", response_model=MetricsResponse)
-def query_metrics(req: MetricsRequest):
+async def query_metrics(req: MetricsRequest):
     """Prometheus metriklerini sorgula"""
     start_time = time.time()
     
-    result = prom.query(req.query, req.time_range)
+    result = await prom.query(req.query, req.time_range)
     
     execution_time = (time.time() - start_time) * 1000
     

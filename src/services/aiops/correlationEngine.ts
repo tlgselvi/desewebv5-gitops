@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { logger } from '../../utils/logger';
-import { redis } from '../storage/redisClient.js';
+import { logger } from '@/utils/logger.js';
+import { redis } from '@/services/storage/redisClient.js';
 
 interface MetricSeries {
   metric: string;

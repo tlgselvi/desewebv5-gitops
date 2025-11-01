@@ -28,7 +28,8 @@ spec:
     spec:
       containers:
       - name: orchestration-engine
-        image: ghcr.io/your-org/orchestration-engine:latest
+        image: orchestration-engine:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:
@@ -98,7 +99,8 @@ spec:
     spec:
       containers:
       - name: self-healing-engine
-        image: ghcr.io/your-org/self-healing-engine:latest
+        image: self-healing-engine:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:
@@ -168,7 +170,8 @@ spec:
     spec:
       containers:
       - name: self-optimization-engine
-        image: ghcr.io/your-org/self-optimization-engine:latest
+        image: self-optimization-engine:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:

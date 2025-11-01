@@ -265,5 +265,7 @@ export function setupSwagger(app: Express) {
     res.send(specs);
   });
 
-  console.log(`📚 API Documentation available at http://localhost:${config.port}/api-docs`);
+  logger.info('API Documentation available', {
+    url: `http://localhost:${config.port}/api-docs`,
+  });
 }

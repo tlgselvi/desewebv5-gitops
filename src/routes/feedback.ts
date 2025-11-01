@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { logger } from '../utils/logger.js';
-import { FeedbackStore } from '../services/storage/redisClient.js';
-import { recordFeedback } from '../middleware/aiopsMetrics.js';
-import { FeedbackSchema } from '../schemas/feedback.js';
+import { logger } from '@/utils/logger.js';
+import { FeedbackStore } from '@/services/storage/redisClient.js';
+import { recordFeedback } from '@/middleware/aiopsMetrics.js';
+import { FeedbackSchema } from '@/schemas/feedback.js';
 
 const router = Router();
 

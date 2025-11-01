@@ -13,7 +13,7 @@ import { predictiveRoutes } from './predictive.js';
 import { anomalyRoutes } from './anomaly.js';
 import { jwksRoutes } from './jwks.js';
 import { authRoutes } from './auth.js';
-import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
+import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {

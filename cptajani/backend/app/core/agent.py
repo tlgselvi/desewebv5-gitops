@@ -22,7 +22,7 @@ class CptAgent:
         self.tools = tools
         self.audit_log = []
 
-    def act(self, intent: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    async def act(self, intent: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """
         CPT Ajanı ana karar döngüsü
         """
@@ -43,7 +43,7 @@ class CptAgent:
             elif intent == "prophet.tune":
                 result = self.tools.update_prophet_config(params)
             elif intent == "metrics.query":
-                result = self.tools.query_metrics(params)
+                result = await self.tools.query_metrics(params)
             elif intent == "argo.sync":
                 result = self.tools.argo_sync(params.get("app", ""))
             elif intent == "data.ingest":

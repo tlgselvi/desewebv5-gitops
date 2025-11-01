@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import logging
 import time
+import asyncio
 from datetime import datetime
 from enum import Enum
 
@@ -163,7 +164,7 @@ class SelfOptimizationEngine:
         optimization_id = f"opt_{int(time.time() * 1000)}"
         
         # Simulate optimization execution
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
         
         # Calculate expected improvement
         improvements = {}

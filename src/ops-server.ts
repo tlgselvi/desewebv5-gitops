@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { logger } from '@/utils/logger.js';
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -68,10 +69,12 @@ app.post('/api/v1/auth/login', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Ops Mode Backend Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔧 API health: http://localhost:${PORT}/api/v1/health`);
-  console.log(`📈 AIOps metrics: http://localhost:${PORT}/api/v1/aiops/metrics`);
+  logger.info('Ops Mode Backend Server started', {
+    port: PORT,
+    healthCheck: `http://localhost:${PORT}/health`,
+    apiHealth: `http://localhost:${PORT}/api/v1/health`,
+    aiopsMetrics: `http://localhost:${PORT}/api/v1/aiops/metrics`,
+  });
 });
 
 export default app;

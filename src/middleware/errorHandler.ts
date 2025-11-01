@@ -8,6 +8,40 @@ export interface AppError extends Error {
   isOperational?: boolean;
 }
 
+interface ErrorDetails {
+  issues?: Array<{
+    field: string;
+    message: string;
+    code: string;
+  }>;
+  code?: string | number;
+}
+
+interface ErrorResponse {
+  error: string;
+  message: string;
+  timestamp: string;
+  path: string;
+  method: string;
+  details?: ErrorDetails;
+  stack?: string;
+}
+
+interface MongoError extends Error {
+  code?: number;
+}
+
+interface MulterError extends Error {
+  code?: string;
+}
+
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    [key: string]: unknown;
+  };
+}
+
 export class CustomError extends Error implements AppError {
   public statusCode: number;
   public isOperational: boolean;
@@ -34,7 +68,7 @@ export const errorHandler = (
 ): void => {
   let statusCode = error.statusCode || 500;
   let message = error.message || 'Internal Server Error';
-  let details: any = undefined;
+  let details: ErrorDetails | undefined = undefined;
 
   // Handle different error types
   if (error instanceof ZodError) {
@@ -53,9 +87,12 @@ export const errorHandler = (
   } else if (error.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
-  } else if (error.name === 'MongoError' && (error as any).code === 11000) {
-    statusCode = 409;
-    message = 'Duplicate field value';
+  } else if (error.name === 'MongoError') {
+    const mongoError = error as unknown as MongoError;
+    if (mongoError.code === 11000) {
+      statusCode = 409;
+      message = 'Duplicate field value';
+    }
   } else if (error.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
@@ -65,7 +102,8 @@ export const errorHandler = (
   } else if (error.name === 'MulterError') {
     statusCode = 400;
     message = 'File upload error';
-    details = { code: (error as any).code };
+    const multerError = error as unknown as MulterError;
+    details = { code: multerError.code };
   }
 
   // Log error
@@ -84,7 +122,7 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: (req as any).user?.id,
+      user: (req as AuthenticatedRequest).user?.id,
     });
   } else {
     logger.warn('Client Error', {
@@ -98,12 +136,12 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: (req as any).user?.id,
+      user: (req as AuthenticatedRequest).user?.id,
     });
   }
 
   // Send error response
-  const errorResponse: any = {
+  const errorResponse: ErrorResponse = {
     error: error.name || 'Error',
     message,
     timestamp: new Date().toISOString(),

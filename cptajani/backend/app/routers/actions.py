@@ -18,9 +18,9 @@ store = StoreAdapter()
 agent = CptAgent(ToolRegistry(k8s, argo, prom, store))
 
 @router.post("/act", response_model=ActResponse)
-def act(req: ActRequest):
+async def act(req: ActRequest):
     """CPT Ajanı ana aksiyon endpoint'i"""
-    result = agent.act(req.intent, req.params or {})
+    result = await agent.act(req.intent, req.params or {})
     
     return ActResponse(
         accepted=result.get("success", False),
