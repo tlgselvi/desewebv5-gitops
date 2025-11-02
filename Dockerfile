@@ -1,4 +1,4 @@
-# Multi-stage build for Dese EA Plan v5.0
+# Multi-stage build for Dese EA Plan v6.7.0
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
