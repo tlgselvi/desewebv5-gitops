@@ -8,14 +8,17 @@ import { logger } from '@/utils/logger.js';
 const connectionString = config.database.url;
 
 const client = postgres(connectionString, {
-  max: 10, // Maximum number of connections in the pool
-  idle_timeout: 20, // Close idle connections after 20 seconds
+  max: 20, // Increased from 10 - Maximum number of connections in the pool
+  idle_timeout: 30, // Increased from 20 - Close idle connections after 30 seconds
   connect_timeout: 10, // Connection timeout in seconds
   max_lifetime: 60 * 30, // Maximum connection lifetime (30 minutes)
   onnotice: () => {}, // Suppress PostgreSQL notices
   transform: {
     undefined: null, // Transform undefined to null for PostgreSQL compatibility
   },
+  // Performance optimizations
+  fetch_types: false, // Disable fetching types for better performance
+  prepare: false, // Disable prepared statements for faster queries (use with caution)
 });
 
 // Create the database instance

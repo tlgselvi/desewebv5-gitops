@@ -58,7 +58,7 @@ const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true }
  *                   items:
  *                     $ref: '#/components/schemas/SeoProject'
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
   const authenticatedReq = req as import('@/middleware/auth.js').AuthenticatedRequest;
   const { ownerId, status } = req.query;
 

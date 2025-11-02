@@ -66,8 +66,19 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Master-Control-CLI'],
 }));
 
-// Compression middleware
-app.use(compression());
+// Compression middleware with optimization
+app.use(compression({
+  level: 6, // Compression level (0-9, 6 is a good balance)
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression for text-based responses
+    return compression.filter(req, res);
+  },
+}));
 
 // Rate limiting
 const limiter = rateLimit({

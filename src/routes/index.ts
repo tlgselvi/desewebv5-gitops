@@ -17,6 +17,7 @@ import { auditRoutes } from './audit.js';
 import { masterControlRoutes } from './masterControl.js';
 import { browserAutomationRoutes } from './browserAutomation.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
+import { cacheMiddleware } from '@/middleware/cache.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {
