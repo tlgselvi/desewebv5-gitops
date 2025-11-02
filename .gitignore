@@ -63,3 +63,14 @@ secrets/
 # Temporary files
 *.tmp
 *.temp
+
+# Next.js
+frontend/.next/
+frontend/.next/**
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Build outputs
+dist/
+*.tsbuildinfo
