@@ -40,10 +40,30 @@ app.use(requestSizeLimiter(10 * 1024 * 1024));
 
 // CORS configuration
 app.use(cors({
-  origin: config.corsOrigin,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow localhost on any port
+    if (config.nodeEnv === 'development') {
+      const isLocalhost = /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
+                         /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+      if (isLocalhost) {
+        return callback(null, true);
+      }
+    }
+    
+    // Check against configured CORS origin
+    const allowedOrigins = [config.corsOrigin, 'http://localhost:3001', 'http://localhost:3000'];
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Master-Control-CLI'],
 }));
 
 // Compression middleware
@@ -111,14 +131,17 @@ app.use('*', (req, res) => {
 });
 
 // Error handling middleware (must be last)
-app.use(errorHandler);
+// Note: Express error handlers require 4 parameters (err, req, res, next)
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  errorHandler(err, req, res, next);
+});
 
 // Start server with database connection test
 const server = app.listen(config.port, async () => {
-  logger.info(`🚀 Dese EA Plan v5.0 server started`, {
+  logger.info(`🚀 Dese EA Plan v6.7.0 server started`, {
     port: config.port,
     environment: config.nodeEnv,
-    version: process.env.APP_VERSION || process.env.npm_package_version || '5.0.0',
+    version: process.env.APP_VERSION || process.env.npm_package_version || '6.7.0',
     domain: 'cpt-optimization',
   });
 

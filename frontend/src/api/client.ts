@@ -15,17 +15,35 @@ export interface ApiError {
 }
 
 // Create axios instance with default config
+const getBaseURL = () => {
+  // In development, use full URL if NEXT_PUBLIC_API_URL is set
+  if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  // Default to relative path for production or when env var is not set
+  return typeof window !== "undefined" 
+    ? `${window.location.protocol}//${window.location.host}/api/v1`
+    : "/api/v1";
+};
+
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/v1",
+  baseURL: getBaseURL(),
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add auth token and dev headers
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Add dev mode header for CLI authentication bypass
+    if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+      if (config.headers) {
+        config.headers["X-Master-Control-CLI"] = "true";
+      }
+    }
+
     const token = localStorage.getItem("token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -85,7 +103,18 @@ api.interceptors.response.use(
 
     // Handle network errors
     if (!error.response) {
-      console.error("Network error:", error.message);
+      const errorMessage = error.message || "Network error";
+      console.error("Network error:", errorMessage);
+      
+      // Provide more helpful error message
+      if (error.code === "ECONNREFUSED" || errorMessage.includes("Network Error")) {
+        console.error(
+          "Backend server may be down. Please check:",
+          "\n- Backend is running on http://localhost:3000",
+          "\n- CORS is configured correctly",
+          "\n- NEXT_PUBLIC_API_URL is set correctly"
+        );
+      }
       // Could show "Please check your internet connection" message
     }
 

@@ -27,22 +27,53 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectsData, healthData] = await Promise.all([
-          apiMethods.get<{ projects: Project[] }>("/projects?status=active"),
-          apiMethods.get("/health"),
-        ]);
+        // Fetch projects with error handling
+        let projectsData: { projects: Project[] } = { projects: [] };
+        try {
+          projectsData = await apiMethods.get<{ projects: Project[] }>("/projects?status=active");
+        } catch (projectsError: any) {
+          console.warn("Failed to fetch projects:", projectsError?.response?.status || projectsError.message);
+          // Continue with empty projects array if fetch fails
+          projectsData = { projects: [] };
+        }
+
+        // Fetch health check (optional)
+        let healthData: any = null;
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+          const healthResponse = await fetch(`${apiUrl.replace('/api/v1', '')}/health`, {
+            headers: {
+              "X-Master-Control-CLI": "true",
+            },
+          });
+          if (healthResponse.ok) {
+            healthData = await healthResponse.json();
+          }
+        } catch (healthError) {
+          // Health check is optional, just log a warning
+          console.warn("Health check failed (non-critical):", healthError);
+        }
 
         setProjects(projectsData.projects?.slice(0, 5) || []);
         
-        // Mock stats for now - can be enhanced with actual metrics
+        // Calculate stats from projects
         setStats({
           totalProjects: projectsData.projects?.length || 0,
-          activeProjects: projectsData.projects?.length || 0,
+          activeProjects: projectsData.projects?.filter(p => p.status === 'active').length || 0,
           totalAnalyses: 0,
-          avgDomainAuthority: 0,
+          avgDomainAuthority: projectsData.projects?.length > 0
+            ? Math.round(projectsData.projects.reduce((sum, p) => sum + (p.targetDomainAuthority || 0), 0) / projectsData.projects.length)
+            : 0,
         });
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        // Set empty stats on error
+        setStats({
+          totalProjects: 0,
+          activeProjects: 0,
+          totalAnalyses: 0,
+          avgDomainAuthority: 0,
+        });
       } finally {
         setLoading(false);
       }
@@ -151,45 +182,45 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             href="/projects"
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all"
+            className="block bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all no-underline"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <span className="text-2xl">➕</span>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">New Project</p>
-                <p className="text-sm text-gray-600">Create a new SEO project</p>
+                <p className="font-semibold text-gray-900 no-underline">New Project</p>
+                <p className="text-sm text-gray-600 no-underline">Create a new SEO project</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/seo"
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all"
+            className="block bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all no-underline"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <span className="text-2xl">🔍</span>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">SEO Analysis</p>
-                <p className="text-sm text-gray-600">Run SEO analysis</p>
+                <p className="font-semibold text-gray-900 no-underline">SEO Analysis</p>
+                <p className="text-sm text-gray-600 no-underline">Run SEO analysis</p>
               </div>
             </div>
           </Link>
 
           <Link
             href="/aiops"
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all"
+            className="block bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all no-underline"
           >
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <span className="text-2xl">🤖</span>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">AIOps Dashboard</p>
-                <p className="text-sm text-gray-600">Monitor system health</p>
+                <p className="font-semibold text-gray-900 no-underline">AIOps Dashboard</p>
+                <p className="text-sm text-gray-600 no-underline">Monitor system health</p>
               </div>
             </div>
           </Link>
@@ -202,7 +233,7 @@ export default function Dashboard() {
           <h2 className="text-xl font-semibold text-gray-900">Recent Projects</h2>
           <Link
             href="/projects"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium no-underline"
           >
             View All →
           </Link>
@@ -213,7 +244,7 @@ export default function Dashboard() {
             <p className="text-gray-500 mb-4">No projects found</p>
             <Link
               href="/projects"
-              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors no-underline"
             >
               Create Your First Project
             </Link>
@@ -266,7 +297,7 @@ export default function Dashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link
                         href={`/projects/${project.id}`}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 hover:text-blue-900 no-underline"
                       >
                         View
                       </Link>

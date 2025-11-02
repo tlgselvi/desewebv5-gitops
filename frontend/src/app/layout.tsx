@@ -6,7 +6,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = { 
-  title: "Dese EA Plan v5.0",
+  title: "Dese EA Plan v6.7.0",
   description: "CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi"
 };
 

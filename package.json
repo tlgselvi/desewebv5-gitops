@@ -1,6 +1,6 @@
 {
   "name": "dese-ea-plan-v5",
-  "version": "5.0.2",
+  "version": "6.7.0",
   "description": "CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama",
   "type": "module",
   "main": "dist/index.js",
