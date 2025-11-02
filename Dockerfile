@@ -19,7 +19,7 @@ COPY tsconfig.json ./
 COPY src ./src
 
 # Build the application
-RUN corepack enable pnpm && pnpm build
+RUN corepack enable pnpm && pnpm install && pnpm build
 
 # Production image, copy all the files and run the app
 FROM base AS runner

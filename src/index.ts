@@ -81,7 +81,7 @@ app.get('/health', async (req, res) => {
     status: dbStatus ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0',
+      version: process.env.APP_VERSION || process.env.npm_package_version || '1.0.0',
     environment: config.nodeEnv,
     database: dbStatus ? 'connected' : 'disconnected',
     memory: {
@@ -118,7 +118,7 @@ const server = app.listen(config.port, async () => {
   logger.info(`🚀 Dese EA Plan v5.0 server started`, {
     port: config.port,
     environment: config.nodeEnv,
-    version: process.env.npm_package_version || '5.0.0',
+    version: process.env.APP_VERSION || process.env.npm_package_version || '5.0.0',
     domain: 'cpt-optimization',
   });
 

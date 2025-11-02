@@ -24,6 +24,16 @@ export const authenticate = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Development bypass for Master Control CLI
+    if (config.nodeEnv === 'development' && req.headers['x-master-control-cli'] === 'true') {
+      req.user = {
+        id: 'master-control-cli',
+        email: 'master-control@cptsystems.com',
+        role: 'admin',
+      };
+      return next();
+    }
+
     // Extract token from Authorization header
     const authHeader = req.headers.authorization;
 
