@@ -17,11 +17,11 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b bg-white shadow-sm">
+    <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shadow-sm sticky top-0 z-10">
       <div className="flex items-center gap-4">
         <div>
-          <h1 className="font-bold text-xl text-gray-900">CPT Optimization</h1>
-          <p className="text-xs text-gray-500">EA Plan v6.7.0</p>
+          <h1 className="text-lg font-bold text-gray-900 font-sans">CPT Optimization</h1>
+          <p className="text-xs text-gray-500 font-sans">EA Plan v6.7.0</p>
         </div>
       </div>
       
@@ -29,14 +29,14 @@ export default function Header() {
         <div className="text-right">
           {isMounted && currentTime ? (
             <>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 font-sans">
                 {currentTime.toLocaleTimeString("tr-TR", {
                   hour: "2-digit",
                   minute: "2-digit",
                   second: "2-digit",
                 })}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 font-sans">
                 {currentTime.toLocaleDateString("tr-TR", {
                   weekday: "long",
                   year: "numeric",
@@ -47,8 +47,8 @@ export default function Header() {
             </>
           ) : (
             <>
-              <p className="text-sm font-medium text-gray-900">--:--:--</p>
-              <p className="text-xs text-gray-500">Loading...</p>
+              <p className="text-sm font-medium text-gray-900 font-sans">--:--:--</p>
+              <p className="text-xs text-gray-500 font-sans">Loading...</p>
             </>
           )}
         </div>
@@ -56,7 +56,7 @@ export default function Header() {
         <div className="w-px h-8 bg-gray-300"></div>
         
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold font-sans shadow-sm">
             U
           </div>
         </div>

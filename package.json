@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:3001": "tsx watch src/index.ts",
     "dev:ops": "tsx watch src/ops-server.ts",
     "build": "tsc-alias -p tsconfig.json",
     "start": "tsx src/index.ts",

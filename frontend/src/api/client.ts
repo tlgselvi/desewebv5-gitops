@@ -20,9 +20,11 @@ const getBaseURL = () => {
   if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  // Default to relative path for production or when env var is not set
+  // Default to backend port 3001 in development
   return typeof window !== "undefined" 
-    ? `${window.location.protocol}//${window.location.host}/api/v1`
+    ? process.env.NODE_ENV === 'development'
+      ? "http://localhost:3001/api/v1"
+      : `${window.location.protocol}//${window.location.host}/api/v1`
     : "/api/v1";
 };
 
@@ -110,7 +112,8 @@ api.interceptors.response.use(
       if (error.code === "ECONNREFUSED" || errorMessage.includes("Network Error")) {
         console.error(
           "Backend server may be down. Please check:",
-          "\n- Backend is running on http://localhost:3000",
+          "\n- Backend is running on http://localhost:3001",
+          "\n- Docker containers (PostgreSQL, Redis) are running",
           "\n- CORS is configured correctly",
           "\n- NEXT_PUBLIC_API_URL is set correctly"
         );

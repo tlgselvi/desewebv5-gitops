@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
       status: allHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      version: process.env.APP_VERSION || process.env.npm_package_version || '5.0.0',
+      version: process.env.APP_VERSION || process.env.npm_package_version || '6.7.0',
       environment: process.env.NODE_ENV || 'development',
       database: dbStatus ? 'connected' : 'disconnected',
       memory: {

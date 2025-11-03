@@ -61,8 +61,8 @@ export function setupRoutes(app: Express): void {
   // Root API endpoint
   app.get(apiPrefix, (req, res) => {
     res.json({
-      name: 'Dese EA Plan v5.0 API',
-      version: '5.0.0',
+      name: 'Dese EA Plan v6.7.0 API',
+      version: '6.7.0',
       description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),

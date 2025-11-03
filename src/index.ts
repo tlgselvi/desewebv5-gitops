@@ -5,7 +5,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
-import { checkDatabaseConnection, closeDatabaseConnection, testDatabaseConnection } from '@/db/index.js';
+import { checkDatabaseConnection, closeDatabaseConnection } from '@/db/index.js';
 import { errorHandler } from '@/middleware/errorHandler.js';
 import { requestLogger } from '@/middleware/requestLogger.js';
 import { prometheusMiddleware } from '@/middleware/prometheus.js';
@@ -112,7 +112,7 @@ app.get('/health', async (req, res) => {
     status: dbStatus ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-      version: process.env.APP_VERSION || process.env.npm_package_version || '1.0.0',
+      version: process.env.APP_VERSION || process.env.npm_package_version || '6.7.0',
     environment: config.nodeEnv,
     database: dbStatus ? 'connected' : 'disconnected',
     memory: {
@@ -158,8 +158,12 @@ const server = app.listen(config.port, async () => {
 
   // Test database connection on startup
   try {
-    await testDatabaseConnection();
-    logger.info('✅ Database connection verified');
+    const isConnected = await checkDatabaseConnection();
+    if (isConnected) {
+      logger.info('✅ Database connection verified');
+    } else {
+      logger.error('❌ Database connection failed on startup');
+    }
   } catch (error) {
     logger.error('❌ Database connection failed on startup', { error });
     // Don't exit - let the app start but health checks will fail

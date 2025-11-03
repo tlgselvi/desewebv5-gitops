@@ -40,7 +40,7 @@ export default function Dashboard() {
         // Fetch health check (optional)
         let healthData: any = null;
         try {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
           const healthResponse = await fetch(`${apiUrl.replace('/api/v1', '')}/health`, {
             headers: {
               "X-Master-Control-CLI": "true",
@@ -111,10 +111,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">CPT Optimization Domain - SEO Project Overview</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 font-sans">Dashboard</h1>
+        <p className="text-gray-600 font-sans">CPT Optimization Domain - SEO Project Overview</p>
       </div>
 
       {/* Stats Cards */}

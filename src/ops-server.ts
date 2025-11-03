@@ -14,7 +14,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '5.8.0',
+    version: '6.7.0',
     service: 'dese-ea-plan-v5'
   });
 });

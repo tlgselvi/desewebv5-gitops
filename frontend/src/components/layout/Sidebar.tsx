@@ -12,10 +12,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-gray-200 shadow-sm flex flex-col">
+    <aside className="w-64 h-screen bg-white border-r border-gray-200 shadow-sm flex flex-col sticky top-0">
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900">Dese EA Plan</h2>
-        <p className="text-xs text-gray-500 mt-1">v6.7.0</p>
+        <h2 className="text-xl font-bold text-gray-900 font-sans">Dese EA Plan</h2>
+        <p className="text-xs text-gray-500 mt-1 font-sans">v6.7.0</p>
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
@@ -84,10 +84,10 @@ export default function Sidebar() {
       
       <div className="p-4 border-t border-gray-200">
         <div className="px-4 py-3 bg-gray-50 rounded-lg">
-          <p className="text-xs text-gray-500 mb-1">System Status</p>
+          <p className="text-xs text-gray-500 mb-1 font-sans">System Status</p>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-gray-700">Operational</span>
+            <span className="text-sm font-medium text-gray-700 font-sans">Operational</span>
           </div>
         </div>
       </div>
