@@ -1,4 +1,13 @@
 global:
+  alerting:
+    alertmanagers:
+      - static_configs:
+          - targets:
+              - 'alertmanager:9093'
+
+# Load alert rules
+rule_files:
+  - 'prometheus/alert.rules.yml'
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:

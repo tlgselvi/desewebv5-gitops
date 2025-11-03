@@ -1,0 +1,81 @@
+groups:
+  - name: dese-jarvis-realtime-alerts
+    interval: 30s
+    rules:
+      - alert: WebSocketConnectionsDown
+        expr: ws_connections < 1
+        for: 30s
+        labels:
+          severity: critical
+          service: websocket
+          component: gateway
+        annotations:
+          summary: "WebSocket bağlantısı yok"
+          description: "Aktif WS bağlantısı tespit edilmedi (ws_connections < 1) - En az 1 bağlantı bekleniyor"
+
+      - alert: HighWebSocketLatency
+        expr: histogram_quantile(0.95, sum(rate(ws_latency_seconds_bucket[5m])) by (le)) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+          service: websocket
+          component: gateway
+        annotations:
+          summary: "Yüksek WebSocket latency"
+          description: "p95 RTT > 500ms ({{ $value }}s) - Performans sorunu olabilir"
+
+      - alert: RedisStreamLagHigh
+        expr: stream_consumer_lag > 50
+        for: 2m
+        labels:
+          severity: warning
+          service: redis-streams
+          component: event-bus
+        annotations:
+          summary: "Redis Stream lag yüksek"
+          description: "Consumer lag > 50 ({{ $value }}) - Stream'de backlog var, consumer takılıyor olabilir"
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: monitoring
+        annotations:
+          summary: "Prometheus hedefi kapalı"
+          description: "Bir veya daha fazla target down durumda - {{ $labels.job }} target çalışmıyor"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(seo_analysis_errors_total[5m])) > 10
+          or
+          sum(rate(content_generation_errors_total[5m])) > 10
+          or
+          sum(rate(http_requests_total{status_code=~"5.."}[5m])) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Yüksek hata oranı"
+          description: "Backend'de yüksek hata oranı tespit edildi - {{ $labels.service }} servisinde sorun var"
+
+      - alert: BackendDown
+        expr: up{job="dese-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Backend servisi kapalı"
+          description: "EA Plan Master Control backend servisi çalışmıyor - Port 3001 erişilemiyor"
+
+      - alert: RedisConnectionFailure
+        expr: redis_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis bağlantı hatası"
+          description: "Redis'e bağlanılamıyor - Event bus çalışmıyor olabilir"
