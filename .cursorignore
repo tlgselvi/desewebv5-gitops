@@ -2,9 +2,17 @@
 # Files and patterns to ignore for Cursor AI processing
 # NOTE: .cursorrules is NOT ignored - it's essential for AI behavior!
 
-*.md
+# Ignore archived documentation (old sprint plans, etc.)
+docs/archive/**/*.md
+
+# Ignore node_modules markdown files
+node_modules/**/*.md
+
 *.yml
 *.yaml
+
+# Allow active documentation to be processed
+!docs/active/**/*.md
 .vscode/
 *.log
 node_modules/
