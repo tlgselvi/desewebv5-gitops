@@ -5,11 +5,11 @@ globs:
   - "frontend/**/*.tsx"
   - "frontend/**/*.ts"
   - "src/**/*.tsx"
-version: 5.0.0
-lastUpdated: 2025-01-27
+version: 6.7.0
+lastUpdated: 2025-11-03
 ---
 
-# 🎨 Frontend Kuralları (React + TypeScript + Vite)
+# 🎨 Frontend Kuralları (Next.js 16 + React 19 + TypeScript)
 
 ## Component Yapısı
 

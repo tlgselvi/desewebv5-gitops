@@ -5,11 +5,11 @@ globs:
   - "src/routes/**/*.ts"
   - "src/services/**/*.ts"
   - "src/middleware/**/*.ts"
-version: 5.0.0
-lastUpdated: 2025-01-27
+version: 6.7.0
+lastUpdated: 2025-11-03
 ---
 
-# 🔧 Backend Kuralları (Node.js + Express)
+# 🔧 Backend Kuralları (Node.js + Express + FastAPI)
 
 ## API Endpoint Yapısı
 

@@ -342,35 +342,4 @@ export const seoReportsRelations = relations(seoReports, ({ one }) => ({
   }),
 }));
 
-// Audit Logging
-export const auditLogs = pgTable('audit_logs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').references(() => users.id),
-  action: varchar('action', { length: 100 }).notNull(), // 'login', 'create_project', 'delete_content', etc.
-  resourceType: varchar('resource_type', { length: 50 }), // 'project', 'content', 'user', etc.
-  resourceId: uuid('resource_id'), // ID of the affected resource
-  method: varchar('method', { length: 10 }), // HTTP method
-  endpoint: text('endpoint'), // API endpoint
-  ipAddress: varchar('ip_address', { length: 45 }), // IPv4 or IPv6
-  userAgent: text('user_agent'),
-  statusCode: integer('status_code'),
-  success: boolean('success').default(true).notNull(),
-  metadata: jsonb('metadata').$type<Record<string, any>>(), // Additional context
-  errorMessage: text('error_message'), // Error message if action failed
-  duration: integer('duration'), // Request duration in milliseconds
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  userIdIdx: index('audit_logs_user_idx').on(table.userId),
-  actionIdx: index('audit_logs_action_idx').on(table.action),
-  resourceTypeIdx: index('audit_logs_resource_type_idx').on(table.resourceType),
-  resourceIdIdx: index('audit_logs_resource_id_idx').on(table.resourceId),
-  createdAtIdx: index('audit_logs_created_at_idx').on(table.createdAt),
-  successIdx: index('audit_logs_success_idx').on(table.success),
-}));
-
-export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
-  user: one(users, {
-    fields: [auditLogs.userId],
-    references: [users.id],
-  }),
-}));
+// NOTE: auditLogs is now defined in schema/audit.ts to avoid duplicate exports

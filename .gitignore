@@ -70,7 +70,27 @@ frontend/.next/**
 frontend/out/
 frontend/build/
 frontend/dist/
+dese-web/.next/
+dese-web/.next/**
+dese-web/out/
+dese-web/build/
+
+# Test outputs
+test-results/
+playwright-report/
+coverage/
+*.tsbuildinfo
 
 # Build outputs
 dist/
 *.tsbuildinfo
+
+# Old/Backup directories
+desewebv5-gitops/
+ea-plan-v6.1/
+ea-plan-v6-microservices/
+tmp/
+bak/
+backup/
+old/
+orig/

@@ -7,7 +7,7 @@ dotenvConfig();
 // Configuration schema validation
 const configSchema = z.object({
   // Server Configuration
-  port: z.coerce.number().default(3000),
+  port: z.coerce.number().default(3001),
   nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
   apiVersion: z.string().default('v1'),
   corsOrigin: z.string().default('http://localhost:3000'),

@@ -24,21 +24,19 @@ export interface AuditLogEntry {
  */
 export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
   try {
-    // Insert into database
+    // Insert into database (using new schema structure)
     await db.insert(auditLogs).values({
-      userId: entry.userId || null,
-      action: entry.action,
-      resourceType: entry.resourceType || null,
-      resourceId: entry.resourceId || null,
-      method: entry.method || null,
-      endpoint: entry.endpoint || null,
-      ipAddress: entry.ipAddress || null,
-      userAgent: entry.userAgent || null,
-      statusCode: entry.statusCode || null,
-      success: entry.success ?? true,
-      metadata: entry.metadata || null,
-      errorMessage: entry.errorMessage || null,
-      duration: entry.duration || null,
+      userId: entry.userId || undefined,
+      ip: entry.ipAddress || undefined,
+      method: entry.method || 'UNKNOWN',
+      path: entry.endpoint || entry.resourceType || '/',
+      resource: entry.resourceType || undefined,
+      action: entry.action || undefined,
+      status: entry.statusCode || 200,
+      latencyMs: entry.duration || 0,
+      traceId: undefined,
+      payloadHash: undefined,
+      meta: entry.errorMessage ? JSON.stringify({ error: entry.errorMessage, metadata: entry.metadata }) : undefined,
     });
 
     // Also log to winston for immediate visibility

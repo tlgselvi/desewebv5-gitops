@@ -1,23 +1,24 @@
 ---
 alwaysApply: true
 priority: high
-version: 5.0.0
-lastUpdated: 2025-01-27
+version: 6.7.0
+lastUpdated: 2025-11-03
 ---
 
 # Genel Kurallar ve Proje Özeti
 
 ## 🎯 Proje Özeti
 
-Dese EA Plan v5.0 - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+Dese EA Plan v6.7.0 - EA Plan Master Control System (Enterprise-level modular system)
 
 **Tech Stack:**
-- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
-- **Backend**: Node.js + Express + PostgreSQL (Drizzle ORM)
+- **Frontend**: Next.js 16 + React 19 + TypeScript + Tailwind CSS
+- **Backend**: Node.js + Express + FastAPI (FinBot) + PostgreSQL (Drizzle ORM)
 - **Testing**: Vitest + Supertest + Playwright
 - **Package Manager**: pnpm 8.15.0
-- **Infrastructure**: Docker + Kubernetes + Helm
+- **Infrastructure**: Docker + Kubernetes + Helm + ArgoCD
 - **Monitoring**: Prometheus + Grafana + Loki + Tempo
+- **Modules**: FinBot (Finance), MuBot (Accounting), DESE (Analytics)
 
 ## 📋 Temel Prensipler
 

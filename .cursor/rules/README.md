@@ -1,4 +1,4 @@
-# 📚 Cursor AI Rules - Dese EA Plan v5.0
+# 📚 Cursor AI Rules - Dese EA Plan v6.7.0
 
 Bu dizin Cursor AI için proje özel kuralları içerir.
 
@@ -7,8 +7,8 @@ Bu dizin Cursor AI için proje özel kuralları içerir.
 - `00-general.md` - Genel kurallar ve proje özeti (alwaysApply: true)
 - `01-ai-directives.md` - AI asistanı için zorunlu direktifler (alwaysApply: true)
 - `02-file-structure.md` - Dosya/glob bazlı kurallar (alwaysApply: true)
-- `03-frontend.md` - Frontend kuralları (React + TypeScript)
-- `04-backend.md` - Backend kuralları (Node.js + Express)
+- `03-frontend.md` - Frontend kuralları (Next.js 16 + React 19)
+- `04-backend.md` - Backend kuralları (Node.js + Express + FastAPI)
 - `05-testing.md` - Testing standartları
 - `06-security.md` - Security kuralları (alwaysApply: true)
 - `07-logging.md` - Logging kuralları (alwaysApply: true)
@@ -24,8 +24,8 @@ alwaysApply: true/false    # Her zaman uygulanmalı mı?
 priority: critical/high/medium/low
 globs:                     # Hangi dosyalarda geçerli?
   - "src/**/*.ts"
-version: 5.0.0
-lastUpdated: 2025-01-27
+version: 6.7.0
+lastUpdated: 2025-11-03
 ---
 ```
 
@@ -49,6 +49,6 @@ Kuralları güncellerken:
 
 ---
 
-**Versiyon:** 5.0.0  
-**Son Güncelleme:** 2025-01-27
+**Versiyon:** 6.7.0  
+**Son Güncelleme:** 2025-11-03
 

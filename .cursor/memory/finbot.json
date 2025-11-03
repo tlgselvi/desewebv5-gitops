@@ -1,7 +1,7 @@
 {
   "module": "FinBot",
   "version": "v2.0",
-  "lastUpdated": "2025-01-27",
+  "lastUpdated": "2025-11-03",
   "context": {
     "framework": "FastAPI (Python 3.11)",
     "features": [

@@ -69,6 +69,6 @@ Eski `.cursorrules` dosyası şu an hala çalışıyor olabilir, ancak yeni form
 
 ---
 
-**Migration Tarihi:** 2025-01-27  
-**Versiyon:** 5.0.0
+**Migration Tarihi:** 2025-11-03  
+**Versiyon:** 6.7.0
 

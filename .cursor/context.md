@@ -165,11 +165,17 @@ Every FinBot request logs:
 - Redis caching with stale fallback
 - Structured logging
 - Path aliases throughout codebase
+- Predictive Correlation AI v1
+- JARVIS Diagnostic Chain (Phase 1-3)
+- JARVIS Efficiency Chain
+- Hydration mismatch fixes
+- Backend port configuration (3001)
+- Audit schema refactoring
+- Docker services setup
 
 ### 🔄 In Progress / Planned
 - Real-time module sync (FinBot ↔ MuBot)
 - Full RBAC completion (permission matrix)
-- Audit trail system
 - GDPR/KVKK compliance
 - AES-256 encryption at rest
 - HashiCorp Vault secret management
@@ -217,7 +223,7 @@ When starting a new chat, simply type:
 
 ## 📚 Key References
 
-- **Core Rules:** `.cursor/rules.yaml`
+- **Core Rules:** `.cursor/rules/` (modüler yapı)
 - **Code Standards:** `CODING_STANDARDS.md`
 - **Contributing:** `CONTRIBUTING.md`
 - **Project Analysis:** `PROJE_DURUM_ANALIZI.json`

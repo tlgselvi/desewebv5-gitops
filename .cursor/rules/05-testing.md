@@ -5,8 +5,8 @@ globs:
   - "**/*.test.ts"
   - "**/*.spec.ts"
   - "tests/**/*.ts"
-version: 5.0.0
-lastUpdated: 2025-01-27
+version: 6.7.0
+lastUpdated: 2025-11-03
 ---
 
 # 🧪 Testing Kuralları

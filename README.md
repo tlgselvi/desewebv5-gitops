@@ -1,10 +1,15 @@
-# Dese EA Plan v5.0
+# Dese EA Plan v6.7.0
 
-CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot + DESE)
 
 ## 🚀 Özellikler
 
-### SEO Modülleri
+### Ana Modüller
+- **FinBot**: Finance Engine (FastAPI, Python 3.11) - Cost & ROI Forecasting
+- **MuBot**: Accounting Engine (Express.js, TypeScript) - Multi-Source Data Ingestion
+- **DESE**: Analytics Layer (Next.js 16 + React 19) - Realtime Metrics Dashboard
+
+### SEO Modülleri (Legacy)
 - **SEO Analyzer**: Core Web Vitals, Lighthouse ve meta denetimi
 - **Content Generator**: E-E-A-T uyumlu içerik ve landing page üretimi
 - **Local SEO Manager**: Google Business, yerel backlink, yorum yönetimi
@@ -13,11 +18,11 @@ CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planla
 - **Sprint Manager**: 3 sprintlik SEO Kanban planlama
 
 ### Teknoloji Stack
-- **Frontend**: React 18 + TypeScript + Vite + Tailwind
-- **Backend**: Node.js + Express + PostgreSQL (Drizzle ORM)
+- **Frontend**: Next.js 16 + React 19 + TypeScript + Tailwind CSS
+- **Backend**: Node.js + Express + FastAPI + PostgreSQL (Drizzle ORM)
 - **Testing**: Vitest + Supertest + Playwright
-- **Packaging**: pnpm
-- **Infrastructure**: Docker + Kubernetes + Helm
+- **Packaging**: pnpm 8.15.0
+- **Infrastructure**: Docker + Kubernetes + Helm + ArgoCD
 - **Monitoring**: Prometheus + Grafana + Loki + Tempo
 - **GitOps**: ArgoCD + Kustomize
 

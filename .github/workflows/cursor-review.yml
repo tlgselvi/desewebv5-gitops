@@ -20,8 +20,8 @@ jobs:
       
       - name: Run Cursor PR review
         run: |
-          if [ -f .cursor/review.yaml ]; then
-            cursor review --pr ${{ github.event.pull_request.number }} --rules .cursor/review.yaml
+          if [ -f .cursor/rules/*.md ]; then
+            cursor review --pr ${{ github.event.pull_request.number }} --rules .cursor/rules
           else
             cursor review --pr ${{ github.event.pull_request.number }}
           fi
