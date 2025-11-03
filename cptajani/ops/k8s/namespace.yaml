@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ea-web
-  labels:
-    environment: production
-    team: platform
-    cost-center: infrastructure
-    app: cpt-ajan

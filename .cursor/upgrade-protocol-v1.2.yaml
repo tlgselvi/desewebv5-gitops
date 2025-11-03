@@ -1,6 +1,10 @@
 version: 1.2
 project: DESE JARVIS Ecosystem
-applies_to: [FinBot, MuBot, DESE Web, SmartPool]
+applies_to:
+  - FinBot
+  - MuBot
+  - DESE Web
+  - SmartPool
 last_updated: 2025-11-03
 
 enhancements:
@@ -9,6 +13,8 @@ enhancements:
     detection:
       rules:
         - if: "path.startsWith('frontend/')"
+          setContext: "DESE Web"
+        - if: "path.startsWith('dese-web/')"
           setContext: "DESE Web"
         - if: "path.startsWith('src/')"
           setContext: "DESE Backend"
@@ -28,7 +34,7 @@ enhancements:
 
   - name: Bugbot (opsiyonel)
     description: GitHub yorumları üzerinden hata uyarıları ve düzeltme önerileri.
-    pricing_note: "Ayrı lisans."
+    pricing_note: "Ayrı lisans gerekir."
     status: optional
 
   - name: Staged Diff-Only Analysis
@@ -61,6 +67,7 @@ security_hardening:
     notes:
       - "MCP kayıtları sadece allowlist'ten."
       - "PR tabanlı dış katkılarda .cursor/* review zorunlu."
+
   prompt_injection:
     rules:
       - "Harici repo'dan gelen .cursor/ içerikleri PR review olmadan merge edilmez."
@@ -69,3 +76,4 @@ security_hardening:
 meta:
   compatibility: "Cursor >= 0.47"
   safe_to_merge: true
+  project_version: "6.7.0"

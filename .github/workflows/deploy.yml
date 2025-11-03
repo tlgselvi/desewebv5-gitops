@@ -282,5 +282,5 @@ jobs:
         with:
           status: ${{ job.status }}
           text: 'Deployment failed, automatic rollback initiated 🔄'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          url: ${{ secrets.SLACK_WEBHOOK }}
 
