@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import * as schema from './schema.js';
 import * as rbacSchema from './schema/rbac.js';
 import * as auditSchema from './schema/audit.js';
+import * as privacySchema from './schema/privacy.js';
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
 
@@ -11,12 +12,15 @@ const connectionString = config.database.url;
 const client = postgres(connectionString);
 
 // Create the database instance
-export const db = drizzle(client, { schema: { ...schema, ...rbacSchema, ...auditSchema } });
+export const db = drizzle(client, {
+  schema: { ...schema, ...rbacSchema, ...auditSchema, ...privacySchema },
+});
 
 // Export schema for use in other modules
 export * from './schema.js';
 export * from './schema/rbac.js';
 export * from './schema/audit.js';
+export * from './schema/privacy.js';
 
 // Database health check
 export async function checkDatabaseConnection(): Promise<boolean> {

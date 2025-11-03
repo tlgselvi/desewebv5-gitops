@@ -32,6 +32,7 @@
     "db:studio": "drizzle-kit studio",
     "rbac:seed": "tsx src/rbac/seed.ts",
     "audit:test": "vitest run -t audit",
+    "privacy:test": "vitest run -t privacy",
     "docker:build": "docker build -t dese-ea-plan-v5 .",
     "docker:run": "docker run -p 3000:3000 dese-ea-plan-v5",
     "k8s:apply": "kubectl apply -f k8s/",
