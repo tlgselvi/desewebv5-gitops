@@ -27,3 +27,71 @@ export const finbotMetrics = {
 register.registerMetric(finbotMetrics.requestTotal);
 register.registerMetric(finbotMetrics.requestDuration);
 
+/**
+ * Redis Streams event bus metrics
+ */
+export const finbotStreamMetrics = {
+  // Counter: Total events published to stream
+  eventsPublished: new client.Counter({
+    name: 'finbot_stream_events_published_total',
+    help: 'Total number of events published to Redis Stream',
+    labelNames: ['stream', 'event_type'],
+    registers: [register],
+  }),
+
+  // Counter: Total messages received from stream
+  messagesReceived: new client.Counter({
+    name: 'finbot_stream_messages_received_total',
+    help: 'Total number of messages received from Redis Stream',
+    labelNames: ['stream'],
+    registers: [register],
+  }),
+
+  // Counter: Total events processed successfully
+  eventsProcessed: new client.Counter({
+    name: 'finbot_stream_events_processed_total',
+    help: 'Total number of events processed successfully',
+    labelNames: ['event_type'],
+    registers: [register],
+  }),
+
+  // Counter: Total events failed to process
+  eventsFailed: new client.Counter({
+    name: 'finbot_stream_events_failed_total',
+    help: 'Total number of events failed to process',
+    labelNames: ['event_type'],
+    registers: [register],
+  }),
+
+  // Counter: Total consume errors
+  consumeErrors: new client.Counter({
+    name: 'finbot_stream_consume_errors_total',
+    help: 'Total number of errors during message consumption',
+    registers: [register],
+  }),
+
+  // Counter: Total events moved to DLQ
+  eventsDLQ: new client.Counter({
+    name: 'finbot_stream_events_dlq_total',
+    help: 'Total number of events moved to dead-letter queue',
+    registers: [register],
+  }),
+
+  // Gauge: Current consumer lag (pending messages)
+  consumerLag: new client.Gauge({
+    name: 'finbot_stream_consumer_lag',
+    help: 'Current consumer lag (number of pending messages)',
+    labelNames: ['stream', 'consumer_group'],
+    registers: [register],
+  }),
+};
+
+// Register stream metrics
+register.registerMetric(finbotStreamMetrics.eventsPublished);
+register.registerMetric(finbotStreamMetrics.messagesReceived);
+register.registerMetric(finbotStreamMetrics.eventsProcessed);
+register.registerMetric(finbotStreamMetrics.eventsFailed);
+register.registerMetric(finbotStreamMetrics.consumeErrors);
+register.registerMetric(finbotStreamMetrics.eventsDLQ);
+register.registerMetric(finbotStreamMetrics.consumerLag);
+

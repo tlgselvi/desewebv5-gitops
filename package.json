@@ -87,6 +87,7 @@
     "prom-client": "^13.2.0",
     "puppeteer": "^21.11.0",
     "redis": "^4.6.10",
+    "ws": "^8.16.0",
     "sharp": "^0.33.0",
     "stripe": "^14.9.0",
     "swagger-jsdoc": "^6.2.8",

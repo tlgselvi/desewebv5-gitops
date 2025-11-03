@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
 import { checkDatabaseConnection, closeDatabaseConnection } from '@/db/index.js';
@@ -13,6 +14,8 @@ import { sanitizeInput, cspHeaders, requestSizeLimiter } from '@/middleware/secu
 import { setupRoutes } from '@/routes/index.js';
 import { setupSwagger } from '@/utils/swagger.js';
 import { gracefulShutdown } from '@/utils/gracefulShutdown.js';
+import { initializeWebSocketGateway, getWebSocketGateway } from '@/ws/gateway.js';
+import { startFinBotConsumer, stopFinBotConsumer } from '@/bus/streams/finbot-consumer.js';
 
 // Create Express app
 const app = express();
@@ -147,8 +150,14 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   errorHandler(err, req, res, next);
 });
 
+// Create HTTP server for WebSocket support
+const httpServer = createServer(app);
+
+// Initialize WebSocket gateway
+initializeWebSocketGateway(httpServer);
+
 // Start server with database connection test
-const server = app.listen(config.port, async () => {
+const server = httpServer.listen(config.port, async () => {
   logger.info(`🚀 Dese EA Plan v6.7.0 server started`, {
     port: config.port,
     environment: config.nodeEnv,
@@ -168,11 +177,36 @@ const server = app.listen(config.port, async () => {
     logger.error('❌ Database connection failed on startup', { error });
     // Don't exit - let the app start but health checks will fail
   }
+
+  // Start FinBot event consumer
+  try {
+    await startFinBotConsumer();
+    logger.info('✅ FinBot event consumer started');
+  } catch (error) {
+    logger.error('❌ Failed to start FinBot event consumer', { error });
+    // Don't exit - app can continue without consumer
+  }
 });
 
 // Graceful shutdown
 gracefulShutdown(server, async () => {
   logger.info('🔄 Gracefully shutting down server...');
+  
+  // Stop FinBot consumer
+  try {
+    await stopFinBotConsumer();
+    logger.info('✅ FinBot event consumer stopped');
+  } catch (error) {
+    logger.error('❌ Error stopping FinBot consumer', { error });
+  }
+  
+  // Close WebSocket gateway
+  const gateway = getWebSocketGateway();
+  if (gateway) {
+    await gateway.close();
+    logger.info('✅ WebSocket gateway closed');
+  }
+  
   await closeDatabaseConnection();
   logger.info('✅ Server shutdown complete');
 });

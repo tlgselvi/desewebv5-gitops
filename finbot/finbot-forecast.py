@@ -25,7 +25,7 @@ except ImportError:
 
 
 class MetricsHandler(BaseHTTPRequestHandler):
-    """HTTP handler for Prometheus metrics"""
+    """HTTP handler for Prometheus metrics and API endpoints"""
     
     def do_GET(self):
         if self.path == '/metrics':
@@ -41,6 +41,103 @@ class MetricsHandler(BaseHTTPRequestHandler):
         else:
             self.send_response(404)
             self.end_headers()
+    
+    def do_POST(self):
+        """Handle POST requests"""
+        if self.path == '/api/v1/finbot/transactions':
+            self.handle_create_transaction()
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Not Found'}).encode())
+    
+    def handle_create_transaction(self):
+        """Handle POST /api/v1/finbot/transactions"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Bad Request', 'message': 'Request body required'}).encode())
+                return
+            
+            # Read request body
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+            
+            # Validate required fields
+            required_fields = ['accountId', 'amount', 'currency', 'type']
+            missing_fields = [field for field in required_fields if field not in data]
+            if missing_fields:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': 'Bad Request',
+                    'message': f'Missing required fields: {", ".join(missing_fields)}'
+                }).encode())
+                return
+            
+            # Generate transaction ID
+            import uuid
+            transaction_id = str(uuid.uuid4())
+            
+            # Publish event to Redis Stream
+            from services.finbot.events import publish_transaction_event
+            
+            event_id = publish_transaction_event(
+                transaction_id=transaction_id,
+                account_id=data['accountId'],
+                amount=float(data['amount']),
+                currency=data['currency'],
+                transaction_type=data['type'],
+                description=data.get('description'),
+                metadata=data.get('metadata')
+            )
+            
+            if event_id:
+                # Success response
+                response = {
+                    'id': transaction_id,
+                    'accountId': data['accountId'],
+                    'amount': data['amount'],
+                    'currency': data['currency'],
+                    'type': data['type'],
+                    'description': data.get('description'),
+                    'metadata': data.get('metadata'),
+                    'eventId': event_id,
+                    'createdAt': datetime.utcnow().isoformat() + 'Z'
+                }
+                
+                self.send_response(201)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(response).encode())
+            else:
+                # Event publishing failed
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': 'Internal Server Error',
+                    'message': 'Failed to publish transaction event'
+                }).encode())
+                
+        except json.JSONDecodeError:
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Bad Request', 'message': 'Invalid JSON'}).encode())
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'error': 'Internal Server Error',
+                'message': str(e)
+            }).encode())
     
     def log_message(self, format, *args):
         pass  # Suppress default logging
