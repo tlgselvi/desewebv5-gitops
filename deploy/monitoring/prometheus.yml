@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'dese-ea-plan'
+    environment: 'development'
+
+scrape_configs:
+  # EA Plan Master Control Backend
+  - job_name: 'dese-backend'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:3001']
+        labels:
+          service: 'dese-backend'
+          version: 'v6.7.0'
+
+  # FinBot Service (if running separately)
+  - job_name: 'finbot'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+        labels:
+          service: 'finbot'
+          version: 'v2.0'
+
+  # MuBot Service (if running separately)
+  - job_name: 'mubot'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+        labels:
+          service: 'mubot'
+          version: 'v2.0'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
