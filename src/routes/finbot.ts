@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '@/middleware/auth.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { finbotMetricsMiddleware } from '@/middleware/finbotMetrics.js';
 import { withAuth } from '@/rbac/decorators.js';
+import { setAuditContext } from '@/middleware/audit.js';
 import { logger } from '@/utils/logger.js';
 import { config } from '@/config/index.js';
 
@@ -46,6 +47,7 @@ const CACHE_TTL = 60;
  */
 router.get(
   '/accounts',
+  setAuditContext('finbot.accounts', 'read'),
   ...withAuth('finbot.accounts', 'read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const cacheKey = 'finbot:accounts';
@@ -156,6 +158,7 @@ router.get(
  */
 router.get(
   '/transactions',
+  setAuditContext('finbot.transactions', 'read'),
   ...withAuth('finbot.transactions', 'read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { accountId, limit = '100' } = req.query;
@@ -234,6 +237,7 @@ router.get(
  */
 router.get(
   '/budgets',
+  setAuditContext('finbot.budgets', 'read'),
   ...withAuth('finbot.budgets', 'read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const cacheKey = 'finbot:budgets';
@@ -303,6 +307,7 @@ router.get(
  */
 router.get(
   '/health',
+  setAuditContext('finbot.health', 'read'),
   ...withAuth('finbot.accounts', 'read'), // Health check requires minimal read permission
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {

@@ -95,3 +95,31 @@ register.registerMetric(finbotStreamMetrics.consumeErrors);
 register.registerMetric(finbotStreamMetrics.eventsDLQ);
 register.registerMetric(finbotStreamMetrics.consumerLag);
 
+/**
+ * Audit Trail metrics
+ */
+export const auditEventsTotal = new client.Counter({
+  name: 'audit_events_total',
+  help: 'Toplam audit olay sayısı',
+  labelNames: ['status'],
+  registers: [register],
+});
+
+export const auditWriteFailuresTotal = new client.Counter({
+  name: 'audit_write_failures_total',
+  help: 'Audit yazma hataları toplamı',
+  registers: [register],
+});
+
+export const auditLatency = new client.Histogram({
+  name: 'audit_latency_seconds',
+  help: 'Audit olayları yazım gecikmesi',
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2],
+  registers: [register],
+});
+
+// Register audit metrics
+register.registerMetric(auditEventsTotal);
+register.registerMetric(auditWriteFailuresTotal);
+register.registerMetric(auditLatency);
+

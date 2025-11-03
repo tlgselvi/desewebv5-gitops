@@ -4,7 +4,7 @@ import { defineConfig } from 'drizzle-kit';
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/dese_ea_plan_v5';
 
 export default defineConfig({
-  schema: ['./src/db/schema.ts', './src/db/schema/rbac.ts'],
+  schema: ['./src/db/schema.ts', './src/db/schema/rbac.ts', './src/db/schema/audit.ts'],
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {

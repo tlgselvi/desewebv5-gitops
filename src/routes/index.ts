@@ -14,6 +14,7 @@ import { anomalyRoutes } from './anomaly.js';
 import { jwksRoutes } from './jwks.js';
 import { authRoutes } from './auth.js';
 import { finbotRoutes } from './finbot.js';
+import { auditRoutes } from './audit.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -59,6 +60,7 @@ export function setupRoutes(app: Express): void {
   app.use(`${apiPrefix}/content`, contentRoutes);
   app.use(`${apiPrefix}/analytics`, analyticsRoutes);
   app.use(`${apiPrefix}/finbot`, finbotRoutes);
+  app.use(`${apiPrefix}/audit`, auditRoutes);
 
   // Root API endpoint
   app.get(apiPrefix, (req, res) => {
@@ -75,6 +77,7 @@ export function setupRoutes(app: Express): void {
         content: `${apiPrefix}/content`,
         analytics: `${apiPrefix}/analytics`,
         finbot: `${apiPrefix}/finbot`,
+        audit: `${apiPrefix}/audit`,
         aiops: `${apiPrefix}/aiops`,
         correlation: `${apiPrefix}/aiops/correlation`,
         predictive: `${apiPrefix}/aiops/predict`,

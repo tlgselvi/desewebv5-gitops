@@ -1,33 +1,16 @@
 import { Router } from 'express';
-import { z } from 'zod';
-import { db, auditLogs } from '@/db/index.js';
-import { eq, desc, gte, and, sql } from 'drizzle-orm';
+import { and, between, eq, gte, lte } from 'drizzle-orm';
+import { db } from '@/db/index.js';
+import { auditLogs } from '@/db/schema/audit.js';
+import { withAuth } from '@/rbac/decorators.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
-import { authenticate, authorize, AuthenticatedRequest } from '@/middleware/auth.js';
 import { logger } from '@/utils/logger.js';
 
 const router = Router();
 
-// All audit routes require authentication and admin role
-router.use(authenticate);
-router.use(authorize(['admin']));
-
-// Validation schemas
-const AuditQuerySchema = z.object({
-  userId: z.string().uuid().optional(),
-  action: z.string().optional(),
-  resourceType: z.string().optional(),
-  resourceId: z.string().uuid().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
-  success: z.coerce.boolean().optional(),
-  limit: z.coerce.number().min(1).max(1000).default(100),
-  offset: z.coerce.number().min(0).default(0),
-});
-
 /**
  * @swagger
- * /audit:
+ * /api/v1/audit:
  *   get:
  *     summary: Get audit logs
  *     tags: [Audit]
@@ -38,166 +21,90 @@ const AuditQuerySchema = z.object({
  *         name: userId
  *         schema:
  *           type: string
- *           format: uuid
+ *         description: Filter by user ID
+ *       - in: query
+ *         name: resource
+ *         schema:
+ *           type: string
+ *         description: Filter by resource
  *       - in: query
  *         name: action
  *         schema:
  *           type: string
+ *         description: Filter by action
  *       - in: query
- *         name: resourceType
+ *         name: status
  *         schema:
- *           type: string
+ *           type: integer
+ *         description: Filter by HTTP status code
  *       - in: query
- *         name: startDate
+ *         name: from
  *         schema:
  *           type: string
  *           format: date-time
+ *         description: Start date (ISO 8601)
  *       - in: query
- *         name: endDate
+ *         name: to
  *         schema:
  *           type: string
  *           format: date-time
- *       - in: query
- *         name: success
- *         schema:
- *           type: boolean
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 100
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
+ *         description: End date (ISO 8601)
  *     responses:
  *       200:
  *         description: Audit logs
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  */
-router.get('/', asyncHandler(async (req, res) => {
-  const validatedData = AuditQuerySchema.parse(req.query);
-  const authenticatedReq = req as AuthenticatedRequest;
+router.get(
+  '/audit',
+  ...withAuth('*', 'read'), // Only admin can read audit logs
+  asyncHandler(async (req, res) => {
+    const { userId, resource, action, from, to, status } = req.query as Record<
+      string,
+      string | undefined
+    >;
 
-  const conditions = [];
+    const whereConditions: ReturnType<typeof eq>[] = [];
 
-  if (validatedData.userId) {
-    conditions.push(eq(auditLogs.userId, validatedData.userId));
-  }
+    if (userId) {
+      whereConditions.push(eq(auditLogs.userId, userId));
+    }
+    if (resource) {
+      whereConditions.push(eq(auditLogs.resource, resource));
+    }
+    if (action) {
+      whereConditions.push(eq(auditLogs.action, action));
+    }
+    if (status) {
+      whereConditions.push(eq(auditLogs.status, Number.parseInt(status, 10)));
+    }
+    if (from && to) {
+      whereConditions.push(between(auditLogs.ts, new Date(from), new Date(to)));
+    } else if (from) {
+      whereConditions.push(gte(auditLogs.ts, new Date(from)));
+    } else if (to) {
+      whereConditions.push(lte(auditLogs.ts, new Date(to)));
+    }
 
-  if (validatedData.action) {
-    conditions.push(eq(auditLogs.action, validatedData.action));
-  }
+    const whereClause =
+      whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-  if (validatedData.resourceType) {
-    conditions.push(eq(auditLogs.resourceType, validatedData.resourceType));
-  }
+    const rows = await db
+      .select()
+      .from(auditLogs)
+      .where(whereClause)
+      .orderBy(auditLogs.ts)
+      .limit(500);
 
-  if (validatedData.resourceId) {
-    conditions.push(eq(auditLogs.resourceId, validatedData.resourceId));
-  }
+    logger.info('Audit logs retrieved', {
+      count: rows.length,
+      filters: { userId, resource, action, status, from, to },
+    });
 
-  if (validatedData.success !== undefined) {
-    conditions.push(eq(auditLogs.success, validatedData.success));
-  }
-
-  if (validatedData.startDate) {
-    conditions.push(gte(auditLogs.createdAt, new Date(validatedData.startDate)));
-  }
-
-  if (validatedData.endDate) {
-    conditions.push(sql`${auditLogs.createdAt} <= ${new Date(validatedData.endDate)}`);
-  }
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  // Get logs with pagination
-  const logs = await db
-    .select()
-    .from(auditLogs)
-    .where(whereClause)
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(validatedData.limit)
-    .offset(validatedData.offset);
-
-  // Get total count for pagination
-  const totalCountResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(auditLogs)
-    .where(whereClause);
-  
-  const totalCount = Number(totalCountResult[0]?.count || 0);
-
-  logger.info('Audit logs retrieved', {
-    userId: authenticatedReq.user?.id,
-    filters: validatedData,
-    count: logs.length,
-  });
-
-  res.json({
-    logs,
-    pagination: {
-      total: totalCount,
-      limit: validatedData.limit,
-      offset: validatedData.offset,
-      hasMore: totalCount > validatedData.offset + validatedData.limit,
-    },
-  });
-}));
-
-/**
- * @swagger
- * /audit/stats:
- *   get:
- *     summary: Get audit log statistics
- *     tags: [Audit]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Audit statistics
- */
-router.get('/stats', asyncHandler(async (req, res) => {
-  const authenticatedReq = req as AuthenticatedRequest;
-
-  // Get stats by action
-  const statsByAction = await db
-    .select({
-      action: auditLogs.action,
-      count: sql<number>`count(*)`,
-    })
-    .from(auditLogs)
-    .groupBy(auditLogs.action)
-    .orderBy(desc(sql<number>`count(*)`))
-    .limit(10);
-
-  // Get stats by success/failure
-  const statsBySuccess = await db
-    .select({
-      success: auditLogs.success,
-      count: sql<number>`count(*)`,
-    })
-    .from(auditLogs)
-    .groupBy(auditLogs.success);
-
-  // Get recent failed actions
-  const recentFailures = await db
-    .select()
-    .from(auditLogs)
-    .where(eq(auditLogs.success, false))
-    .orderBy(desc(auditLogs.createdAt))
-    .limit(10);
-
-  logger.info('Audit statistics retrieved', {
-    userId: authenticatedReq.user?.id,
-  });
-
-  res.json({
-    byAction: statsByAction,
-    bySuccess: statsBySuccess,
-    recentFailures,
-  });
-}));
+    res.json({ data: rows });
+  })
+);
 
 export { router as auditRoutes };
-

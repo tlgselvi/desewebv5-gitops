@@ -49,6 +49,26 @@ try {
   echo "✅ RBAC seed completed"
 fi
 
+# Audit retention (opsiyonel): son AUDIT_RETENTION_DAYS dışındakileri sil
+if [ -n "$AUDIT_RETENTION_DAYS" ]; then
+  echo "🧹 Cleaning old audit logs (older than $AUDIT_RETENTION_DAYS days)..."
+  node -e "
+const postgres = require('postgres');
+const sql = postgres(process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/dese_ea_plan_v5');
+sql\`DELETE FROM audit_logs WHERE ts < NOW() - INTERVAL '\${process.env.AUDIT_RETENTION_DAYS} days'\`.then(() => {
+  console.log('✅ Old audit logs cleaned');
+  sql.end();
+  process.exit(0);
+}).catch((e) => {
+  console.error('⚠️  Audit cleanup failed, but continuing...', e.message);
+  sql.end();
+  process.exit(0);
+});
+" || {
+    echo "⚠️  Audit cleanup failed, but continuing..."
+  }
+fi
+
 # Start the application
 echo "🎯 Starting application..."
 exec "$@"

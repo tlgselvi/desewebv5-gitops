@@ -16,6 +16,7 @@ import { setupSwagger } from '@/utils/swagger.js';
 import { gracefulShutdown } from '@/utils/gracefulShutdown.js';
 import { initializeWebSocketGateway, getWebSocketGateway } from '@/ws/gateway.js';
 import { startFinBotConsumer, stopFinBotConsumer } from '@/bus/streams/finbot-consumer.js';
+import { auditMiddleware } from '@/middleware/audit.js';
 
 // Create Express app
 const app = express();
@@ -40,6 +41,9 @@ app.use(sanitizeInput);
 
 // Request size limiter (10MB)
 app.use(requestSizeLimiter(10 * 1024 * 1024));
+
+// Audit middleware (before authentication to capture all requests)
+app.use(auditMiddleware);
 
 // CORS configuration
 app.use(cors({

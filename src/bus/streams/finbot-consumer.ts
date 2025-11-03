@@ -2,6 +2,8 @@ import { redis } from '@/services/storage/redisClient.js';
 import { logger } from '@/utils/logger.js';
 import { parseEvent, Event, EventType } from '@/bus/schema.js';
 import { finbotStreamMetrics } from '@/config/prometheus.js';
+import { getWebSocketGateway } from '@/ws/gateway.js';
+import { auditStreamEvent } from '@/bus/audit-proxy.js';
 
 /**
  * FinBot Event Consumer
@@ -80,6 +82,8 @@ async function handleTransactionCreated(event: Event): Promise<void> {
     metadata?: Record<string, unknown>;
   };
 
+  const startTime = Date.now();
+
   logger.info('Transaction created event received', {
     transactionId: data.transactionId,
     accountId: data.accountId,
@@ -88,15 +92,40 @@ async function handleTransactionCreated(event: Event): Promise<void> {
     type: data.type,
   });
 
-  // Broadcast to WebSocket clients
-  const gateway = getWebSocketGateway();
-  if (gateway) {
-    gateway.broadcastEvent(event);
-  }
+  try {
+    // Broadcast to WebSocket clients
+    const gateway = getWebSocketGateway();
+    if (gateway) {
+      gateway.broadcastEvent(event);
+    }
 
-  // TODO: Implement actual business logic
-  // - Update MuBot accounting records
-  // - Trigger AIOps correlation analysis
+    // TODO: Implement actual business logic
+    // - Update MuBot accounting records
+    // - Trigger AIOps correlation analysis
+
+    // Audit successful processing
+    const processingTime = Date.now() - startTime;
+    await auditStreamEvent({
+      eventId: event.id,
+      type: event.type,
+      source: 'finbot',
+      status: 200,
+      processingTimeMs: processingTime,
+      traceId: event.id,
+    });
+  } catch (error) {
+    // Audit failed processing
+    const processingTime = Date.now() - startTime;
+    await auditStreamEvent({
+      eventId: event.id,
+      type: event.type,
+      source: 'finbot',
+      status: 500,
+      processingTimeMs: processingTime,
+      traceId: event.id,
+    });
+    throw error;
+  }
 }
 
 /**
