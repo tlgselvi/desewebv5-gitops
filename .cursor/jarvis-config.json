@@ -1,0 +1,105 @@
+{
+  "version": "1.1",
+  "compatible_with": "EA Plan Master Control v6.7.0",
+  "description": "DESE JARVIS Enhancement Protocol - Cursor 2025 optimizasyonları",
+  
+  "ai": {
+    "contextPersistence": true,
+    "contextFile": ".cursor/context.json",
+    "maxTokens": 128000,
+    "autoRefresh": true,
+    "gitAwareness": true,
+    "structuredCommits": true
+  },
+  
+  "mcp": {
+    "enabled": true,
+    "servers": [
+      {
+        "name": "finbot",
+        "url": "http://localhost:5555/finbot"
+      },
+      {
+        "name": "mubot",
+        "url": "http://localhost:5556/mubot"
+      },
+      {
+        "name": "dese",
+        "url": "http://localhost:5557/dese"
+      }
+    ]
+  },
+  
+  "review": {
+    "enabled": true,
+    "ruleset": ".cursor/review.yaml",
+    "autoReview": true,
+    "severityLevels": {
+      "critical": ["no raw SQL", "security vulnerabilities"],
+      "high": ["type safety", "error handling"],
+      "medium": ["UI complexity", "WebSocket efficiency"],
+      "low": ["code style", "documentation"]
+    }
+  },
+  
+  "promptChains": {
+    "build-test-deploy": {
+      "steps": ["build-finbot", "test-finbot", "deploy-finbot"],
+      "autoCommit": false
+    },
+    "audit-trace": {
+      "steps": ["audit-trace-run", "audit-trace-summary"],
+      "autoCommit": false
+    }
+  },
+  
+  "reviewRules": [
+    {
+      "pattern": "src/**/*.ts",
+      "checks": ["type safety", "error handling", "logging"],
+      "severity": "high"
+    },
+    {
+      "pattern": "frontend/**/*.tsx",
+      "checks": ["UI state complexity < 3", "accessibility", "performance"],
+      "severity": "medium"
+    },
+    {
+      "pattern": "src/db/schema/**/*.ts",
+      "checks": ["no raw SQL", "drizzle ORM usage"],
+      "severity": "critical"
+    },
+    {
+      "pattern": "src/ws/**/*.ts",
+      "checks": ["WebSocket broadcast efficiency", "error handling"],
+      "severity": "medium"
+    },
+    {
+      "pattern": "src/routes/**/*.ts",
+      "checks": ["RBAC protection", "audit logging", "input validation"],
+      "severity": "high"
+    }
+  ],
+  
+  "gitHooks": {
+    "preCommit": {
+      "command": "cursor review --staged",
+      "enabled": true
+    },
+    "postCommit": {
+      "command": "cursor notify --context update",
+      "enabled": true
+    }
+  },
+  
+  "features": {
+    "contextPersistence": true,
+    "gitAwareness": true,
+    "mcpIntegration": true,
+    "aiReview": true,
+    "promptChains": true,
+    "smartCommits": true,
+    "autoDocumentation": true
+  }
+}
+
