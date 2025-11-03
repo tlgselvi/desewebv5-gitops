@@ -1,0 +1,31 @@
+{
+  "module": "MuBot",
+  "version": "v2.0",
+  "lastUpdated": "2025-01-27",
+  "context": {
+    "framework": "Express.js + TypeScript",
+    "features": [
+      "Multi-Source Data Ingestion",
+      "Data Quality Validation",
+      "Prometheus metrics",
+      "Redis Streams events"
+    ],
+    "mcp": {
+      "enabled": true,
+      "server": "http://localhost:5556/mubot",
+      "endpoints": ["/health", "/query", "/context"]
+    },
+    "keyPatterns": [
+      "@/ path aliases",
+      "Data quality scoring",
+      "Schema validation",
+      "Structured logging"
+    ],
+    "criticalFiles": [
+      "mubot/**/*.ts",
+      "src/mcp/mubot-server.ts"
+    ]
+  },
+  "memory": []
+}
+

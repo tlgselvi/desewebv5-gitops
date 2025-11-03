@@ -1,0 +1,71 @@
+version: 1.2
+project: DESE JARVIS Ecosystem
+applies_to: [FinBot, MuBot, DESE Web, SmartPool]
+last_updated: 2025-11-03
+
+enhancements:
+  - name: Auto-Detect Context
+    description: Aktif dosya yoluna göre modülü otomatik seçer.
+    detection:
+      rules:
+        - if: "path.startsWith('frontend/')"
+          setContext: "DESE Web"
+        - if: "path.startsWith('src/')"
+          setContext: "DESE Backend"
+        - if: "path.startsWith('finbot/')"
+          setContext: "FinBot"
+        - if: "path.startsWith('mubot/')"
+          setContext: "MuBot"
+    status: enabled
+
+  - name: PR Code Review via Cursor CLI
+    description: PR açılınca Cursor CLI ile otomatik inceleme ve yorum.
+    ci:
+      github_actions:
+        workflow: ".github/workflows/cursor-review.yml"
+      docs: "https://cursor.com/docs/cli/cookbook/code-review"
+    status: enabled
+
+  - name: Bugbot (opsiyonel)
+    description: GitHub yorumları üzerinden hata uyarıları ve düzeltme önerileri.
+    pricing_note: "Ayrı lisans."
+    status: optional
+
+  - name: Staged Diff-Only Analysis
+    description: AI bağlamına yalnızca stage edilmiş değişiklikleri besle.
+    commands:
+      - "git diff --staged > .cursor/context.staged.diff"
+      - "cursor chat --context .cursor/context.staged.diff"
+    status: enabled
+
+  - name: Persistent Memory per Module
+    description: Modül bazlı uzun süreli hafıza dosyaları.
+    memory:
+      files:
+        - ".cursor/memory/backend.json"
+        - ".cursor/memory/frontend.json"
+        - ".cursor/memory/finbot.json"
+        - ".cursor/memory/mubot.json"
+    status: enabled
+
+security_hardening:
+  mcp:
+    allowlist:
+      - "http://localhost:5555/finbot"
+      - "http://localhost:5556/mubot"
+      - "http://localhost:5557/dese"
+    block_unknown_servers: true
+    sandbox:
+      fs_readonly: true
+      max_tokens: 128000
+    notes:
+      - "MCP kayıtları sadece allowlist'ten."
+      - "PR tabanlı dış katkılarda .cursor/* review zorunlu."
+  prompt_injection:
+    rules:
+      - "Harici repo'dan gelen .cursor/ içerikleri PR review olmadan merge edilmez."
+      - "AI'ye kritik sırları verme (secrets redaction)."
+
+meta:
+  compatibility: "Cursor >= 0.47"
+  safe_to_merge: true

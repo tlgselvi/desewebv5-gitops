@@ -1,0 +1,25 @@
+{
+  "module": "DESE Web Frontend",
+  "version": "6.7.0",
+  "lastUpdated": "2025-01-27",
+  "context": {
+    "framework": "Next.js 16 + React 19",
+    "styling": "Tailwind CSS",
+    "packageManager": "pnpm",
+    "keyPatterns": [
+      "Functional components",
+      "TypeScript interfaces for props",
+      "Path aliases (@/)",
+      "Server components where possible",
+      "Client components with 'use client'",
+      "Tailwind CSS classes"
+    ],
+    "criticalFiles": [
+      "frontend/src/app/**/*.tsx",
+      "frontend/src/components/**/*.tsx",
+      "frontend/src/api/**/*.ts"
+    ]
+  },
+  "memory": []
+}
+

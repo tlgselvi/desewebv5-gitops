@@ -1,0 +1,34 @@
+{
+  "module": "DESE Backend",
+  "version": "6.7.0",
+  "lastUpdated": "2025-01-27",
+  "context": {
+    "framework": "Express.js + TypeScript",
+    "database": "PostgreSQL (Drizzle ORM)",
+    "cache": "Redis",
+    "authentication": "JWT",
+    "authorization": "RBAC",
+    "observability": {
+      "prometheus": true,
+      "grafana": true,
+      "audit": true
+    },
+    "keyPatterns": [
+      "@/ path aliases kullan",
+      "logger kullan (console.log yok)",
+      "asyncHandler ile error handling",
+      "Drizzle ORM (raw SQL yok)",
+      "Zod validation",
+      "RBAC protection",
+      "Audit logging"
+    ],
+    "criticalFiles": [
+      "src/routes/**/*.ts",
+      "src/services/**/*.ts",
+      "src/middleware/**/*.ts",
+      "src/db/schema/**/*.ts"
+    ]
+  },
+  "memory": []
+}
+

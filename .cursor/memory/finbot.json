@@ -1,0 +1,31 @@
+{
+  "module": "FinBot",
+  "version": "v2.0",
+  "lastUpdated": "2025-01-27",
+  "context": {
+    "framework": "FastAPI (Python 3.11)",
+    "features": [
+      "Cost & ROI Forecasting",
+      "Prophet time-series analysis",
+      "Prometheus metrics",
+      "Redis Streams events"
+    ],
+    "mcp": {
+      "enabled": true,
+      "server": "http://localhost:5555/finbot",
+      "endpoints": ["/health", "/query", "/context"]
+    },
+    "keyPatterns": [
+      "Python type hints",
+      "FastAPI route decorators",
+      "Prometheus metrics",
+      "Structured logging"
+    ],
+    "criticalFiles": [
+      "finbot/**/*.py",
+      "src/mcp/finbot-server.ts"
+    ]
+  },
+  "memory": []
+}
+

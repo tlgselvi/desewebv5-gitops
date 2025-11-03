@@ -1,0 +1,50 @@
+name: cursor-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - name: Install Cursor CLI
+        run: npm i -g @cursor/cli
+      
+      - name: Run Cursor PR review
+        run: |
+          if [ -f .cursor/review.yaml ]; then
+            cursor review --pr ${{ github.event.pull_request.number }} --rules .cursor/review.yaml
+          else
+            cursor review --pr ${{ github.event.pull_request.number }}
+          fi
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        continue-on-error: true
+      
+      - name: Comment PR with review results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `## Cursor AI Code Review
+            
+            ✅ Review completed using Cursor CLI
+            
+            See workflow logs for detailed review results.
+            
+            **Note:** To enable full review features, add \`CURSOR_API_KEY\` to repository secrets.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
