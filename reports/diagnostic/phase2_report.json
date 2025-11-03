@@ -1,0 +1,13 @@
+{
+  "components": {
+    "drift_score": 99.9,
+    "latency_score": 99.5,
+    "correlation_score": 92.35
+  },
+  "metrics": {
+    "dese_drift": 5.0,
+    "fin_latency": 5,
+    "mubot_corr": 0.775
+  },
+  "predictive_score": 92.0
+}

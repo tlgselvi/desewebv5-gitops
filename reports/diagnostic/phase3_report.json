@@ -1,0 +1,74 @@
+{
+  "overall": {
+    "warning": 0,
+    "failed": 3,
+    "score": 87.5,
+    "status": "GOOD",
+    "passed": 7,
+    "total_tests": 8
+  },
+  "modules": [
+    "dese",
+    "finbot",
+    "mubot"
+  ],
+  "phase": "3",
+  "tests": [
+    {
+      "status": "PASSED",
+      "message": "Config file exists",
+      "test": "config_validation"
+    },
+    {
+      "status": "PASSED",
+      "message": "Server responding",
+      "test": "mcp_discovery",
+      "module": "dese"
+    },
+    {
+      "status": "PASSED",
+      "message": "Server responding",
+      "test": "mcp_discovery",
+      "module": "finbot"
+    },
+    {
+      "status": "PASSED",
+      "message": "Server responding",
+      "test": "mcp_discovery",
+      "module": "mubot"
+    },
+    {
+      "status": "PASSED",
+      "test": "predictive_metrics",
+      "score": 92.0
+    },
+    {
+      "status": "FAILED",
+      "message": "Endpoint not accessible",
+      "test": "correlation_metrics"
+    },
+    {
+      "status": "PASSED",
+      "details": {
+        "finbot": 4,
+        "dese": 5,
+        "mubot": 3
+      },
+      "test": "latency",
+      "avg_latency": 4.0
+    },
+    {
+      "status": "PASSED",
+      "test": "feedback_loop",
+      "score": 95
+    }
+  ],
+  "test_type": "closed-loop",
+  "metrics": [
+    "predictive",
+    "correlation",
+    "latency",
+    "feedback"
+  ],
+  "timestamp": "2025-11-03 21:21:09"
+}

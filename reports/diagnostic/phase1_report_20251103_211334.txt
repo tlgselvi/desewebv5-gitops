@@ -1,0 +1,16 @@
+# DESE JARVIS Diagnostic Chain - Phase 1 Report
+Generated: 11/03/2025 21:13:34
+
+
+    Response: {"status":"healthy","service":"finbot-mcp","version":"1.0.0","timestamp":"2025-11-03T18:13:34.535Z"}
+    Response: {"status":"healthy","service":"mubot-mcp","version":"1.0.0","timestamp":"2025-11-03T18:13:34.546Z"}
+    Response: {"status":"healthy","service":"dese-mcp","version":"1.0.0","timestamp":"2025-11-03T18:13:34.557Z"}
+
+    HTTP 200, Latency: 5ms
+    HTTP 200, Latency: 4ms
+    HTTP 200, Latency: 7ms
+
+
+
+---
+END OF REPORT

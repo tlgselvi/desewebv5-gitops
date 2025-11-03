@@ -161,3 +161,8 @@ register.registerMetric(wsBroadcastTotal);
 register.registerMetric(wsLatency);
 register.registerMetric(streamConsumerLag);
 
+/**
+ * Correlation AI metrics (Sprint 2.6 - Predictive Correlation AI)
+ */
+export { correlationScoreGauge, anomalyRateGauge } from '@/services/aiops/correlationService.js';
+

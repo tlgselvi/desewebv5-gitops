@@ -18,6 +18,7 @@ import { auditRoutes } from './audit.js';
 import { privacyRoutes } from './privacy.js';
 import { metricsRealtimeRoutes } from './metrics-realtime.js';
 import { alertsRoutes } from './alerts.js'; // Added
+import { correlationSimpleRoutes } from './correlation-simple.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -44,6 +45,9 @@ export function setupRoutes(app: Express): void {
 
   // Correlation routes
   app.use(`${apiPrefix}/aiops`, correlationRoutes);
+  
+  // Simple correlation routes (Sprint 2.6 - Redis-based)
+  app.use('/', correlationSimpleRoutes);
 
   // Predictive routes
   app.use(`${apiPrefix}/aiops`, predictiveRoutes);
@@ -90,6 +94,7 @@ export function setupRoutes(app: Express): void {
                alerts: `${apiPrefix}/alerts`, // Added
                aiops: `${apiPrefix}/aiops`,
         correlation: `${apiPrefix}/aiops/correlation`,
+        correlationSimple: `/api/v1/ai/correlation`,
         predictive: `${apiPrefix}/aiops/predict`,
         anomaly: `${apiPrefix}/aiops/anomalies`,
         prometheus: '/metrics',
