@@ -1,0 +1,39 @@
+# .cursor/rules.yaml
+
+version: 1.0
+
+project: EA Plan Master Control v6.7.0
+
+last_updated: 2025-11-03
+
+
+
+description: >
+
+  Enterprise-level modular system including FinBot (Finance Engine), MuBot (Accounting Engine), and DESE (Analytics Layer).
+
+  Hybrid sync architecture: REST + Prometheus. Backend: Express.js + FastAPI. Frontend: Next.js 16 + React 19.
+
+  This ruleset defines architecture, coding style, security, testing, and roadmap constraints for both human developers and AI copilots.
+
+
+
+#################################################################
+
+# 🧠 GENEL İLKELER
+
+#################################################################
+
+principles:
+
+  - Kod modüler, yeniden kullanılabilir ve test edilebilir olmalı.
+
+  - Fonksiyonel, deklaratif yaklaşım tercih edilmeli. Sınıflar yerine fonksiyonlar.
+
+  - Komponentler küçük, tek sorumlu, bağımsız olmalı.
+
+  - Erken dönüş (early return) uygulanmalı.
+
+  - Sabit metinler dışa çıkarılmalı, yerelleştirilebilir olmalı.
+
+  - Kodlar DRY (Don''t Repeat Yourself) prensibine uymalı.
