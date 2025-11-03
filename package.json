@@ -34,6 +34,7 @@
     "audit:test": "vitest run -t audit",
     "privacy:test": "vitest run -t privacy",
     "metrics:test": "pwsh scripts/test-prometheus-metrics.ps1",
+    "metrics:grafana": "pwsh scripts/setup-grafana-dashboard.ps1",
     "docker:build": "docker build -t dese-ea-plan-v5 .",
     "docker:run": "docker run -p 3000:3000 dese-ea-plan-v5",
     "k8s:apply": "kubectl apply -f k8s/",
