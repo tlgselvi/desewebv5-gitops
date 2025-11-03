@@ -1,5 +1,9 @@
 1:"$Sreact.fragment"
-2:I[64381,["/_next/static/chunks/48c5753aca325314.js"],"OutletBoundary"]
-3:"$Sreact.suspense"
-0:{"buildId":"kuvLd0MPTeA54FFSm_KXw","rsc":["$","$1","c",{"children":[["$","main",null,{"className":"flex min-h-screen flex-col items-center justify-center p-24","children":["$","div",null,{"className":"z-10 max-w-5xl w-full items-center justify-center font-mono text-sm","children":[["$","h1",null,{"className":"text-4xl font-bold text-center mb-8","children":"Dese Web v5.6"}],["$","p",null,{"className":"text-center text-gray-600","children":"Welcome to Next.js 14 with App Router, TypeScript, and Tailwind CSS"}]]}]}],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"loading":null,"isPartial":false}
-4:null
+2:I[73440,["/_next/static/chunks/6e9ac5b86215ad1c.js","/_next/static/chunks/13879f7a2c80d4ab.js"],"ClientPageRoot"]
+3:I[50912,["/_next/static/chunks/837c389aaa3009ed.js","/_next/static/chunks/087cc0271ce6be54.js","/_next/static/chunks/34d6f10ebd9db2bd.js"],"default"]
+6:I[64381,["/_next/static/chunks/6e9ac5b86215ad1c.js","/_next/static/chunks/13879f7a2c80d4ab.js"],"OutletBoundary"]
+7:"$Sreact.suspense"
+0:{"buildId":"Jfk2sYjf7pkkDgUOr75Jd","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/_next/static/chunks/087cc0271ce6be54.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/34d6f10ebd9db2bd.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
+4:{}
+5:"$0:rsc:props:children:0:props:serverProvidedParams:params"
+8:null

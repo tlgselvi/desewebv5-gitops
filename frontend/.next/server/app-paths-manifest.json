@@ -2,6 +2,14 @@
   "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
   "/aiops/page": "app/aiops/page.js",
+  "/finbot/accounts/page": "app/finbot/accounts/page.js",
+  "/finbot/ai-personas/page": "app/finbot/ai-personas/page.js",
+  "/finbot/budgets/page": "app/finbot/budgets/page.js",
+  "/finbot/page": "app/finbot/page.js",
+  "/finbot/scenario/page": "app/finbot/scenario/page.js",
+  "/finbot/transactions/page": "app/finbot/transactions/page.js",
   "/login/page": "app/login/page.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/projects/page": "app/projects/page.js",
+  "/tools/page": "app/tools/page.js"
 }

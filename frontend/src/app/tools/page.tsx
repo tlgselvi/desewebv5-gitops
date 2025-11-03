@@ -34,7 +34,7 @@ export default function ToolsPage() {
 
   const fetchStatus = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
       const response = await fetch(`${apiUrl}/browser-automation/status`, {
         headers: {
           "X-Master-Control-CLI": "true",
@@ -50,7 +50,7 @@ export default function ToolsPage() {
 
   const fetchConnections = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
       const response = await fetch(`${apiUrl}/browser-automation/connections`, {
         headers: {
           "X-Master-Control-CLI": "true",
@@ -74,7 +74,7 @@ export default function ToolsPage() {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
       const endpoint =
         connectionType === "cdp"
           ? `${apiUrl}/browser-automation/connect`
@@ -112,7 +112,7 @@ export default function ToolsPage() {
   const handleDisconnect = async (connectionId: string) => {
     setLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
       const response = await fetch(
         `${apiUrl}/browser-automation/connections/${connectionId}/disconnect`,
         {

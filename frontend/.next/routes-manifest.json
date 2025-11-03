@@ -46,10 +46,58 @@
       "namedRegex": "^/aiops(?:/)?$"
     },
     {
+      "page": "/finbot",
+      "regex": "^/finbot(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finbot(?:/)?$"
+    },
+    {
+      "page": "/finbot/accounts",
+      "regex": "^/finbot/accounts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finbot/accounts(?:/)?$"
+    },
+    {
+      "page": "/finbot/ai-personas",
+      "regex": "^/finbot/ai\\-personas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finbot/ai\\-personas(?:/)?$"
+    },
+    {
+      "page": "/finbot/budgets",
+      "regex": "^/finbot/budgets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finbot/budgets(?:/)?$"
+    },
+    {
+      "page": "/finbot/scenario",
+      "regex": "^/finbot/scenario(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finbot/scenario(?:/)?$"
+    },
+    {
+      "page": "/finbot/transactions",
+      "regex": "^/finbot/transactions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/finbot/transactions(?:/)?$"
+    },
+    {
       "page": "/login",
       "regex": "^/login(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/projects",
+      "regex": "^/projects(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/projects(?:/)?$"
+    },
+    {
+      "page": "/tools",
+      "regex": "^/tools(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tools(?:/)?$"
     }
   ],
   "dataRoutes": [],
