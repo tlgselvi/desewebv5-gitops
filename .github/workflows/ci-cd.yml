@@ -16,9 +16,9 @@ on:
   push:
     branches: [ main ]
 
-    permissions:
-      contents: read
-      actions: read
+permissions:
+  contents: read
+  actions: read
   id-token: write
 
 jobs:
@@ -35,6 +35,6 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
-            curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":"EA Plan v6.7.0 rollout triggered"}' \
-            $SLACK_WEBHOOK || echo "Slack notification skipped"
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"EA Plan v6.7.0 rollout triggered"}' \
+          $SLACK_WEBHOOK || echo "Slack notification skipped"
