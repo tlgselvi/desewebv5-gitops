@@ -123,3 +123,41 @@ register.registerMetric(auditEventsTotal);
 register.registerMetric(auditWriteFailuresTotal);
 register.registerMetric(auditLatency);
 
+/**
+ * WebSocket metrics
+ */
+export const wsConnections = new client.Gauge({
+  name: 'ws_connections',
+  help: 'Aktif WS bağlantıları',
+  registers: [register],
+});
+
+export const wsBroadcastTotal = new client.Counter({
+  name: 'ws_broadcast_total',
+  help: 'WS broadcast toplamı',
+  registers: [register],
+});
+
+export const wsLatency = new client.Histogram({
+  name: 'ws_latency_seconds',
+  help: 'WS RTT dağılımı',
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+  registers: [register],
+});
+
+/**
+ * Redis Stream consumer lag metrics
+ */
+export const streamConsumerLag = new client.Gauge({
+  name: 'stream_consumer_lag',
+  help: 'Redis Stream consumer lag',
+  labelNames: ['stream', 'group'],
+  registers: [register],
+});
+
+// Register WebSocket and Stream metrics
+register.registerMetric(wsConnections);
+register.registerMetric(wsBroadcastTotal);
+register.registerMetric(wsLatency);
+register.registerMetric(streamConsumerLag);
+

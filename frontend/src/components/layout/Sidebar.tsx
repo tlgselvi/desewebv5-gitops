@@ -93,6 +93,14 @@ export default function Sidebar() {
             <span className="text-lg">🔒</span>
             <span>Audit & Privacy</span>
           </Link>
+          
+          <Link
+            href="/admin/realtime"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive("/admin/realtime") || pathname?.startsWith("/admin/realtime")}`}
+          >
+            <span className="text-lg">📊</span>
+            <span>Realtime Metrics</span>
+          </Link>
         </div>
       </nav>
       

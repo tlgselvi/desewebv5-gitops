@@ -16,6 +16,7 @@ import { authRoutes } from './auth.js';
 import { finbotRoutes } from './finbot.js';
 import { auditRoutes } from './audit.js';
 import { privacyRoutes } from './privacy.js';
+import { metricsRealtimeRoutes } from './metrics-realtime.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -63,6 +64,7 @@ export function setupRoutes(app: Express): void {
   app.use(`${apiPrefix}/finbot`, finbotRoutes);
   app.use(`${apiPrefix}/audit`, auditRoutes);
   app.use(`${apiPrefix}/privacy`, privacyRoutes);
+  app.use(`${apiPrefix}/metrics`, metricsRealtimeRoutes);
 
   // Root API endpoint
   app.get(apiPrefix, (req, res) => {
@@ -81,11 +83,13 @@ export function setupRoutes(app: Express): void {
         finbot: `${apiPrefix}/finbot`,
         audit: `${apiPrefix}/audit`,
         privacy: `${apiPrefix}/privacy`,
+        metrics: `${apiPrefix}/metrics`,
+        metricsRealtime: `${apiPrefix}/metrics/realtime`,
         aiops: `${apiPrefix}/aiops`,
         correlation: `${apiPrefix}/aiops/correlation`,
         predictive: `${apiPrefix}/aiops/predict`,
         anomaly: `${apiPrefix}/aiops/anomalies`,
-        metrics: '/metrics',
+        prometheus: '/metrics',
         aiopsMetrics: '/metrics/aiops',
         health: '/health',
         docs: '/api-docs',

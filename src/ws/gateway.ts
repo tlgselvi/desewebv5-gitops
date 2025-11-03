@@ -19,6 +19,10 @@ interface AuthenticatedWebSocket extends WebSocket {
 export class WebSocketGateway {
   private wss: WebSocketServer;
   private clients: Set<AuthenticatedWebSocket> = new Set();
+  
+  // Metrics tracking
+  private broadcastTotal = 0;
+  private latencySamples: number[] = []; // Last 512 ping/pong measurements (ms)
 
   constructor(server: HTTPServer) {
     this.wss = new WebSocketServer({
@@ -29,6 +33,7 @@ export class WebSocketGateway {
 
     this.setupEventHandlers();
     this.setupHeartbeat();
+    this.setupMetricsUpdate();
     
     logger.info('WebSocket gateway initialized', {
       path: '/ws',
@@ -88,6 +93,21 @@ export class WebSocketGateway {
       logger.info('WebSocket client connected', {
         clientId: ws.userId,
         totalClients: this.clients.size,
+      });
+
+      // Record ping/pong latency
+      const sentAt = Date.now();
+      try {
+        ws.ping();
+      } catch (error) {
+        logger.error('Error sending ping', { error });
+      }
+
+      ws.on('pong', () => {
+        const latency = Date.now() - sentAt;
+        this.recordLatency(latency);
+        // Update Prometheus metric
+        wsLatency.observe(latency / 1000); // Convert ms to seconds
       });
 
       // Handle incoming messages
@@ -209,6 +229,73 @@ export class WebSocketGateway {
   }
 
   /**
+   * Setup periodic metrics update (Prometheus)
+   */
+  private setupMetricsUpdate(): void {
+    const interval = setInterval(async () => {
+      try {
+        // Update WebSocket connections gauge
+        wsConnections.set(this.clients.size);
+
+        // Update stream consumer lag metrics
+        const streams =
+          (process.env.REDIS_STREAMS ?? 'finbot.events,mubot.events,dese.events').split(
+            ','
+          );
+        const streamStats = await getStreamStats(streams);
+
+        for (const stat of streamStats) {
+          for (const group of stat.groups) {
+            streamConsumerLag.set(
+              { stream: stat.stream, group: group.name },
+              group.lagApprox
+            );
+          }
+        }
+      } catch (error) {
+        logger.error('Error updating metrics', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }, 10000); // 10 seconds
+
+    this.wss.on('close', () => {
+      clearInterval(interval);
+    });
+  }
+
+  /**
+   * Record latency measurement
+   */
+  private recordLatency(ms: number): void {
+    this.latencySamples.push(ms);
+    if (this.latencySamples.length > 512) {
+      this.latencySamples.shift();
+    }
+  }
+
+  /**
+   * Get WebSocket statistics
+   */
+  public getWsStats(): {
+    connections: number;
+    broadcastTotal: number;
+    p50: number;
+    p95: number;
+  } {
+    const arr = [...this.latencySamples].sort((a, b) => a - b);
+    const p = (q: number) =>
+      arr.length ? arr[Math.floor((q / 100) * (arr.length - 1))] : 0;
+
+    return {
+      connections: this.clients.size,
+      broadcastTotal: this.broadcastTotal,
+      p50: p(50),
+      p95: p(95),
+    };
+  }
+
+  /**
    * Broadcast event to all connected clients
    */
   public broadcastEvent(event: Event): void {
@@ -240,6 +327,11 @@ export class WebSocketGateway {
         }
       }
     });
+
+    // Increment broadcast counter
+    this.broadcastTotal++;
+    // Update Prometheus metric
+    wsBroadcastTotal.inc();
 
     logger.debug('Event broadcasted', {
       eventId: event.id,
@@ -275,6 +367,13 @@ export class WebSocketGateway {
         }
       }
     });
+
+    // Increment broadcast counter
+    if (sentCount > 0) {
+      this.broadcastTotal++;
+      // Update Prometheus metric
+      wsBroadcastTotal.inc();
+    }
 
     logger.debug('Message broadcasted to filtered clients', {
       sentCount,
@@ -330,5 +429,20 @@ export function initializeWebSocketGateway(server: HTTPServer): WebSocketGateway
  */
 export function getWebSocketGateway(): WebSocketGateway | null {
   return gatewayInstance;
+}
+
+/**
+ * Get WebSocket statistics
+ */
+export function getWsStats(): {
+  connections: number;
+  broadcastTotal: number;
+  p50: number;
+  p95: number;
+} {
+  if (!gatewayInstance) {
+    return { connections: 0, broadcastTotal: 0, p50: 0, p95: 0 };
+  }
+  return gatewayInstance.getWsStats();
 }
 
