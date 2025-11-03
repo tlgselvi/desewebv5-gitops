@@ -33,6 +33,6 @@ export default function AIOpsPage() {
           <ReplayTimeline />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

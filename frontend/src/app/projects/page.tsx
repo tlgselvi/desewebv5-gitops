@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { api, getErrorMessage } from "@/api/client";
 
 interface Project {
   id: string;
@@ -30,8 +31,8 @@ export default function ProjectsPage() {
       try {
         setLoading(true);
         const url = filter === "all" ? "/projects" : `/projects?status=${filter}`;
-        const data = await apiMethods.get<{ projects: Project[] }>(url);
-        setProjects(data.projects || []);
+        const response = await api.get<{ projects: Project[] }>(url);
+        setProjects(response.data.projects || []);
         setError(null);
       } catch (err) {
         setError(getErrorMessage(err));

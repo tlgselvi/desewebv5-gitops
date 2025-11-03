@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { api } from "@/api/client";
 
 interface TelemetryData {
   timestamp: number;
@@ -21,7 +22,8 @@ export default function DriftPanel() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const result = await apiMethods.get<{ success: boolean; data?: TelemetryData }>("/aiops/collect");
+        const response = await api.get<{ success: boolean; data?: TelemetryData }>("/aiops/collect");
+        const result = response.data;
         
         if (result.success && result.data) {
           const telemetryData = result.data;
