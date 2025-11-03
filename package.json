@@ -41,7 +41,7 @@
     "mcp:finbot": "tsx src/mcp/finbot-server.ts",
     "mcp:mubot": "tsx src/mcp/mubot-server.ts",
     "mcp:dese": "tsx src/mcp/dese-server.ts",
-    "mcp:all": "concurrently \"pnpm mcp:finbot\" \"pnpm mcp:mubot\" \"pnpm mcp:dese\"",
+    "mcp:all": "tsx src/mcp/finbot-server.ts & tsx src/mcp/mubot-server.ts & tsx src/mcp/dese-server.ts",
     "docker:build": "docker build -t dese-ea-plan-v5 .",
     "docker:run": "docker run -p 3000:3000 dese-ea-plan-v5",
     "k8s:apply": "kubectl apply -f k8s/",
