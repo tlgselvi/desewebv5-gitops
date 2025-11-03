@@ -3,7 +3,6 @@ import request from 'supertest';
 import express from 'express';
 import { seoRoutes } from './seo.js';
 import * as seoService from '@/services/seoAnalyzer.js';
-import { createAuthHeaders } from '../../../tests/helpers.js';
 
 const app = express();
 app.use(express.json());
@@ -24,7 +23,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -42,7 +40,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -60,7 +57,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -78,7 +74,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -92,7 +87,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .get('/seo/metrics')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -115,7 +109,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .get('/seo/trends')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -145,7 +138,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -166,7 +158,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -197,7 +188,6 @@ describe('SEO Routes', () => {
       // Act
       const response = await request(app)
         .post('/seo/analyze')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 

@@ -2,13 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { predictiveRoutes } from './predictive.js';
-import { errorHandler } from '@/middleware/errorHandler.js';
 import PredictiveRemediator from '@/services/aiops/predictiveRemediator.js';
 
 const app = express();
 app.use(express.json());
 app.use('/predict', predictiveRoutes);
-app.use(errorHandler);
 
 describe('Predictive Routes', () => {
   beforeEach(() => {

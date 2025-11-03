@@ -13,53 +13,20 @@ import { predictiveRoutes } from './predictive.js';
 import { anomalyRoutes } from './anomaly.js';
 import { jwksRoutes } from './jwks.js';
 import { authRoutes } from './auth.js';
-import { auditRoutes } from './audit.js';
-import { masterControlRoutes } from './masterControl.js';
-import { browserAutomationRoutes } from './browserAutomation.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
-import { cacheMiddleware } from '@/middleware/cache.js';
 import { config } from '@/config/index.js';
 
 export function setupRoutes(app: Express): void {
   const apiPrefix = `/api/${config.apiVersion}`;
 
-  // Root route
-  app.get('/', (req, res) => {
-    res.json({
-      name: 'Dese EA Plan v6.7 - Master Control Append Chain',
-      version: process.env.APP_VERSION || 'v6.7.0',
-      description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi',
-      environment: config.nodeEnv,
-      timestamp: new Date().toISOString(),
-      status: 'operational',
-      endpoints: {
-        health: '/health',
-        api: apiPrefix,
-        docs: '/api-docs',
-        metrics: '/metrics',
-        masterControl: `${apiPrefix}/master-control`,
-      },
-    });
-  });
-
-  // Health check routes (both /health and /api/v1/health)
+  // Health check routes
   app.use('/health', healthRoutes);
-  app.use(`${apiPrefix}/health`, healthRoutes);
 
   // JWKS endpoint
   app.use('/', jwksRoutes);
 
   // Auth routes
   app.use(`${apiPrefix}/auth`, authRoutes);
-
-  // Audit routes (admin only)
-  app.use(`${apiPrefix}/audit`, auditRoutes);
-
-  // Master Control routes (admin only)
-  app.use(`${apiPrefix}/master-control`, masterControlRoutes);
-
-  // Browser Automation routes
-  app.use(`${apiPrefix}/browser-automation`, browserAutomationRoutes);
 
   // Metrics endpoint
   app.use('/metrics', metricsRoutes);
@@ -113,8 +80,6 @@ export function setupRoutes(app: Express): void {
         aiopsMetrics: '/metrics/aiops',
         health: '/health',
         docs: '/api-docs',
-        audit: `${apiPrefix}/audit`,
-        masterControl: `${apiPrefix}/master-control`,
       },
     });
   });

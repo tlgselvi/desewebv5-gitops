@@ -3,7 +3,6 @@ import request from 'supertest';
 import express from 'express';
 import { projectRoutes } from './projects.js';
 import * as dbModule from '@/db/index.js';
-import { createAuthHeaders, createAdminAuthHeaders } from '../../../tests/helpers.js';
 
 const app = express();
 app.use(express.json());
@@ -22,7 +21,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .get('/projects')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -38,7 +36,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .get('/projects?ownerId=user-123')
-        .set(createAdminAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -57,7 +54,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .post('/projects')
-        .set(createAuthHeaders())
         .send(invalidPayload)
         .expect('Content-Type', /json/);
 
@@ -74,7 +70,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .post('/projects')
-        .set(createAuthHeaders())
         .send(incompletePayload)
         .expect('Content-Type', /json/);
 
@@ -101,7 +96,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .post('/projects')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -122,7 +116,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .post('/projects')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -143,7 +136,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .post('/projects')
-        .set(createAuthHeaders())
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -157,7 +149,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .get('/projects/invalid-id')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -209,7 +200,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .put('/projects/invalid-id')
-        .set(createAuthHeaders())
         .send({ name: 'Updated' })
         .expect('Content-Type', /json/);
 
@@ -240,7 +230,6 @@ describe('Projects Routes', () => {
       // Act
       const response = await request(app)
         .delete('/projects/invalid-id')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert

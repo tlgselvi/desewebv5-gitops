@@ -43,6 +43,14 @@ export default function Sidebar() {
           <span>AIOps</span>
         </Link>
         
+        <Link
+          href="/finbot"
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive("/finbot") || pathname?.startsWith("/finbot")}`}
+        >
+          <span className="text-lg">💰</span>
+          <span>FinBot</span>
+        </Link>
+        
         <div className="pt-4 mt-4 border-t border-gray-200">
           <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Tools

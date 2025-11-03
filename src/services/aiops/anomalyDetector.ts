@@ -74,53 +74,9 @@ export class AnomalyDetector {
   /**
    * Calculate Z-score for anomaly detection
    */
-  calculateZScore(value: number, mean: number, std: number): number {
+  private calculateZScore(value: number, mean: number, std: number): number {
     if (std === 0) return 0;
     return (value - mean) / std;
-  }
-
-  /**
-   * Detect anomalies in metric values using Z-score analysis
-   */
-  detectAnomalies(data: AnomalyData & { metric?: string }): AnomalyScore[] {
-    if (!data.values || data.values.length === 0) {
-      return [];
-    }
-
-    const percentiles = this.calculatePercentiles(data.values);
-    const anomalies: AnomalyScore[] = [];
-
-    // Check each value for anomalies
-    data.values.forEach((value, index) => {
-      const zScore = this.calculateZScore(value, percentiles.mean, percentiles.std);
-      const absZScore = Math.abs(zScore);
-      const isAnomaly = absZScore > 2.5; // 99% confidence interval
-
-      if (isAnomaly) {
-        const severity = this.getSeverityFromZScore(absZScore);
-        anomalies.push({
-          metric: data.metric || 'unknown',
-          score: Math.round(zScore * 100) / 100,
-          percentile: absZScore >= 3.0 ? 'p99' : 'p95',
-          isAnomaly: true,
-          deviation: value - percentiles.mean,
-          timestamp: data.timestamps[index] || Date.now(),
-          severity,
-        });
-      }
-    });
-
-    return anomalies;
-  }
-
-  /**
-   * Get severity based on Z-score (make public for tests)
-   */
-  getSeverityFromZScore(absZScore: number): 'low' | 'medium' | 'high' | 'critical' {
-    if (absZScore >= 3.5) return 'critical';
-    if (absZScore >= 3.0) return 'high';
-    if (absZScore >= 2.5) return 'medium';
-    return 'low';
   }
 
   /**
@@ -181,6 +137,15 @@ export class AnomalyDetector {
     };
   }
 
+  /**
+   * Get severity based on Z-score
+   */
+  private getSeverityFromZScore(absZScore: number): 'low' | 'medium' | 'high' | 'critical' {
+    if (absZScore >= 3.5) return 'critical';
+    if (absZScore >= 3.0) return 'high';
+    if (absZScore >= 2.5) return 'medium';
+    return 'low';
+  }
 
   /**
    * Aggregate anomaly scores

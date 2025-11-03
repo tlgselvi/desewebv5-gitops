@@ -91,6 +91,74 @@ describe('SeoAnalyzer Service', () => {
         seoAnalyzer.getProjectMetrics(projectId, 200)
       ).rejects.toThrow();
     });
+
+    it('should validate limit minimum value', async () => {
+      // Arrange
+      const projectId = '00000000-0000-0000-0000-000000000000';
+      const mockProject = { id: projectId };
+      vi.spyOn(dbModule.db.query.seoProjects, 'findFirst').mockResolvedValue(mockProject as any);
+
+      // Act & Assert - limit < 1 should fail
+      await expect(
+        seoAnalyzer.getProjectMetrics(projectId, 0)
+      ).rejects.toThrow();
+    });
+
+    it('should validate limit is a number', async () => {
+      // Arrange
+      const projectId = '00000000-0000-0000-0000-000000000000';
+      const mockProject = { id: projectId };
+      vi.spyOn(dbModule.db.query.seoProjects, 'findFirst').mockResolvedValue(mockProject as any);
+
+      // Act & Assert
+      await expect(
+        seoAnalyzer.getProjectMetrics(projectId, 'invalid' as any)
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('analyzeProject - Additional Validations', () => {
+    it('should validate URLs are valid HTTP/HTTPS format', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        urls: ['not-a-valid-url', 'ftp://example.com'],
+      };
+
+      // Act & Assert
+      await expect(
+        seoAnalyzer.analyzeProject(invalidRequest as any)
+      ).rejects.toThrow();
+    });
+
+    it('should validate projectId is a valid UUID', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: 'not-a-uuid',
+        urls: ['https://example.com'],
+      };
+
+      // Act & Assert
+      await expect(
+        seoAnalyzer.analyzeProject(invalidRequest as any)
+      ).rejects.toThrow();
+    });
+
+    it('should handle database errors gracefully', async () => {
+      // Arrange
+      const request = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        urls: ['https://example.com'],
+      };
+      vi.spyOn(dbModule.db, 'select').mockImplementation(() => {
+        throw new Error('Database connection failed');
+      });
+
+      // Act & Assert
+      await expect(
+        seoAnalyzer.analyzeProject(request as any)
+      ).rejects.toThrow();
+    });
   });
 });
 

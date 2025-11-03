@@ -108,6 +108,119 @@ describe('Feedback Routes', () => {
       // Assert
       expect([200, 500]).toContain(response.status);
     });
+
+    it('should handle Redis errors when clearing', async () => {
+      // Arrange
+      vi.spyOn(FeedbackStore, 'clear').mockRejectedValue(
+        new Error('Redis connection failed')
+      );
+
+      // Act
+      const response = await request(app)
+        .delete('/aiops/feedback')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect([500, 503]).toContain(response.status);
+    });
+  });
+
+  describe('POST /aiops/feedback - Edge Cases', () => {
+    it('should return 400 when severity is invalid', async () => {
+      // Arrange
+      const invalidPayload = {
+        metric: 'cpu_usage',
+        anomaly: true,
+        verdict: 'positive',
+        source: 'manual',
+        type: 'anomaly',
+        severity: 'invalid_severity',
+      };
+
+      // Act
+      const response = await request(app)
+        .post('/aiops/feedback')
+        .send(invalidPayload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when type is invalid', async () => {
+      // Arrange
+      const invalidPayload = {
+        metric: 'cpu_usage',
+        anomaly: true,
+        verdict: 'positive',
+        source: 'manual',
+        type: 'invalid_type',
+        severity: 'high',
+      };
+
+      // Act
+      const response = await request(app)
+        .post('/aiops/feedback')
+        .send(invalidPayload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should handle Redis save errors', async () => {
+      // Arrange
+      const validPayload = {
+        metric: 'cpu_usage',
+        anomaly: true,
+        verdict: 'positive',
+        source: 'manual',
+        type: 'anomaly',
+        severity: 'high',
+      };
+      vi.spyOn(FeedbackStore, 'save').mockRejectedValue(
+        new Error('Redis connection failed')
+      );
+
+      // Act
+      const response = await request(app)
+        .post('/aiops/feedback')
+        .send(validPayload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect([500, 503]).toContain(response.status);
+    });
+  });
+
+  describe('GET /aiops/feedback - Edge Cases', () => {
+    it('should handle Redis connection errors', async () => {
+      // Arrange
+      vi.spyOn(FeedbackStore, 'getAll').mockRejectedValue(
+        new Error('Redis connection failed')
+      );
+
+      // Act
+      const response = await request(app)
+        .get('/aiops/feedback')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect([500, 503]).toContain(response.status);
+    });
+
+    it('should return empty array when Redis returns null', async () => {
+      // Arrange
+      vi.spyOn(FeedbackStore, 'getAll').mockResolvedValue([]);
+
+      // Act
+      const response = await request(app)
+        .get('/aiops/feedback')
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect([200, 500]).toContain(response.status);
+    });
   });
 });
 

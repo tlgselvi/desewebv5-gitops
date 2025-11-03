@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { authRoutes } from './auth.js';
-import { errorHandler } from '@/middleware/errorHandler.js';
 import * as dbModule from '@/db/index.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -10,7 +9,6 @@ import jwt from 'jsonwebtoken';
 const app = express();
 app.use(express.json());
 app.use('/auth', authRoutes);
-app.use(errorHandler); // Error handler must be last
 
 describe('Auth Routes', () => {
   beforeEach(() => {
@@ -127,6 +125,48 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(500);
       expect(response.body.error).toBe('Database connection failed');
     });
+
+    it('should return 400 when payload is empty', async () => {
+      // Arrange
+      const payload = {};
+
+      // Act
+      const response = await request(app)
+        .post('/auth/login')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when username is empty string', async () => {
+      // Arrange
+      const payload = { username: '', password: 'password123' };
+
+      // Act
+      const response = await request(app)
+        .post('/auth/login')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when password is empty string', async () => {
+      // Arrange
+      const payload = { username: 'testuser', password: '' };
+
+      // Act
+      const response = await request(app)
+        .post('/auth/login')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('POST /auth/register', () => {
@@ -200,6 +240,60 @@ describe('Auth Routes', () => {
 
       // Assert
       expect([400, 409]).toContain(response.status);
+    });
+
+    it('should return 400 when email is empty string', async () => {
+      // Arrange
+      const payload = {
+        email: '',
+        password: 'password123',
+      };
+
+      // Act
+      const response = await request(app)
+        .post('/auth/register')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when password contains only spaces', async () => {
+      // Arrange
+      const payload = {
+        email: 'test@example.com',
+        password: '      ',
+      };
+
+      // Act
+      const response = await request(app)
+        .post('/auth/register')
+        .send(payload)
+        .expect('Content-Type', /json/);
+
+      // Assert
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when email format is invalid', async () => {
+      // Arrange
+      const invalidEmails = [
+        'notanemail',
+        '@example.com',
+        'test@',
+        'test..test@example.com',
+      ];
+
+      // Act & Assert
+      for (const email of invalidEmails) {
+        const response = await request(app)
+          .post('/auth/register')
+          .send({ email, password: 'password123' })
+          .expect('Content-Type', /json/);
+
+        expect(response.status).toBe(400);
+      }
     });
   });
 });

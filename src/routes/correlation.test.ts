@@ -2,13 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { correlationRoutes } from './correlation.js';
-import { errorHandler } from '@/middleware/errorHandler.js';
 import CorrelationEngine from '@/services/aiops/correlationEngine.js';
 
 const app = express();
 app.use(express.json());
 app.use('/correlation', correlationRoutes);
-app.use(errorHandler);
 
 describe('Correlation Routes', () => {
   beforeEach(() => {

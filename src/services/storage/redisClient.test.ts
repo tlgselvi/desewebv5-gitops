@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { FeedbackStore, checkRedisConnection, SafeRedis } from './redisClient.js';
+import { FeedbackStore, checkRedisConnection } from './redisClient.js';
 import { redis } from './redisClient.js';
 
 describe('RedisClient Service', () => {
@@ -21,13 +21,13 @@ describe('RedisClient Service', () => {
           type: 'anomaly',
           severity: 'high',
         };
-        vi.spyOn(SafeRedis, 'set').mockResolvedValue(true);
+        vi.spyOn(redis, 'set').mockResolvedValue('OK');
 
         // Act
         await FeedbackStore.save(entry);
 
         // Assert
-        expect(SafeRedis.set).toHaveBeenCalled();
+        expect(redis.set).toHaveBeenCalled();
       });
     });
 
@@ -39,22 +39,19 @@ describe('RedisClient Service', () => {
           { timestamp: 1, metric: 'cpu', anomaly: true },
           { timestamp: 2, metric: 'memory', anomaly: false },
         ];
-        vi.spyOn(SafeRedis, 'keys').mockResolvedValue(mockKeys);
-        mockEntries.forEach((entry, i) => {
-          vi.spyOn(SafeRedis, 'get').mockResolvedValueOnce(entry as any);
-        });
+        vi.spyOn(redis, 'keys').mockResolvedValue(mockKeys);
+        vi.spyOn(redis, 'mget').mockResolvedValue(mockEntries.map(e => JSON.stringify(e)));
 
         // Act
         const result = await FeedbackStore.getAll();
 
         // Assert
         expect(Array.isArray(result)).toBe(true);
-        expect(result.length).toBeGreaterThanOrEqual(0);
       });
 
       it('should return empty array when no feedback exists', async () => {
         // Arrange
-        vi.spyOn(SafeRedis, 'keys').mockResolvedValue([]);
+        vi.spyOn(redis, 'keys').mockResolvedValue([]);
 
         // Act
         const result = await FeedbackStore.getAll();
@@ -68,8 +65,8 @@ describe('RedisClient Service', () => {
       it('should clear all feedback entries', async () => {
         // Arrange
         const mockKeys = ['feedback:1', 'feedback:2'];
-        vi.spyOn(SafeRedis, 'keys').mockResolvedValue(mockKeys);
-        vi.spyOn(SafeRedis, 'del').mockResolvedValue(true);
+        vi.spyOn(redis, 'keys').mockResolvedValue(mockKeys);
+        vi.spyOn(redis, 'del').mockResolvedValue(2);
 
         // Act
         const deleted = await FeedbackStore.clear();
@@ -80,7 +77,7 @@ describe('RedisClient Service', () => {
 
       it('should return 0 when no entries exist', async () => {
         // Arrange
-        vi.spyOn(SafeRedis, 'keys').mockResolvedValue([]);
+        vi.spyOn(redis, 'keys').mockResolvedValue([]);
 
         // Act
         const deleted = await FeedbackStore.clear();
@@ -94,7 +91,7 @@ describe('RedisClient Service', () => {
       it('should return count of feedback entries', async () => {
         // Arrange
         const mockKeys = ['feedback:1', 'feedback:2', 'feedback:3'];
-        vi.spyOn(SafeRedis, 'keys').mockResolvedValue(mockKeys);
+        vi.spyOn(redis, 'keys').mockResolvedValue(mockKeys);
 
         // Act
         const count = await FeedbackStore.count();
@@ -119,15 +116,103 @@ describe('RedisClient Service', () => {
 
     it('should return false when Redis connection fails', async () => {
       // Arrange
-      // Mock checkRedisConnection to use circuit breaker which will fail
-      const originalCheck = checkRedisConnection;
       vi.spyOn(redis, 'ping').mockRejectedValue(new Error('Connection failed'));
 
       // Act
       const isConnected = await checkRedisConnection();
 
-      // Assert - circuit breaker should handle error and return false
+      // Assert
       expect(isConnected).toBe(false);
+    });
+
+    it('should return false when Redis ping times out', async () => {
+      // Arrange
+      vi.spyOn(redis, 'ping').mockRejectedValue(new Error('ETIMEDOUT'));
+
+      // Act
+      const isConnected = await checkRedisConnection();
+
+      // Assert
+      expect(isConnected).toBe(false);
+    });
+  });
+
+  describe('FeedbackStore - Error Handling', () => {
+    describe('save', () => {
+      it('should handle Redis set errors', async () => {
+        // Arrange
+        const entry = {
+          timestamp: Date.now(),
+          metric: 'cpu_usage',
+          anomaly: true,
+          verdict: 'positive',
+          comment: 'Test comment',
+          source: 'manual',
+          type: 'anomaly',
+          severity: 'high',
+        };
+        vi.spyOn(redis, 'set').mockRejectedValue(new Error('Redis error'));
+
+        // Act & Assert
+        await expect(FeedbackStore.save(entry)).rejects.toThrow();
+      });
+
+      it('should validate entry has required fields', async () => {
+        // Arrange
+        const incompleteEntry = {
+          timestamp: Date.now(),
+          metric: 'cpu_usage',
+          // Missing required fields
+        };
+
+        // Act & Assert
+        await expect(FeedbackStore.save(incompleteEntry as any)).rejects.toThrow();
+      });
+    });
+
+    describe('getAll', () => {
+      it('should handle Redis keys errors', async () => {
+        // Arrange
+        vi.spyOn(redis, 'keys').mockRejectedValue(new Error('Redis error'));
+
+        // Act & Assert
+        await expect(FeedbackStore.getAll()).rejects.toThrow();
+      });
+
+      it('should handle invalid JSON in Redis values', async () => {
+        // Arrange
+        const mockKeys = ['feedback:1'];
+        vi.spyOn(redis, 'keys').mockResolvedValue(mockKeys);
+        vi.spyOn(redis, 'mget').mockResolvedValue(['invalid-json']);
+
+        // Act
+        const result = await FeedbackStore.getAll();
+
+        // Assert - Should handle gracefully
+        expect(Array.isArray(result)).toBe(true);
+      });
+    });
+
+    describe('clear', () => {
+      it('should handle Redis del errors', async () => {
+        // Arrange
+        const mockKeys = ['feedback:1'];
+        vi.spyOn(redis, 'keys').mockResolvedValue(mockKeys);
+        vi.spyOn(redis, 'del').mockRejectedValue(new Error('Redis error'));
+
+        // Act & Assert
+        await expect(FeedbackStore.clear()).rejects.toThrow();
+      });
+    });
+
+    describe('count', () => {
+      it('should handle Redis keys errors', async () => {
+        // Arrange
+        vi.spyOn(redis, 'keys').mockRejectedValue(new Error('Redis error'));
+
+        // Act & Assert
+        await expect(FeedbackStore.count()).rejects.toThrow();
+      });
     });
   });
 });

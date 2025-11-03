@@ -2,13 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { anomalyRoutes } from './anomaly.js';
-import { errorHandler } from '@/middleware/errorHandler.js';
 import AnomalyDetector from '@/services/aiops/anomalyDetector.js';
 
 const app = express();
 app.use(express.json());
 app.use('/anomaly', anomalyRoutes);
-app.use(errorHandler);
 
 describe('Anomaly Routes', () => {
   beforeEach(() => {
@@ -24,7 +22,7 @@ describe('Anomaly Routes', () => {
 
       // Act
       const response = await request(app)
-        .post('/anomaly/anomalies/detect')
+        .post('/anomaly/detect')
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -41,7 +39,7 @@ describe('Anomaly Routes', () => {
 
       // Act
       const response = await request(app)
-        .post('/anomaly/anomalies/detect')
+        .post('/anomaly/detect')
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -59,7 +57,7 @@ describe('Anomaly Routes', () => {
 
       // Act
       const response = await request(app)
-        .post('/anomaly/anomalies/detect')
+        .post('/anomaly/detect')
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -77,7 +75,7 @@ describe('Anomaly Routes', () => {
 
       // Act
       const response = await request(app)
-        .post('/anomaly/anomalies/detect')
+        .post('/anomaly/detect')
         .send(payload)
         .expect('Content-Type', /json/);
 
@@ -95,7 +93,7 @@ describe('Anomaly Routes', () => {
 
       // Act
       const response = await request(app)
-        .post('/anomaly/anomalies/detect')
+        .post('/anomaly/detect')
         .send(payload)
         .expect('Content-Type', /json/);
 

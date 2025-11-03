@@ -2,7 +2,6 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { Express } from 'express';
 import { config } from '@/config/index.js';
-import { logger } from './logger.js';
 
 const options = {
   definition: {

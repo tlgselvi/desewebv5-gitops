@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { contentRoutes } from './content.js';
-import { createAuthHeaders } from '../../../tests/helpers.js';
 import * as contentService from '@/services/contentGenerator.js';
 
 const app = express();
@@ -25,7 +24,6 @@ describe('Content Routes', () => {
       // Act
       const response = await request(app)
         .post('/content/generate')
-        .set(createAuthHeaders())
         .send(invalidPayload)
         .expect('Content-Type', /json/);
 
@@ -44,7 +42,6 @@ describe('Content Routes', () => {
       // Act
       const response = await request(app)
         .post('/content/generate')
-        .set(createAuthHeaders())
         .send(invalidPayload)
         .expect('Content-Type', /json/);
 
@@ -63,7 +60,6 @@ describe('Content Routes', () => {
       // Act
       const response = await request(app)
         .post('/content/generate')
-        .set(createAuthHeaders())
         .send(invalidPayload)
         .expect('Content-Type', /json/);
 
@@ -106,7 +102,6 @@ describe('Content Routes', () => {
       // Act
       const response = await request(app)
         .get('/content')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert
@@ -158,7 +153,6 @@ describe('Content Routes', () => {
       // Act
       const response = await request(app)
         .get('/content/templates')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert

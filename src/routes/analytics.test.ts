@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { analyticsRoutes } from './analytics.js';
-import { createAuthHeaders } from '../../../tests/helpers.js';
 import * as dbModule from '@/db/index.js';
 
 const app = express();
@@ -19,7 +18,6 @@ describe('Analytics Routes', () => {
       // Act
       const response = await request(app)
         .get('/analytics/dashboard')
-        .set(createAuthHeaders())
         .expect('Content-Type', /json/);
 
       // Assert

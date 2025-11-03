@@ -110,6 +110,75 @@ describe('ContentGenerator Service', () => {
         contentGenerator.createTemplate(invalidTemplate as any)
       ).rejects.toThrow();
     });
+
+    it('should validate template name is required', async () => {
+      // Arrange
+      const invalidTemplate = {
+        type: 'blog_post',
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.createTemplate(invalidTemplate as any)
+      ).rejects.toThrow();
+    });
+
+    it('should validate template type enum', async () => {
+      // Arrange
+      const invalidTemplate = {
+        name: 'Test Template',
+        type: 'invalid_type',
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.createTemplate(invalidTemplate as any)
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('generateContent - Additional Validations', () => {
+    it('should validate keywords array is not empty', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        contentType: 'blog_post' as const,
+        keywords: [],
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.generateContent(invalidRequest as any)
+      ).rejects.toThrow();
+    });
+
+    it('should validate keywords array maximum length', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        contentType: 'blog_post' as const,
+        keywords: Array(21).fill('keyword'), // More than 20
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.generateContent(invalidRequest as any)
+      ).rejects.toThrow();
+    });
+
+    it('should validate keywords are strings', async () => {
+      // Arrange
+      const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000000',
+        contentType: 'blog_post' as const,
+        keywords: [123, 456], // Numbers instead of strings
+      };
+
+      // Act & Assert
+      await expect(
+        contentGenerator.generateContent(invalidRequest as any)
+      ).rejects.toThrow();
+    });
   });
 });
 

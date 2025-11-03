@@ -14,19 +14,11 @@ describe('RequestLogger Middleware', () => {
       path: '/test',
       ip: '127.0.0.1',
       headers: {},
-      get: vi.fn((name: string) => {
-        if (name === 'user-agent') {
-          return mockRequest.headers?.['user-agent'] || 'test-agent';
-        }
-        return mockRequest.headers?.[name.toLowerCase()];
-      }),
     };
 
     mockResponse = {
       statusCode: 200,
       on: vi.fn(),
-      get: vi.fn(),
-      end: vi.fn(),
     };
 
     mockNext = vi.fn();
