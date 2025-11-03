@@ -1,16 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import fetch from 'node-fetch';
 import { redis } from '@/services/storage/redisClient.js';
-import { authenticate, authorize, AuthenticatedRequest } from '@/middleware/auth.js';
+import { AuthenticatedRequest } from '@/middleware/auth.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { finbotMetricsMiddleware } from '@/middleware/finbotMetrics.js';
+import { withAuth } from '@/rbac/decorators.js';
 import { logger } from '@/utils/logger.js';
 import { config } from '@/config/index.js';
 
 const router = Router();
-
-// All FinBot routes require authentication
-router.use(authenticate);
 
 // FinBot-specific Prometheus metrics middleware
 router.use(finbotMetricsMiddleware);
@@ -48,7 +46,7 @@ const CACHE_TTL = 60;
  */
 router.get(
   '/accounts',
-  authorize(['finance_analyst', 'accountant', 'admin']),
+  ...withAuth('finbot.accounts', 'read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const cacheKey = 'finbot:accounts';
     
@@ -158,7 +156,7 @@ router.get(
  */
 router.get(
   '/transactions',
-  authorize(['finance_analyst', 'accountant', 'admin']),
+  ...withAuth('finbot.transactions', 'read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const { accountId, limit = '100' } = req.query;
     const cacheKey = `finbot:transactions:${accountId || 'all'}:${limit}`;
@@ -236,7 +234,7 @@ router.get(
  */
 router.get(
   '/budgets',
-  authorize(['finance_analyst', 'accountant', 'admin']),
+  ...withAuth('finbot.budgets', 'read'),
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const cacheKey = 'finbot:budgets';
     
@@ -305,6 +303,7 @@ router.get(
  */
 router.get(
   '/health',
+  ...withAuth('finbot.accounts', 'read'), // Health check requires minimal read permission
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const response = await fetch(`${FINBOT_BASE}/api/v1/finbot/health`, {

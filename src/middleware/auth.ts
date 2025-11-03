@@ -143,11 +143,24 @@ export const authenticate = async (
         return;
       }
 
+      // Fetch user roles from RBAC tables
+      const userRolesResult = await db
+        .select({ roleName: roles.name })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(userRoles.userId, user.id));
+
+      const roleNames = userRolesResult.map((r) => r.roleName as RoleName);
+      
+      // If no RBAC roles found, use legacy role field as fallback
+      const finalRoles = roleNames.length > 0 ? roleNames : [user.role as RoleName];
+
       // Attach user to request object
       req.user = {
         id: user.id,
         email: user.email,
-        role: user.role,
+        roles: finalRoles,
+        role: user.role, // Legacy field for backward compatibility
         firstName: user.firstName,
         lastName: user.lastName,
       };
