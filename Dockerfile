@@ -33,13 +33,18 @@ RUN adduser --system --uid 1001 dese
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+
+# Copy entrypoint script (before switching user)
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create necessary directories
 RUN mkdir -p logs uploads
-RUN chown -R dese:nodejs logs uploads
+RUN chown -R dese:nodejs logs uploads /usr/local/bin/docker-entrypoint.sh
 
-# Switch to non-root user
-USER dese
+# Note: Entrypoint runs as root for migrations, then switches to dese user
+# This allows database migrations to run with proper permissions
 
 # Expose port
 EXPOSE 3000
@@ -47,10 +52,15 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV RUN_MIGRATIONS=true
+ENV RBAC_SEED=false
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# Use entrypoint script
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Start the application
 CMD ["node", "dist/index.js"]
