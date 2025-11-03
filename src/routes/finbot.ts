@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 import { redis } from '@/services/storage/redisClient.js';
 import { authenticate, authorize, AuthenticatedRequest } from '@/middleware/auth.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
+import { finbotMetricsMiddleware } from '@/middleware/finbotMetrics.js';
 import { logger } from '@/utils/logger.js';
 import { config } from '@/config/index.js';
 
@@ -10,6 +11,9 @@ const router = Router();
 
 // All FinBot routes require authentication
 router.use(authenticate);
+
+// FinBot-specific Prometheus metrics middleware
+router.use(finbotMetricsMiddleware);
 
 // FinBot service base URL from environment or config
 const FINBOT_BASE = process.env.FINBOT_BASE || 'http://finbot:8080';
