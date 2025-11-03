@@ -9,6 +9,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY finbot-forecast.py .
+COPY services/ ./services/
+
+# Environment variables for Event Bus
+ENV EVENT_BUS_SECRET=ea-plan-event-bus-secret-key-min-32-chars-change-in-production
+ENV REDIS_URL=redis://redis:6379
 
 # Expose metrics port
 EXPOSE 8080
