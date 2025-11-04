@@ -5,8 +5,15 @@ import { setAuditContext } from '@/middleware/audit.js';
 import { requestDeletion, processDeletion } from '@/privacy/delete.js';
 import { requestExport, processExport } from '@/privacy/export.js';
 import { setConsent, getConsents } from '@/privacy/consent.js';
+import {
+  anonymizeUserData,
+  anonymizeOldAuditLogs,
+  getAnonymizationStats,
+} from '@/privacy/anonymize.js';
+import { anonymizeRoutes } from '@/routes/privacy/anonymize.js';
 import type { AuthenticatedRequest } from '@/middleware/auth.js';
 import { logger } from '@/utils/logger.js';
+import { z } from 'zod';
 
 const router = Router();
 
@@ -191,6 +198,119 @@ router.get(
     });
   })
 );
+
+/**
+ * @swagger
+ * /api/v1/privacy/anonymize:
+ *   post:
+ *     summary: Anonymize user data (GDPR/KVKK)
+ *     tags: [Privacy]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User data anonymized
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.post(
+  '/anonymize',
+  setAuditContext('privacy', 'anonymize'),
+  ...withAuth('*', 'write'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'unauthenticated' });
+    }
+
+    await anonymizeUserData(userId);
+
+    logger.info('User data anonymization completed', {
+      userId,
+    });
+
+    res.json({
+      ok: true,
+      message: 'User data has been anonymized',
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/privacy/anonymize/old-logs:
+ *   post:
+ *     summary: Anonymize old audit logs (admin only)
+ *     tags: [Privacy]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               retentionDays:
+ *                 type: number
+ *                 default: 400
+ *     responses:
+ *       200:
+ *         description: Old audit logs anonymized
+ */
+const anonymizeOldLogsSchema = z.object({
+  retentionDays: z.number().int().positive().optional().default(400),
+});
+
+router.post(
+  '/anonymize/old-logs',
+  setAuditContext('privacy', 'anonymize_old_logs'),
+  ...withAuth('system.audit', 'write'),
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const validated = anonymizeOldLogsSchema.parse(req.body);
+    const rowsAffected = await anonymizeOldAuditLogs(validated.retentionDays);
+
+    logger.info('Old audit logs anonymization completed', {
+      retentionDays: validated.retentionDays,
+      rowsAffected,
+    });
+
+    res.json({
+      ok: true,
+      message: 'Old audit logs anonymized',
+      rowsAffected,
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/v1/privacy/anonymize/stats:
+ *   get:
+ *     summary: Get anonymization statistics (admin only)
+ *     tags: [Privacy]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Anonymization statistics
+ */
+router.get(
+  '/anonymize/stats',
+  setAuditContext('privacy', 'anonymize_stats'),
+  ...withAuth('system.audit', 'read'),
+  asyncHandler(async (_req: AuthenticatedRequest, res) => {
+    const stats = await getAnonymizationStats();
+
+    res.json({
+      ok: true,
+      data: stats,
+    });
+  })
+);
+
+// Mount anonymization routes
+router.use('/anonymize', anonymizeRoutes);
 
 export { router as privacyRoutes };
 

@@ -190,6 +190,79 @@ export default function RealtimeDashboard() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance Trends</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-56">
+            <ResponsiveContainer>
+              <LineChart
+                data={chart}
+                margin={{ left: 12, right: 12, top: 10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="ts" />
+                <YAxis yAxisId="left" label={{ value: 'Connections', angle: -90, position: 'insideLeft' }} />
+                <YAxis yAxisId="right" orientation="right" label={{ value: 'Latency (ms)', angle: 90, position: 'insideRight' }} />
+                <Tooltip />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="ws"
+                  name="WS Connections"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="p95"
+                  name="p95 Latency (ms)"
+                  stroke="#dc2626"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="b"
+                  name="Broadcasts"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Alert History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2 border rounded">
+              <div>
+                <p className="font-medium text-sm">High Latency Detected</p>
+                <p className="text-xs text-muted-foreground">2 minutes ago</p>
+              </div>
+              <Badge variant="destructive">Active</Badge>
+            </div>
+            <div className="flex items-center justify-between p-2 border rounded">
+              <div>
+                <p className="font-medium text-sm">Connection Spike</p>
+                <p className="text-xs text-muted-foreground">15 minutes ago</p>
+              </div>
+              <Badge variant="default">Resolved</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex gap-2">
         <Button onClick={() => refresh()} disabled={loading}>
           Yenile

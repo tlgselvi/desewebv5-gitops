@@ -1,0 +1,279 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "performance",
+    "title": "EA Plan Master Control - Performance Dashboard",
+    "tags": ["performance", "metrics", "monitoring", "phase5"],
+    "timezone": "browser",
+    "refresh": "10s",
+    "schemaVersion": 16,
+    "version": 1,
+    "description": "Performance metrics dashboard with trend analysis and alert history (Phase-5 Sprint 2)",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "type": "graph",
+        "title": "HTTP Request Duration (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "refId": "A",
+            "legendFormat": "p95 Duration"
+          },
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+            "refId": "B",
+            "legendFormat": "p50 Duration"
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": true
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "fill": 0
+      },
+      {
+        "id": 2,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "type": "graph",
+        "title": "HTTP Request Rate",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "refId": "A",
+            "legendFormat": "{{method}} {{status}}"
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Requests/sec",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": true
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "fill": 1
+      },
+      {
+        "id": 3,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "type": "graph",
+        "title": "Database Query Performance",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_bucket[5m])) by (le))",
+            "refId": "A",
+            "legendFormat": "p95 Query Duration"
+          },
+          {
+            "expr": "rate(db_connections[5m])",
+            "refId": "B",
+            "legendFormat": "Active Connections"
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": true
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "fill": 0
+      },
+      {
+        "id": 4,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "type": "graph",
+        "title": "MCP Server Response Times",
+        "targets": [
+          {
+            "expr": "mcp_response_time",
+            "refId": "A",
+            "legendFormat": "{{server}}"
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "ms",
+            "label": "Response Time",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": true
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "fill": 0
+      },
+      {
+        "id": 5,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "type": "graph",
+        "title": "Error Rate Trend",
+        "targets": [
+          {
+            "expr": "rate(http_errors_total[5m])",
+            "refId": "A",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Errors/sec",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": true
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "fill": 1
+      },
+      {
+        "id": 6,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "type": "table",
+        "title": "Alert History",
+        "targets": [
+          {
+            "expr": "ALERTS{alertstate=\"firing\"}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "indexByName": {
+                "alertname": 0,
+                "severity": 1,
+                "alertstate": 2
+              },
+              "renameByName": {
+                "alertname": "Alert Name",
+                "severity": "Severity",
+                "alertstate": "State"
+              }
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 1
+                },
+                {
+                  "color": "red",
+                  "value": 2
+                }
+              ]
+            }
+          },
+          "overrides": []
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+    }
+  },
+  "overwrite": true
+}
+
