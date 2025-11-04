@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: anonymization-scheduler
+  namespace: dese-ea-plan-v5
+  labels:
+    app: dese-ea-plan-v5
+    component: privacy
+    phase: 5
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: dese-ea-plan-v5
+            component: anonymization
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: dese-ea-plan-v5
+          containers:
+            - name: anonymization
+              image: ghcr.io/dese-ai/dese-ea-plan-v5:latest
+              imagePullPolicy: Always
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: dese-ea-plan-v5-secrets
+                      key: database-url
+                - name: AUDIT_RETENTION_DAYS
+                  value: "400"
+                - name: NODE_ENV
+                  value: "production"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  node -e "import('./src/services/privacy/anonymizationScheduler.js').then(async (m) => { await m.scheduleOldLogsAnonymization(400); await m.processDeletionRequests(); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });"
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
