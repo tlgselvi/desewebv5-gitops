@@ -1,4 +1,4 @@
-# Multi-stage build for Dese EA Plan v6.7.0
+# Multi-stage build for Dese EA Plan v6.8.0
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm i --frozen-lockfile
+RUN corepack enable pnpm && pnpm install --no-frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -16,10 +16,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml* ./
 COPY tsconfig.json ./
+COPY drizzle.config.ts* ./
 COPY src ./src
 
 # Build the application
-RUN corepack enable pnpm && pnpm install && pnpm build
+RUN corepack enable pnpm && pnpm install && pnpm build && ls -la /app/dist || echo "Build output check"
 
 # Production image, copy all the files and run the app
 FROM base AS runner
@@ -29,11 +30,10 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 dese
 
-# Copy built application
-COPY --from=builder /app/dist ./dist
+# Copy built application (dist may be created by tsc-alias)
+COPY --from=builder /app/dist* ./dist/
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 
 # Copy entrypoint script (before switching user)
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
