@@ -255,6 +255,151 @@ Write-Host ""
 Write-Host "Return this console output directly to DESE JARVIS for next-task analysis." -ForegroundColor Gray
 Write-Host ""
 
+# STEP 5 — Prometheus metrics completeness check (Phase-5 Sprint 1: Task 1.3)
+Write-Host "▶️ STEP 5 — Prometheus Metrics Completeness Check" -ForegroundColor Yellow
+
+try {
+    $metricsUrl = "http://localhost:3001/metrics"
+    $response = Invoke-WebRequest -Uri $metricsUrl -TimeoutSec 5 -ErrorAction Stop
+    $metricsContent = $response.Content
+    
+    # Required metric categories
+    $metricCategories = @{
+        "HTTP Metrics" = @("http_requests_total", "http_request_duration_seconds", "http_errors_total")
+        "WebSocket Metrics" = @("ws_connections", "ws_broadcast_total", "ws_latency_seconds")
+        "Redis Metrics" = @("stream_consumer_lag", "stream_messages_total", "redis_connections")
+        "AIOps Metrics" = @("aiops_anomalies_total", "aiops_remediations_total", "aiops_feedback_total")
+        "MCP Metrics" = @("mcp_requests_total", "mcp_response_time", "mcp_errors_total")
+        "Database Metrics" = @("db_connections", "db_query_duration", "db_errors_total")
+    }
+    
+    $completenessResults = @{}
+    $overallCompleteness = 0
+    $totalMetrics = 0
+    $foundMetrics = 0
+    
+    foreach ($category in $metricCategories.GetEnumerator()) {
+        $categoryName = $category.Key
+        $metrics = $category.Value
+        $foundCount = 0
+        
+        foreach ($metric in $metrics) {
+            $totalMetrics++
+            if ($metricsContent -match $metric) {
+                $foundCount++
+                $foundMetrics++
+            }
+        }
+        
+        $completeness = ($foundCount / $metrics.Count) * 100
+        $completenessResults[$categoryName] = @{
+            Found = $foundCount
+            Total = $metrics.Count
+            Completeness = $completeness
+        }
+        
+        $status = if ($completeness -ge 80) { "✅" } elseif ($completeness -ge 50) { "⚠️ " } else { "❌" }
+        $color = if ($completeness -ge 80) { "Green" } elseif ($completeness -ge 50) { "Yellow" } else { "Red" }
+        Write-Host "  $status $categoryName : $([math]::Round($completeness, 1))% ($foundCount/$($metrics.Count))" -ForegroundColor $color
+    }
+    
+    $overallCompleteness = ($foundMetrics / $totalMetrics) * 100
+    Write-Host ""
+    Write-Host "  Overall Metrics Completeness: $([math]::Round($overallCompleteness, 1))%" -ForegroundColor $(if ($overallCompleteness -ge 80) { "Green" } else { "Yellow" })
+    
+    if ($overallCompleteness -lt 80) {
+        $validationResults.Warnings += "Metrics completeness below 80%: $([math]::Round($overallCompleteness, 1))%"
+    }
+    
+} catch {
+    $errorMsg = "Metrics completeness check failed: $($_.Exception.Message)"
+    Write-Host "  ⚠️  $errorMsg" -ForegroundColor Yellow
+    $validationResults.Warnings += $errorMsg
+}
+
+Write-Host ""
+
+# STEP 6 — Grafana dashboard validation (Phase-5 Sprint 1: Task 1.3)
+Write-Host "▶️ STEP 6 — Grafana Dashboard Validation" -ForegroundColor Yellow
+
+$grafanaDashboards = @(
+    "deploy/monitoring/grafana/dashboards/realtime-metrics.json",
+    "deploy/monitoring/grafana/dashboards/performance.json"
+)
+
+$dashboardResults = @{}
+foreach ($dashboardPath in $grafanaDashboards) {
+    if (Test-Path $dashboardPath) {
+        try {
+            $dashboardContent = Get-Content $dashboardPath -Raw | ConvertFrom-Json
+            $panelCount = if ($dashboardContent.panels) { $dashboardContent.panels.Count } else { 0 }
+            $hasQueries = $dashboardContent.panels | Where-Object { $_.targets -and $_.targets.Count -gt 0 } | Measure-Object | Select-Object -ExpandProperty Count
+            
+            $dashboardResults[$dashboardPath] = @{
+                Exists = $true
+                PanelCount = $panelCount
+                PanelsWithQueries = $hasQueries
+                Valid = $panelCount -gt 0
+            }
+            
+            $status = if ($panelCount -gt 0) { "✅" } else { "⚠️ " }
+            Write-Host "  $status $dashboardPath : $panelCount panels, $hasQueries with queries" -ForegroundColor $(if ($panelCount -gt 0) { "Green" } else { "Yellow" })
+        } catch {
+            $dashboardResults[$dashboardPath] = @{ Exists = $true; Valid = $false; Error = $_.Exception.Message }
+            Write-Host "  ❌ $dashboardPath : Invalid JSON" -ForegroundColor Red
+        }
+    } else {
+        $dashboardResults[$dashboardPath] = @{ Exists = $false; Valid = $false }
+        Write-Host "  ⚠️  $dashboardPath : Not found" -ForegroundColor Yellow
+        $validationResults.Warnings += "Dashboard not found: $dashboardPath"
+    }
+}
+
+Write-Host ""
+
+# STEP 7 — Alert rule validation (Phase-5 Sprint 1: Task 1.3)
+Write-Host "▶️ STEP 7 — Alert Rule Validation" -ForegroundColor Yellow
+
+$alertRulesPath = "deploy/monitoring/prometheus/alert.rules.yml"
+if (Test-Path $alertRulesPath) {
+    try {
+        $alertRulesContent = Get-Content $alertRulesPath -Raw
+        $alertCount = ([regex]::Matches($alertRulesContent, "- alert:")).Count
+        $groupCount = ([regex]::Matches($alertRulesContent, "groups:")).Count
+        
+        Write-Host "  ✅ Alert rules found: $alertCount alerts in $groupCount groups" -ForegroundColor Green
+        
+        # Validate alert rule syntax (basic check)
+        $requiredFields = @("alert", "expr", "for", "annotations")
+        $validAlerts = 0
+        
+        $alertBlocks = $alertRulesContent -split "- alert:" | Where-Object { $_ -match "alert:" }
+        foreach ($block in $alertBlocks) {
+            $hasAllFields = $true
+            foreach ($field in $requiredFields) {
+                if ($block -notmatch $field) {
+                    $hasAllFields = $false
+                    break
+                }
+            }
+            if ($hasAllFields) {
+                $validAlerts++
+            }
+        }
+        
+        Write-Host "  ✅ Valid alerts: $validAlerts/$alertCount" -ForegroundColor $(if ($validAlerts -eq $alertCount) { "Green" } else { "Yellow" })
+        
+    } catch {
+        Write-Host "  ⚠️  Alert rules validation failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        $validationResults.Warnings += "Alert rules validation failed"
+    }
+} else {
+    Write-Host "  ⚠️  Alert rules file not found: $alertRulesPath" -ForegroundColor Yellow
+    $validationResults.Warnings += "Alert rules file not found"
+}
+
+Write-Host ""
+
 # Exit with appropriate code
 if ($validationResults.Errors.Count -gt 0) {
     exit 1

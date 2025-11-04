@@ -3,11 +3,12 @@
     "id": null,
     "uid": "realtime-metrics",
     "title": "EA Plan Master Control - Realtime Metrics",
-    "tags": ["realtime", "websocket", "redis-streams", "dese"],
+    "tags": ["realtime", "websocket", "redis-streams", "dese", "phase5"],
     "timezone": "browser",
     "refresh": "5s",
     "schemaVersion": 16,
-    "version": 0,
+    "version": 1,
+    "description": "Enhanced realtime metrics dashboard with MCP server monitoring and alert validation (Phase-5 Sprint 1)",
     "panels": [
       {
         "id": 1,
