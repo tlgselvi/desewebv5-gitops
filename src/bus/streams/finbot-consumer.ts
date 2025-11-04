@@ -250,7 +250,7 @@ async function claimPendingMessages(): Promise<void> {
             CONSUMER_NAME,
             RETRY_DELAY_MS,
             messageId
-          );
+          ) as [string, string[]][] | null;
           
           if (claimed && claimed.length > 0) {
             await processPendingMessage(messageId, claimed[0]);

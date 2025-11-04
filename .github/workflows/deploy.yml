@@ -277,10 +277,10 @@ jobs:
             exit 1
           fi
 
-      - name: 📧 Notify team
+      - name: ?? Notify team
+        continue-on-error: true
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          text: 'Deployment failed, automatic rollback initiated 🔄'
-          url: ${{ secrets.SLACK_WEBHOOK }}
-
+          text: 'Deployment failed, automatic rollback initiated ??'
+          url: ${{ secrets.SLACK_WEBHOOK || '' }}

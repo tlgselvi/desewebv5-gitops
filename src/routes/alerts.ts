@@ -88,15 +88,17 @@ router.post(
         };
 
         // Redis Streams'e gönder (dese.alerts stream'i)
-        await addToStream('dese.alerts', {
-          eventId: id,
-          source: 'alertmanager',
-          type: 'prometheus.alert',
-          severity: payload.severity,
-          alertname: payload.alertname,
-          payload: JSON.stringify(payload),
-          timestamp: payload.timestamp,
-        });
+        await redis.xadd(
+          'dese.alerts',
+          '*',
+          'eventId', id,
+          'source', 'alertmanager',
+          'type', 'prometheus.alert',
+          'severity', payload.severity,
+          'alertname', payload.alertname,
+          'payload', JSON.stringify(payload),
+          'timestamp', payload.timestamp
+        );
 
         // Logla
         logger.info('Prometheus alert received', {
@@ -153,28 +155,34 @@ router.get(
     try {
       // Redis Stream'den son alertleri oku
       const streamKey = 'dese.alerts';
-      const messages = await getFromStream(streamKey, '+', '-', limit);
+      const messages = await redis.xrevrange(streamKey, '+', '-', 'COUNT', limit);
 
       const alerts = messages.map((message) => {
         try {
+          // Redis xrevrange returns [id, [field1, value1, field2, value2, ...]]
+          const fields: Record<string, string> = {};
+          for (let i = 0; i < message[1].length; i += 2) {
+            fields[message[1][i]] = message[1][i + 1];
+          }
+          
           return {
-            id: message.fields.eventId,
-            streamId: message.id,
-            source: message.fields.source,
-            type: message.fields.type,
-            severity: message.fields.severity,
-            alertname: message.fields.alertname,
-            payload: JSON.parse(message.fields.payload),
-            timestamp: message.fields.timestamp,
+            id: fields.eventId || '',
+            streamId: message[0],
+            source: fields.source || '',
+            type: fields.type || '',
+            severity: fields.severity || '',
+            alertname: fields.alertname || '',
+            payload: JSON.parse(fields.payload || '{}'),
+            timestamp: fields.timestamp || '',
           };
         } catch (error) {
           logger.warn('Failed to parse alert payload', {
-            messageId: message.id,
+            messageId: message[0],
             error: error instanceof Error ? error.message : String(error),
           });
           return null;
         }
-      }).filter((alert) => alert !== null);
+      }).filter((alert): alert is NonNullable<typeof alert> => alert !== null);
 
       res.status(200).json({
         alerts,

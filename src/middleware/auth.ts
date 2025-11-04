@@ -1,16 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { db, users } from '@/db/index.js';
+import { db, users, roles, userRoles } from '@/db/index.js';
 import { eq } from 'drizzle-orm';
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
 import { createError } from './errorHandler.js';
+import type { RoleName } from '@/rbac/types.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
     role: string;
+    roles?: RoleName[];
     [key: string]: unknown;
   };
 }

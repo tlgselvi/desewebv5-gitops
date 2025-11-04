@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db, seoMetrics, seoProjects, generatedContent, seoAlerts } from '@/db/index.js';
-import { eq, desc, gte, sql } from 'drizzle-orm';
+import { eq, desc, gte, sql, and } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
 import { logger, analyticsLogger } from '@/utils/logger.js';
@@ -406,24 +406,29 @@ router.get('/metrics', asyncHandler(async (req, res) => {
     });
   }
 
-  let query = db
-    .select()
-    .from(seoMetrics)
-    .where(eq(seoMetrics.projectId, projectId));
-
+  const conditions = [eq(seoMetrics.projectId, projectId)];
+  
   if (startDate) {
-    query = query.where(gte(seoMetrics.measuredAt, new Date(startDate)));
+    conditions.push(gte(seoMetrics.measuredAt, new Date(startDate)));
   }
 
   if (endDate) {
-    query = query.where(sql`${seoMetrics.measuredAt} <= ${new Date(endDate)}`);
+    conditions.push(sql`${seoMetrics.measuredAt} <= ${new Date(endDate)}`);
   }
+
+  const query = db
+    .select()
+    .from(seoMetrics)
+    .where(and(...conditions));
 
   const metrics = await query.orderBy(desc(seoMetrics.measuredAt));
 
   // Calculate summary statistics
-  const metricField = metric ? seoMetrics[metric as keyof typeof seoMetrics] : seoMetrics.performance;
-  const values = metrics.map(m => m[metricField as keyof typeof m] as number).filter(v => v !== null);
+  const metricKey = (metric || 'performance') as keyof typeof metrics[0];
+  const values = metrics.map(m => {
+    const value = m[metricKey];
+    return typeof value === 'number' ? value : null;
+  }).filter((v): v is number => v !== null);
 
   const summary = {
     count: values.length,

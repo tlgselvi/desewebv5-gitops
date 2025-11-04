@@ -80,6 +80,26 @@ export class AnomalyDetector {
   }
 
   /**
+   * Detect anomalies in data (public method for routes)
+   */
+  detectAnomalies(data: AnomalyData): AnomalyScore[] {
+    const results: AnomalyScore[] = [];
+    
+    // Detect p95 and p99 anomalies
+    const p95Result = this.detectp95Anomaly(data);
+    if (p95Result.result) {
+      results.push(p95Result.result);
+    }
+    
+    const p99Result = this.detectp99Anomaly(data);
+    if (p99Result.result) {
+      results.push(p99Result.result);
+    }
+    
+    return results;
+  }
+
+  /**
    * Detect anomalies in p95 percentile
    */
   detectp95Anomaly(data: AnomalyData): {

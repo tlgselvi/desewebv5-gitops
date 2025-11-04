@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { checkRedisConnection, SafeRedis } from '@/services/storage/redisClient.js';
+import { checkRedisConnection, redis } from '@/services/storage/redisClient.js';
 import { logger } from '@/utils/logger.js';
 
 interface CacheOptions {
@@ -43,13 +43,14 @@ export function cacheMiddleware(options: CacheOptions = {}) {
       const cacheKey = `cache:${keyGenerator(req)}`;
       
       // Try to get from cache
-      const cachedData = await SafeRedis.get(cacheKey);
+      const cachedData = await redis.get(cacheKey);
       if (cachedData) {
         try {
           const parsed = JSON.parse(cachedData);
           res.set('X-Cache', 'HIT');
           res.set('Cache-Control', `public, max-age=${ttl}`);
-          return res.json(parsed);
+          res.json(parsed);
+          return;
         } catch (error) {
           logger.warn('Failed to parse cached data', { cacheKey, error });
         }
@@ -62,7 +63,7 @@ export function cacheMiddleware(options: CacheOptions = {}) {
       res.json = function (body: any): Response {
         // Only cache if condition is met
         if (condition(req, res)) {
-          SafeRedis.set(cacheKey, JSON.stringify(body), ttl).catch((error) => {
+          redis.setex(cacheKey, ttl, JSON.stringify(body)).catch((error) => {
             logger.warn('Failed to cache response', { cacheKey, error });
           });
           res.set('X-Cache', 'MISS');

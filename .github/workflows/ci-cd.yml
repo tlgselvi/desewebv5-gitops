@@ -32,9 +32,13 @@ jobs:
       - name: Canary Rollout
         run: echo "Triggering rollout for CPT Web..."
       - name: Notify Slack
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true
         run: |
+          SLACK_WEBHOOK="${{ secrets.SLACK_WEBHOOK }}"
+          if [ -z "$SLACK_WEBHOOK" ] || [ "$SLACK_WEBHOOK" = "" ]; then
+            echo "SLACK_WEBHOOK secret not configured, skipping notification"
+            exit 0
+          fi
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"EA Plan v6.7.0 rollout triggered"}' \
-          $SLACK_WEBHOOK || echo "Slack notification skipped"
+            --data '{"text":"EA Plan v6.7.0 rollout triggered"}' \
+            "$SLACK_WEBHOOK" || echo "Slack notification failed"

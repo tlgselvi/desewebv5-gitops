@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
-import type { Request, Response, NextFunction } from 'express';
+import type { Response, NextFunction } from 'express';
+import type { AuthenticatedRequest } from '@/middleware/auth.js';
 import { db } from '@/db/index.js';
 import { rolePermissions, permissions, userRoles, roles } from '@/db/schema/rbac.js';
 import type { Action, Resource, RoleName, AuthUser } from '@/rbac/types.js';
@@ -21,14 +22,14 @@ function matchPermission(
 
 export function authorize({ resource, action }: AuthorizeOptions) {
   return async function authorizeMiddleware(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     try {
-      const user = req.user as AuthUser | undefined; // set by JWT auth middleware
+      const user = req.user as (AuthUser & { roles: RoleName[] }) | undefined; // set by JWT auth middleware
 
-      if (!user) {
+      if (!user || !user.roles) {
         logger.warn('Unauthenticated access attempt', {
           path: req.path,
           resource,

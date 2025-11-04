@@ -4,6 +4,7 @@ import { db, seoProjects, users } from '@/db/index.js';
 import { eq } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { authenticate, authorize } from '@/middleware/auth.js';
+import { cacheMiddleware } from '@/middleware/cache.js';
 import { logger } from '@/utils/logger.js';
 import { logAuditEvent, AuditActions, createAuditEntryFromRequest } from '@/utils/auditLogger.js';
 
