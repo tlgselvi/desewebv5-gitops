@@ -19,6 +19,7 @@ import { privacyRoutes } from './privacy.js';
 import { metricsRealtimeRoutes } from './metrics-realtime.js';
 import { alertsRoutes } from './alerts.js'; // Added
 import { correlationSimpleRoutes } from './correlation-simple.js';
+import { permissionRoutes } from './permissions.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -71,12 +72,13 @@ export function setupRoutes(app: Express): void {
         app.use(`${apiPrefix}/privacy`, privacyRoutes);
         app.use(`${apiPrefix}/metrics`, metricsRealtimeRoutes);
         app.use(`${apiPrefix}/alerts`, alertsRoutes); // Added
+        app.use(`${apiPrefix}/permissions`, permissionRoutes);
 
   // Root API endpoint
   app.get(apiPrefix, (req, res) => {
     res.json({
-      name: 'Dese EA Plan v6.7.0 API',
-      version: '6.7.0',
+      name: 'Dese EA Plan v6.8.0 API',
+      version: '6.8.0',
       description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),

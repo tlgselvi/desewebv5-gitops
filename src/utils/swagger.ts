@@ -7,8 +7,8 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Dese EA Plan v6.7.0 API',
-      version: '6.7.0',
+      title: 'Dese EA Plan v6.8.0 API',
+      version: '6.8.0',
       description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API',
       contact: {
         name: 'CPT Digital Team',
