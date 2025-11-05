@@ -43,12 +43,10 @@ try {
       --storage-size=20GB `
       --storage-auto-increase `
       --backup-start-time=03:00 `
-      --enable-bin-log `
       --maintenance-window-day=SUN `
       --maintenance-window-hour=4 `
       --maintenance-release-channel=production `
-      --deletion-protection `
-      --labels=project=dese-ea-plan,version=v6.8.0,environment=production
+      --deletion-protection
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host ""

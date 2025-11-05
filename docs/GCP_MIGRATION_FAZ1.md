@@ -26,7 +26,7 @@ PostgreSQL 15+ veritabanını Google Cloud SQL'de barındırmak için yeni bir i
 | **Storage Type** | SSD |
 | **Storage Size** | 20GB (auto-increase) |
 | **Backup** | Enabled (03:00 UTC) |
-| **Binary Logging** | Enabled |
+| **Binary Logging** | N/A (PostgreSQL'de desteklenmiyor) |
 | **Maintenance Window** | Pazar 04:00 UTC |
 | **Deletion Protection** | Enabled |
 
@@ -70,12 +70,10 @@ gcloud sql instances create dese-ea-plan-db \
   --storage-size=20GB \
   --storage-auto-increase \
   --backup-start-time=03:00 \
-  --enable-bin-log \
   --maintenance-window-day=SUN \
   --maintenance-window-hour=4 \
   --maintenance-release-channel=production \
-  --deletion-protection \
-  --labels=project=dese-ea-plan,version=v6.8.0,environment=production
+  --deletion-protection
 ```
 
 ### 3. Script ile Oluşturma
@@ -206,7 +204,7 @@ psql "postgresql://postgres:<GUVENLI_BIR_SIFRE_YAZIN>@<IP_ADRESI>:5432/dese_db"
 
 1. **✅ Deletion Protection:** Instance yanlışlıkla silinemez
 2. **✅ Backups:** Otomatik backup aktif (03:00 UTC)
-3. **✅ Binary Logging:** Point-in-time recovery için aktif
+3. **✅ Backups:** Point-in-time recovery için otomatik backup aktif
 4. **✅ Maintenance Window:** Production için optimize edildi
 5. **⚠️ Şifre:** Güçlü şifre kullanın ve güvenli saklayın
 
