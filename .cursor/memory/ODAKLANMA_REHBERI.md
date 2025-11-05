@@ -106,6 +106,7 @@
 - ✅ **WebSocket Gateway JWT Validation** (Topic subscription/unsubscription)
 - ✅ **Python Servislerinde Mock Data Kaldırıldı** (5 servis gerçek API entegrasyonu)
 - ✅ **Sprint 2.6 Tamamlandı** (Gün 4-5: Alert Dashboard UI + Sprint Review)
+- ✅ **Güvenlik Güncellemeleri** (Deprecated paketler güncellendi)
 
 ### Devam Eden Görevler
 
@@ -245,7 +246,7 @@ curl -X POST http://localhost:5555/finbot/query \
 
 **Son Güncelleme:** 2025-01-27 (Saat: Şimdi)  
 **Durum:** ✅ Tüm Kritik Görevler Tamamlandı  
-**Mevcut İlerleme:** ~90% (Tüm kritik görevler tamamlandı)  
+**Mevcut İlerleme:** ~92% (Tüm kritik görevler + Sprint 2.6 + Güvenlik güncellemeleri tamamlandı)  
 **Son Tamamlanan:** 
 - MCP Server Authentication & Security (Faz 2)
 - Test düzeltmeleri
