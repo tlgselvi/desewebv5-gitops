@@ -139,19 +139,34 @@ if (config.nodeEnv !== 'production') {
   setupSwagger(app);
 }
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.originalUrl} not found`,
-    timestamp: new Date().toISOString(),
-  });
+// 404 handler (must be before error handler)
+app.use('*', (req, res, next) => {
+  // Only handle 404 if no response was sent
+  if (!res.headersSent) {
+    res.status(404).json({
+      error: 'Not Found',
+      message: `Route ${req.originalUrl} not found`,
+      timestamp: new Date().toISOString(),
+    });
+  } else {
+    next();
+  }
 });
 
 // Error handling middleware (must be last)
 // Note: Express error handlers require 4 parameters (err, req, res, next)
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  errorHandler(err, req, res, next);
+  // Ensure JSON response is sent
+  if (!res.headersSent) {
+    errorHandler(err, req, res, next);
+  } else {
+    // Headers already sent, log error but don't send response
+    logger.error('Error occurred after response sent', {
+      error: err.message,
+      stack: err.stack,
+      url: req.url,
+    });
+  }
 });
 
 // Create HTTP server for WebSocket support
