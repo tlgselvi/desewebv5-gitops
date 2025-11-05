@@ -1,4 +1,13 @@
-import { WebSocket, WebSocketServer } from 'ws';
+// Dynamic import to handle ESM module resolution issues
+let WebSocket: typeof import('ws').WebSocket;
+let WebSocketServer: typeof import('ws').WebSocketServer;
+
+// Initialize WebSocket types at module load
+(async () => {
+  const wsModule = await import('ws');
+  WebSocket = wsModule.WebSocket;
+  WebSocketServer = wsModule.WebSocketServer;
+})();
 import { Server as HTTPServer } from 'http';
 import { logger } from '@/utils/logger.js';
 import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
@@ -15,13 +24,13 @@ import { getStreamStats } from '@/metrics/realtime.js';
 
 // Authenticated WebSocket with additional properties
   // Using intersection type - TypeScript will merge WebSocket methods automatically
-type AuthenticatedWebSocket = WebSocket & {
+type AuthenticatedWebSocket = ReturnType<typeof getWebSocket> & {
   userId?: string;
   isAlive?: boolean;
 }
 
 export class WebSocketGateway {
-  private wss: WebSocketServer;
+  private wss: ReturnType<typeof getWebSocketServer>;
   private clients: Set<AuthenticatedWebSocket> = new Set();
   
   // Metrics tracking
@@ -29,6 +38,7 @@ export class WebSocketGateway {
   private latencySamples: number[] = []; // Last 512 ping/pong measurements (ms)
 
   constructor(server: HTTPServer) {
+    const WebSocketServer = getWebSocketServer();
     this.wss = new WebSocketServer({
       server,
       path: '/ws',
@@ -76,7 +86,7 @@ export class WebSocketGateway {
    * Setup WebSocket event handlers
    */
   private setupEventHandlers(): void {
-    this.wss.on('connection', (ws: WebSocket, req) => {
+    this.wss.on('connection', (ws: ReturnType<typeof getWebSocket>, req) => {
       const authenticatedWs = ws as AuthenticatedWebSocket;
       // Extract token from query string
       const url = new URL(req.url || '', 'http://localhost');
@@ -143,7 +153,7 @@ export class WebSocketGateway {
       });
 
       // Handle errors
-      (authenticatedWs as WebSocket).on('error', (error) => {
+      (authenticatedWs as ReturnType<typeof getWebSocket>).on('error', (error) => {
         logger.error('WebSocket error', {
           clientId: authenticatedWs.userId,
           error: error instanceof Error ? error.message : String(error),
@@ -218,13 +228,13 @@ export class WebSocketGateway {
           logger.debug('Terminating dead WebSocket connection', {
             clientId: ws.userId,
           });
-        (ws as WebSocket).terminate();
+        (ws as ReturnType<typeof getWebSocket>).terminate();
         this.clients.delete(ws);
         return;
       }
 
       ws.isAlive = false;
-      (ws as WebSocket).ping();
+      (ws as ReturnType<typeof getWebSocket>).ping();
       });
     }, 30000); // 30 seconds
 

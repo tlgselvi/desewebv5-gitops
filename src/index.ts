@@ -157,8 +157,16 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 // Create HTTP server for WebSocket support
 const httpServer = createServer(app);
 
-// Initialize WebSocket gateway
-initializeWebSocketGateway(httpServer);
+// Initialize WebSocket gateway (lazy initialization)
+// WebSocket gateway is initialized after server starts to avoid import issues
+setImmediate(() => {
+  try {
+    initializeWebSocketGateway(httpServer);
+  } catch (error) {
+    logger.error('Failed to initialize WebSocket gateway', { error });
+    // Continue without WebSocket - app can still function
+  }
+});
 
 // Start server with database connection test
 const server = httpServer.listen(config.port, async () => {
