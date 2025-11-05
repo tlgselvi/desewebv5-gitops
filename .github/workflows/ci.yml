@@ -30,12 +30,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup PowerShell
-        uses: microsoft/setup-powershell@v1
-        shell: pwsh
+        uses: microsoft/setup-powershell@v2
 
       - name: Run JARVIS Efficiency Chain
         env:
           PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL || 'http://localhost:9090' }}
+        shell: pwsh
         run: |
           pwsh scripts/jarvis-efficiency-chain.ps1 -Verbose
         continue-on-error: true

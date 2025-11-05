@@ -147,7 +147,11 @@ function Step-MetricsPush {
     try {
         # Check if Prometheus is reachable
         $response = Invoke-WebRequest -Uri "$promUrl/api/v1/status/config" -TimeoutSec 5 -ErrorAction Stop
-        Write-Log "Prometheus is reachable at: $promUrl"
+        if ($response.StatusCode -eq 200) {
+            Write-Log "Prometheus is reachable at: $promUrl"
+        } else {
+            Write-Log "Prometheus returned status code: $($response.StatusCode)" -Level "WARN"
+        }
         
         # Metrics push would go here (placeholder)
         # In production, push metrics using Prometheus Pushgateway or similar
@@ -156,6 +160,7 @@ function Step-MetricsPush {
         return @{
             PrometheusUrl = $promUrl
             Status = "success"
+            StatusCode = $response.StatusCode
         }
     } catch {
         Write-Log "Prometheus is not reachable: $($_.Exception.Message)" -Level "WARN"
