@@ -507,5 +507,5 @@ Production health check ve CI/CD pipeline'ını geliştirmek için:
 ---
 
 **Son Güncelleme**: 2024
-**Versiyon**: 5.0.0
+**Versiyon**: 6.8.0
 
