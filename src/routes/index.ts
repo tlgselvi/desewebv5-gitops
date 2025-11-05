@@ -20,6 +20,7 @@ import { metricsRealtimeRoutes } from './metrics-realtime.js';
 import { alertsRoutes } from './alerts.js'; // Added
 import { correlationSimpleRoutes } from './correlation-simple.js';
 import { permissionRoutes } from './permissions.js';
+import { browserAutomationRoutes } from './browserAutomation.js';
 import { aiopsMetrics } from '@/middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
@@ -73,6 +74,7 @@ export function setupRoutes(app: Express): void {
         app.use(`${apiPrefix}/metrics`, metricsRealtimeRoutes);
         app.use(`${apiPrefix}/alerts`, alertsRoutes); // Added
         app.use(`${apiPrefix}/permissions`, permissionRoutes);
+        app.use(`${apiPrefix}/browser-automation`, browserAutomationRoutes);
 
   // Root route handler (must be before 404 handler)
   app.get('/', (req, res) => {
