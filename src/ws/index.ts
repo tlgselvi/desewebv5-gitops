@@ -5,5 +5,6 @@
  */
 
 export * from './gateway.js';
+export { WebSocketServer, WebSocket } from 'ws';
 
 

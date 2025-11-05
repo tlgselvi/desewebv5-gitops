@@ -190,7 +190,7 @@ export class BrowserAutomationService {
           });
           return {
             success: true,
-            screenshot: screenshot.toString(),
+            screenshot: screenshot.toString('base64'),
           };
         }
 
