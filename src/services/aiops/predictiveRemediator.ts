@@ -296,7 +296,8 @@ export class PredictiveRemediator {
       const features: SeverityFeatures = {
         correlationScore: avgCorrelation,
         anomalyScore: snapshot.anomalyScore,
-        trendDirection: trend
+        trendDirection: trend,
+        remarks: ''
       };
 
       // Classify severity

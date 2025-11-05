@@ -80,7 +80,7 @@ export class ContentGenerator {
       const eEatScore = await this.calculateEEATScore(content, validatedRequest);
 
       // Save generated content
-      const savedContent = await db.insert(generatedContent).values({
+      const savedContent = await (db.insert(generatedContent).values({
         projectId: validatedRequest.projectId,
         templateId: validatedRequest.templateId,
         title: content.title,
@@ -90,7 +90,7 @@ export class ContentGenerator {
         eEatScore: eEatScore.overall,
         qualityScore: content.qualityScore,
         status: 'draft',
-      }).returning();
+      } as any) as any).returning();
 
       contentLogger.info('Content generation completed', {
         contentId: savedContent[0].id,
@@ -428,13 +428,14 @@ export class ContentGenerator {
     template: string;
     variables?: Record<string, any>;
   }) {
-    const template = await db.insert(contentTemplates).values({
+    const template = await (db.insert(contentTemplates).values({
       name: templateData.name,
       type: templateData.type,
       template: templateData.template,
       variables: templateData.variables || {},
       eEatScore: 0.8, // Default E-E-A-T score for templates
-    }).returning();
+      isActive: true,
+    } as any) as any).returning();
 
     contentLogger.info('Content template created', { templateId: template[0].id });
     return template[0];

@@ -263,13 +263,13 @@ router.post('/', asyncHandler(async (req, res) => {
     }
   }
 
-  const project = await (db
+  const insertQuery = db
     .insert(seoProjects)
     .values({
       ...validatedData,
       ownerId,
-    }) as any)
-    .returning();
+    } as any);
+  const project = await (insertQuery as any).returning();
 
   logger.info('Project created', {
     projectId: project[0].id,

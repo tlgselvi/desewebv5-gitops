@@ -178,7 +178,7 @@ export class BrowserAutomationService {
       switch (validated.action) {
         case 'navigate': {
           const url = params.url as string;
-          await page.goto(url, { waitUntil: 'networkidle2' });
+          await page.goto(url, { waitUntil: 'networkidle2' as const });
           return { success: true, url };
         }
 
@@ -190,7 +190,7 @@ export class BrowserAutomationService {
           });
           return {
             success: true,
-            screenshot: screenshot.toString('base64'),
+            screenshot: screenshot.toString(),
           };
         }
 
@@ -219,7 +219,7 @@ export class BrowserAutomationService {
           if (selector) {
             await page.waitForSelector(selector, { timeout });
           } else {
-            await page.waitForTimeout(timeout);
+            await new Promise(resolve => setTimeout(resolve, timeout));
           }
           return { success: true, timeout };
         }
