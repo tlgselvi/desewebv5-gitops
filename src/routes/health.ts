@@ -41,7 +41,14 @@ router.get('/', async (req, res) => {
       },
       services: {
         database: dbStatus,
-        redis: true, // TODO: Add Redis health check
+        redis: await (async () => {
+          try {
+            await redis.ping();
+            return true;
+          } catch {
+            return false;
+          }
+        })(),
         openai: !!process.env.OPENAI_API_KEY,
         lighthouse: true,
       },

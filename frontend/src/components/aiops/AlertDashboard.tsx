@@ -85,7 +85,18 @@ export default function AlertDashboard() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          resolvedBy: "user", // TODO: Get from auth context
+          resolvedBy: (() => {
+            try {
+              const token = getToken();
+              if (token) {
+                const decoded = JSON.parse(atob(token.split(".")[1]));
+                return decoded.email || decoded.id || "user";
+              }
+              return "user";
+            } catch {
+              return "user";
+            }
+          })(),
         }),
       });
 
