@@ -71,6 +71,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      if (process.env.NODE_ENV === "development") {
+        console.warn("🔐 Authentication Error: Token expired or invalid. Redirecting to login...");
+      }
+
       // Clear token and redirect to login
       localStorage.removeItem("token");
       
@@ -97,28 +101,84 @@ api.interceptors.response.use(
       // Could implement exponential backoff retry here
     }
 
-    // Handle 500+ Server Errors
+    // Handle 500+ Server Errors with detailed logging
     if (error.response?.status && error.response.status >= 500) {
-      console.error("Server error:", error.response.data?.message || "Internal server error");
-      // Could show a user-friendly error message
+      const errorDetails = {
+        type: "Server Error",
+        status: error.response.status,
+        message: error.response.data?.message || "Internal server error",
+        url: originalRequest?.url,
+        method: originalRequest?.method?.toUpperCase(),
+        timestamp: new Date().toISOString(),
+        data: error.response.data,
+      };
+
+      if (process.env.NODE_ENV === "development") {
+        console.group(`🚨 Server Error ${errorDetails.status}`);
+        console.error("Message:", errorDetails.message);
+        console.error("URL:", `${originalRequest?.baseURL}${errorDetails.url}`);
+        console.error("Method:", errorDetails.method || "N/A");
+        console.error("Timestamp:", errorDetails.timestamp);
+        if (errorDetails.data) {
+          console.error("Response Data:", errorDetails.data);
+        }
+        console.groupEnd();
+      } else {
+        console.error("Server error:", errorDetails.message);
+      }
     }
 
-    // Handle network errors
+    // Handle network errors with detailed logging
     if (!error.response) {
       const errorMessage = error.message || "Network error";
-      console.error("Network error:", errorMessage);
+      const errorDetails = {
+        type: "Network Error",
+        message: errorMessage,
+        code: error.code,
+        url: originalRequest?.url,
+        baseURL: originalRequest?.baseURL,
+        method: originalRequest?.method?.toUpperCase(),
+        timestamp: new Date().toISOString(),
+        stack: error.stack,
+      };
+
+      // Detailed console logging for development
+      if (process.env.NODE_ENV === "development") {
+        console.group("🚨 Network Error Details");
+        console.error("Type:", errorDetails.type);
+        console.error("Message:", errorDetails.message);
+        console.error("Code:", errorDetails.code || "N/A");
+        console.error("URL:", `${errorDetails.baseURL}${errorDetails.url}`);
+        console.error("Method:", errorDetails.method || "N/A");
+        console.error("Timestamp:", errorDetails.timestamp);
+        if (error.stack) {
+          console.error("Stack:", error.stack);
+        }
+        console.groupEnd();
+      } else {
+        // Production: simple error
+        console.error("Network error:", errorMessage);
+      }
       
       // Provide more helpful error message
       if (error.code === "ECONNREFUSED" || errorMessage.includes("Network Error")) {
-        console.error(
+        const troubleshooting = [
           "Backend server may be down. Please check:",
-          "\n- Backend is running on http://localhost:3001",
-          "\n- Docker containers (PostgreSQL, Redis) are running",
-          "\n- CORS is configured correctly",
-          "\n- NEXT_PUBLIC_API_URL is set correctly"
-        );
+          "- Backend is running on http://localhost:3001",
+          "- Docker containers (PostgreSQL, Redis) are running",
+          "- CORS is configured correctly",
+          "- NEXT_PUBLIC_API_URL is set correctly",
+          `- Current baseURL: ${getBaseURL()}`,
+        ];
+        
+        if (process.env.NODE_ENV === "development") {
+          console.group("💡 Troubleshooting Tips");
+          troubleshooting.forEach((tip) => console.warn(tip));
+          console.groupEnd();
+        } else {
+          console.error(troubleshooting.join("\n"));
+        }
       }
-      // Could show "Please check your internet connection" message
     }
 
     return Promise.reject(error);

@@ -23,6 +23,23 @@ const nextConfig = {
     optimizePackageImports: ['@tanstack/react-query', 'axios'], // Tree-shake unused exports
   },
   
+  // Development error overlay
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
+  
+  // Better error reporting in development
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        minimize: false, // Better error messages
+      };
+    }
+    return config;
+  },
+  
   // Note: Webpack config removed - Next.js 16 uses Turbopack by default
   // For Turbopack-specific optimizations, use the turbopack config above
 };

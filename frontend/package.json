@@ -5,9 +5,14 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
+    "dev:watch": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint .",
+    "lint:watch": "next lint --watch",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "dev:full": "concurrently \"npm run dev\" \"npm run lint:watch\" \"npm run type-check:watch\""
   },
   "keywords": [],
   "author": "",
@@ -23,23 +28,24 @@
     "axios": "^1.12.2",
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.0.0",
+    "framer-motion": "^11.0.0",
     "jose": "^6.1.0",
+    "lucide-react": "^0.344.0",
     "next": "^16.0.0",
     "postcss": "^8.5.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "recharts": "^2.12.0",
     "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
-    "zustand": "^5.0.8",
-    "framer-motion": "^11.0.0",
-    "recharts": "^2.12.0",
-    "lucide-react": "^0.344.0"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.1.0",
     "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@vitejs/plugin-react": "^5.1.0",
     "@vitest/ui": "^4.0.3",
+    "concurrently": "^9.2.1",
     "jsdom": "^27.0.1",
     "vitest": "^4.0.3",
     "zod": "^4.1.12"

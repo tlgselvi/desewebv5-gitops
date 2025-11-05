@@ -252,7 +252,7 @@ export function RoleEditor() {
                         )}
                       </div>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRemovePermission(selectedRole.id, perm.id)}
                       >
