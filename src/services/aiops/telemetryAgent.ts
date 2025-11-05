@@ -80,8 +80,23 @@ export class TelemetryAgent {
   /**
    * Get current system state
    */
-  async getSystemState(): Promise<TelemetryData> {
-    return this.run();
+  async getSystemState(threshold: number = 0.05): Promise<TelemetryData> {
+    const data = await this.collectMetrics();
+    const avgLatency = this.calculateAverageLatency(data);
+    const drift = this.detectDrift(avgLatency, 1.0, threshold);
+
+    const telemetryData: TelemetryData = {
+      timestamp: Date.now(),
+      avgLatency,
+      drift,
+      metrics: {
+        avgLatency,
+        predictedLatency: 1.0,
+        driftPercentage: avgLatency > 0 ? ((avgLatency - 1.0) / 1.0) * 100 : 0,
+      },
+    };
+
+    return telemetryData;
   }
 }
 

@@ -1,0 +1,112 @@
+name: JARVIS Weekly Maintenance
+
+on:
+  schedule:
+    # Run every Monday at 2:00 AM UTC (weekly)
+    - cron: '0 2 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  jarvis-efficiency:
+    name: JARVIS Efficiency Chain
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup PowerShell
+        uses: microsoft/setup-powershell@v1
+        shell: pwsh
+
+      - name: Run JARVIS Efficiency Chain
+        env:
+          PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL || 'http://localhost:9090' }}
+        run: |
+          pwsh scripts/jarvis-efficiency-chain.ps1 -Verbose
+        continue-on-error: true
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jarvis-reports-${{ github.run_number }}
+          path: reports/
+          retention-days: 30
+
+      - name: Generate summary
+        if: always()
+        run: |
+          echo "## JARVIS Weekly Maintenance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d "reports" ]; then
+            echo "### Reports Generated" >> $GITHUB_STEP_SUMMARY
+            ls -la reports/ >> $GITHUB_STEP_SUMMARY
+          fi
+
+  mcp-health-check:
+    name: MCP Server Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start MCP Servers (Background)
+        run: |
+          pnpm mcp:all &
+          sleep 10
+
+      - name: Health Check - FinBot MCP
+        run: |
+          curl -f http://localhost:5555/finbot/health || exit 1
+
+      - name: Health Check - MuBot MCP
+        run: |
+          curl -f http://localhost:5556/mubot/health || exit 1
+
+      - name: Health Check - DESE MCP
+        run: |
+          curl -f http://localhost:5557/dese/health || exit 1
+
+      - name: Health Check - Observability MCP
+        run: |
+          curl -f http://localhost:5558/observability/health || exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          pkill -f "mcp.*server" || true
+

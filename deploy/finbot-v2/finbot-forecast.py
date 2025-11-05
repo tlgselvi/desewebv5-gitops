@@ -26,6 +26,8 @@ class FinBotForecaster:
     
     def __init__(self):
         self.prometheus_gateway = os.getenv('PROMETHEUS_GATEWAY', 'http://prometheus:9091')
+        self.backend_url = os.getenv('BACKEND_URL', 'http://localhost:3001')
+        self.prometheus_url = os.getenv('PROMETHEUS_URL', 'http://prometheus:9090')
         self.prediction_horizon = int(os.getenv('FINBOT_PREDICTION_DAYS', '90'))
         
         # Prometheus metrics
@@ -44,17 +46,66 @@ class FinBotForecaster:
         self.correlation_score = 0.0
     
     def fetch_historical_cost_data(self, days: int = 90) -> pd.DataFrame:
-        """Fetch historical cost data from cloud providers / APIs"""
+        """Fetch historical cost data from backend API or Prometheus"""
         try:
-            # In production, this would query AWS/Azure/GCP billing APIs
-            # For now, generating mock data structure
+            import requests
             
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
-            dates = pd.date_range(start=start_date, end=end_date, freq='D')
+            # Try to fetch from backend analytics API
+            try:
+                analytics_url = f"{self.backend_url}/api/v1/analytics/dashboard"
+                response = requests.get(analytics_url, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    # Extract cost history if available
+                    cost_history = data.get('costHistory', data.get('historicalCosts', []))
+                    
+                    if cost_history and len(cost_history) > 0:
+                        # Convert to DataFrame
+                        df = pd.DataFrame(cost_history)
+                        if 'date' in df.columns and 'cost' in df.columns:
+                            df['ds'] = pd.to_datetime(df['date'])
+                            df['y'] = df['cost'].astype(float)
+                            return df[['ds', 'y']]
+            except Exception as api_error:
+                print(f"⚠️  Backend API error, trying Prometheus: {api_error}")
             
-            # Mock cost data with trend
+            # Try Prometheus for cost metrics
+            try:
+                query = 'finbot_cost_prediction'  # Or relevant cost metric
+                prometheus_url = f"{self.prometheus_url}/api/v1/query_range"
+                params = {
+                    'query': query,
+                    'start': start_date.timestamp(),
+                    'end': end_date.timestamp(),
+                    'step': '1d'
+                }
+                
+                response = requests.get(prometheus_url, params=params, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('status') == 'success' and data.get('data', {}).get('result'):
+                        result = data['data']['result'][0]
+                        values = result.get('values', [])
+                        
+                        if values:
+                            dates = [datetime.fromtimestamp(v[0]) for v in values]
+                            costs = [float(v[1]) for v in values]
+                            
+                            df = pd.DataFrame({
+                                'ds': dates,
+                                'y': costs
+                            })
+                            return df
+            except Exception as prom_error:
+                print(f"⚠️  Prometheus error: {prom_error}")
+            
+            # Fallback to mock data if all APIs fail
+            dates = pd.date_range(start=start_date, end=end_date, freq='D')
             base_cost = 100.0
             trend = 0.02  # 2% daily increase
             costs = [base_cost * (1 + trend) ** i for i in range(len(dates))]

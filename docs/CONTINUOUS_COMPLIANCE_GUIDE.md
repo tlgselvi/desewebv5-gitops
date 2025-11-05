@@ -1,5 +1,8 @@
 # 🔁 Continuous Compliance Loop Guide
 
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
+
 ## 📋 Overview
 
 The Continuous Compliance Loop ensures that SBOM baseline, security policies, and configuration remain aligned across the entire application lifecycle. This system automatically detects drift, remediates within acceptable thresholds, and maintains compliance standards.

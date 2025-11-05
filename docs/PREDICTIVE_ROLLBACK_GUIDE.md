@@ -1,4 +1,7 @@
-# 🤖 Predictive Rollback Guide - EA Plan v5.1
+# 🤖 Predictive Rollback Guide - EA Plan v6.8.0
+
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
 
 ## 📋 Overview
 

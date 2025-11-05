@@ -1,4 +1,7 @@
-# EA Plan v5.6 - Deployment Checklist
+# EA Plan v6.8.0 - Deployment Checklist
+
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
 
 ## Pre-Deployment
 

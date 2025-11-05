@@ -21,6 +21,7 @@ class AIOpsDecisionEngine:
     
     def __init__(self):
         self.prometheus_gateway = os.getenv('PROMETHEUS_GATEWAY', 'http://prometheus:9091')
+        self.prometheus_url = os.getenv('PROMETHEUS_URL', 'http://prometheus:9090')
         self.auto_remediate = os.getenv('AIOPS_AUTO_REMEDIATE', 'false').lower() == 'true'
         self.decision_threshold = float(os.getenv('AIOPS_DECISION_THRESHOLD', '0.7'))
         
@@ -40,23 +41,67 @@ class AIOpsDecisionEngine:
         self.is_trained = False
     
     def fetch_metrics(self, metric_names: List[str], hours: int = 24) -> pd.DataFrame:
-        """Fetch metrics from Prometheus"""
+        """Fetch metrics from Prometheus API"""
         try:
-            # In production, this would query Prometheus API
-            # For now, returning mock data structure
+            import requests
             
             end_time = datetime.now()
             start_time = end_time - timedelta(hours=hours)
             
-            # Mock data structure
-            timestamps = pd.date_range(start=start_time, end=end_time, freq='1H')
+            # Query Prometheus API
+            prometheus_url = f"{self.prometheus_url}/api/v1/query_range"
             
-            metrics = {}
+            metrics_data = {}
+            timestamps = None
+            
             for metric_name in metric_names:
-                # Generate mock time-series data
-                metrics[metric_name] = np.random.normal(50, 10, len(timestamps))
+                try:
+                    # Build PromQL query
+                    query = metric_name
+                    
+                    params = {
+                        'query': query,
+                        'start': start_time.timestamp(),
+                        'end': end_time.timestamp(),
+                        'step': '1h'
+                    }
+                    
+                    response = requests.get(prometheus_url, params=params, timeout=10)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        if data.get('status') == 'success' and data.get('data', {}).get('result'):
+                            result = data['data']['result'][0]  # Get first result
+                            values = result.get('values', [])
+                            
+                            if values:
+                                # Extract timestamps and values
+                                if timestamps is None:
+                                    timestamps = [datetime.fromtimestamp(v[0]) for v in values]
+                                
+                                metric_values = [float(v[1]) for v in values]
+                                metrics_data[metric_name] = metric_values
+                        else:
+                            print(f"⚠️  No data for metric {metric_name}")
+                    else:
+                        print(f"⚠️  Prometheus API error for {metric_name}: {response.status_code}")
+                        
+                except Exception as e:
+                    print(f"⚠️  Error fetching {metric_name}: {e}")
+                    # Fallback to empty series
+                    if timestamps is None:
+                        timestamps = pd.date_range(start=start_time, end=end_time, freq='1H')
+                    metrics_data[metric_name] = [0] * len(timestamps)
             
-            df = pd.DataFrame(metrics, index=timestamps)
+            # If no data fetched, return empty DataFrame
+            if not metrics_data or timestamps is None:
+                timestamps = pd.date_range(start=start_time, end=end_time, freq='1H')
+                for metric_name in metric_names:
+                    if metric_name not in metrics_data:
+                        metrics_data[metric_name] = [0] * len(timestamps)
+            
+            df = pd.DataFrame(metrics_data, index=timestamps)
             return df
         
         except Exception as e:

@@ -1,13 +1,20 @@
 {
   "name": "dese-ea-plan-v5",
-  "version": "5.0.0",
+  "version": "6.8.0",
   "description": "CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama",
   "type": "module",
   "main": "dist/index.js",
+  "packageManager": "pnpm@8.15.0",
+  "bin": {
+    "master-control": "./dist/cli/masterControl.js"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:3001": "tsx watch src/index.ts",
+    "dev:ops": "tsx watch src/ops-server.ts",
     "build": "tsc && tsc-alias",
-    "start": "node dist/index.js",
+    "start": "tsx src/index.ts",
+    "start:ops": "tsx src/ops-server.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -23,6 +30,21 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "rbac:seed": "tsx src/rbac/seed.ts",
+    "audit:test": "vitest run -t audit",
+    "privacy:test": "vitest run -t privacy",
+    "metrics:test": "pwsh scripts/test-prometheus-metrics.ps1",
+    "metrics:grafana": "pwsh scripts/setup-grafana-dashboard.ps1",
+    "metrics:validate": "pwsh scripts/validate-realtime-metrics.ps1",
+    "metrics:validate:bash": "bash scripts/validate-realtime-metrics.sh",
+    "metrics:alerts": "pwsh scripts/setup-alertmanager.ps1",
+    "mcp:finbot": "tsx src/mcp/finbot-server.ts",
+    "mcp:mubot": "tsx src/mcp/mubot-server.ts",
+    "mcp:dese": "tsx src/mcp/dese-server.ts",
+    "mcp:observability": "tsx src/mcp/observability-server.ts",
+    "mcp:all": "tsx src/mcp/finbot-server.ts & tsx src/mcp/mubot-server.ts & tsx src/mcp/dese-server.ts & tsx src/mcp/observability-server.ts",
+    "ai:stage-context": "git diff --staged > .cursor/context.staged.diff && echo staged diff exported",
+    "ai:review:staged": "npm run ai:stage-context && cursor chat --context .cursor/context.staged.diff",
     "docker:build": "docker build -t dese-ea-plan-v5 .",
     "docker:run": "docker run -p 3000:3000 dese-ea-plan-v5",
     "k8s:apply": "kubectl apply -f k8s/",
@@ -37,7 +59,10 @@
     "cicd:setup": "bash scripts/setup-cicd.sh",
     "cicd:sync": "pwsh gitops-sync.ps1",
     "deploy:staging": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5-staging",
-    "deploy:production": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5"
+    "deploy:production": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5",
+    "watchdog": "bash ops/watchdog.sh",
+    "watchdog:win": "powershell -ExecutionPolicy Bypass -File ops/watchdog.ps1",
+    "watchdog:cron": "bash ops/watchdog-cron.sh"
   },
   "keywords": [
     "seo",
@@ -59,7 +84,7 @@
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "drizzle-orm": "^0.29.0",
+    "drizzle-orm": "^0.44.7",
     "express": "^4.18.2",
     "express-prometheus-middleware": "^1.2.0",
     "express-rate-limit": "^7.1.5",
@@ -67,15 +92,15 @@
     "helmet": "^7.1.0",
     "ioredis": "^5.3.2",
     "jsonwebtoken": "^9.0.2",
-    "lighthouse": "^11.4.0",
+    "lighthouse": "^13.0.1",
     "mathjs": "^15.0.0",
     "multer": "1.4.5-lts.2",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.7",
+    "nodemailer": "^7.0.10",
     "openai": "^4.20.1",
     "postgres": "^3.4.3",
     "prom-client": "^13.2.0",
-    "puppeteer": "^21.11.0",
+    "puppeteer": "^24.28.0",
     "redis": "^4.6.10",
     "sharp": "^0.33.0",
     "stripe": "^14.9.0",
@@ -84,6 +109,7 @@
     "twilio": "^4.19.0",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^4.7.1",
+    "ws": "^8.16.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -100,11 +126,12 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.14",
     "@types/supertest": "^2.0.16",
+    "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
-    "@vitest/coverage-v8": "^1.0.0",
-    "@vitest/ui": "^1.0.0",
-    "drizzle-kit": "^0.20.4",
+    "@vitest/coverage-v8": "^4.0.6",
+    "@vitest/ui": "^4.0.6",
+    "drizzle-kit": "^0.31.6",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
@@ -117,11 +144,10 @@
     "tsc-alias": "^1.8.8",
     "tsx": "^4.6.0",
     "typescript": "^5.3.2",
-    "vitest": "^1.0.0"
+    "vitest": "^4.0.6"
   },
   "engines": {
     "node": ">=20.19.0",
     "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.0"
+  }
 }

@@ -1,4 +1,7 @@
-# Dese EA Plan v5.0 - GitOps Workflow
+# Dese EA Plan v6.8.0 - GitOps Workflow
+
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
 
 ## 🚀 GitOps Senkronizasyon Sistemi
 

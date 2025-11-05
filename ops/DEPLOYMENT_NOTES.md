@@ -1,4 +1,7 @@
-# Dese Web v5.6 - Sprint 1.5 Ops Deployment Notes
+# Dese EA Plan v6.8.0 - Ops Deployment Notes
+
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
 
 ## Day 1 - Load Testing (k6)
 

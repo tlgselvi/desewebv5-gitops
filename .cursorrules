@@ -1,0 +1,650 @@
+# Dese EA Plan v6.8.0 - Cursor AI Rules
+
+> **Geçerlilik:** Bu kurallar Dese EA Plan v6.8.0 projesi için geçerlidir  
+> **Versiyon:** 6.8.0  
+> **Son Güncelleme:** 2025-01-27  
+> **Uyumluluk:** Cursor AI v2.0+, TypeScript 5.3+, Node.js 20.19+
+
+---
+
+## 🎯 ODAKLANMA REHBERİ - ÖNEMLİ!
+
+> **Kullanıcı dikkat dağınıklığı sorunu yaşıyor. Bu yüzden:**
+
+1. **TEK GÖREV ODAKLI ÇALIŞ**: Her seferinde sadece bir görev üzerinde çalış
+2. **NET HEDEFLER**: Her görev için net bir sonuç tanımla
+3. **İLERLEME TAKİBİ**: Tamamlanan görevleri işaretle
+4. **GEREKSİZ DOSYALAR**: Eski/geçersiz dosyaları sil, temiz tut
+5. **ÖNCELİK SIRASI**: Her zaman öncelik sırasına göre çalış
+
+### Şu Anki Aktif Görev
+
+**MCP Server İyileştirmeleri** (Faz 1: Temel İyileştirmeler)
+- Öncelik: 🔴 Yüksek
+- Süre: 1-2 gün
+- Durum: ⏳ Planlama tamamlandı, implementasyona başlanacak
+
+**Detaylı plan:** `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md` dosyasında
+
+---
+
+## 🎯 Proje Özeti
+
+Dese EA Plan v6.8.0 - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+
+**Tech Stack:**
+- **Frontend**: Next.js 16 + React 19 + TypeScript + Tailwind CSS
+- **Backend**: Node.js + Express + PostgreSQL (Drizzle ORM)
+- **MCP Servers**: 4 adet (FinBot, MuBot, DESE, Observability)
+- **Testing**: Vitest + Supertest + Playwright
+- **Package Manager**: pnpm 8.15.0
+- **Infrastructure**: Docker + Kubernetes + Helm + ArgoCD
+- **Monitoring**: Prometheus + Grafana + Loki + Tempo
+
+---
+
+## 🤖 AI Asistanı için Özel Direktifler
+
+> **ÖNEMLİ:** Cursor AI asistanı kod önerirken ve üretirken **MUTLAKA** aşağıdaki kurallara uymalıdır:
+
+### Zorunlu Kurallar
+
+1. **Path Aliases**: **HER ZAMAN** `@/` prefix'ini kullanın
+   - ✅ `import { config } from '@/config/index.js'`
+   - ❌ `import { config } from '../../config/index.js'`
+
+2. **Type Safety**: **ASLA** `any` tipi önermeyin
+   - ✅ `function getUser(id: string): Promise<User | null>`
+   - ❌ `function getUser(id: any)`
+
+3. **Logging**: **ASLA** `console.log` önermeyin, **HER ZAMAN** `logger` kullanın
+   - ✅ `logger.info('User created', { userId: user.id })`
+   - ❌ `console.log('User created:', user)`
+
+4. **Error Handling**: **HER async fonksiyonda** try-catch kullanın
+   - ✅ Always wrap async operations in try-catch
+   - ❌ Never leave promises unhandled
+
+5. **Database Queries**: **ASLA** raw SQL önermeyin, **HER ZAMAN** Drizzle ORM kullanın
+   - ✅ `db.query.users.findFirst({ where: eq(users.id, id) })`
+   - ❌ `db.query('SELECT * FROM users WHERE id = ?')`
+
+6. **MCP Server Rules**: MCP server'lar için özel kurallar
+   - ✅ Her MCP server authentication yapmalı
+   - ✅ Gerçek backend API'lerine bağlanmalı (mock data değil)
+   - ✅ Error handling ve logging zorunlu
+   - ✅ Redis cache kullanılmalı
+
+---
+
+## 📁 MCP Server Kuralları
+
+### MCP Server Yapısı
+
+**4 Adet MCP Server:**
+1. **FinBot MCP** (Port 5555) - `/finbot`
+2. **MuBot MCP** (Port 5556) - `/mubot`
+3. **DESE MCP** (Port 5557) - `/dese`
+4. **Observability MCP** (Port 5558) - `/observability`
+
+### MCP Server Kod Standartları
+
+```typescript
+// ✅ Doğru MCP Server Yapısı
+import express, { Request, Response } from 'express';
+import { logger } from '@/utils/logger.js';
+import { authenticate } from '@/middleware/auth.js';
+import { withAuth } from '@/rbac/decorators.js';
+import { redis } from '@/services/storage/redisClient.js';
+import { asyncHandler } from '@/middleware/errorHandler.js';
+
+const app = express();
+const PORT = 5555; // Environment variable'dan alınmalı
+
+app.use(express.json());
+app.use(authenticate); // Authentication zorunlu
+
+// Health check endpoint
+app.get('/finbot/health', async (req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    service: 'finbot-mcp',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Query endpoint (cache ile)
+app.post('/finbot/query',
+  ...withAuth('mcp.finbot.query', 'read'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { query, context } = req.body;
+    
+    // Cache kontrolü
+    const cacheKey = `mcp:finbot:query:${JSON.stringify(req.body)}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+    
+    // Gerçek API çağrısı (mock değil!)
+    const finbotResponse = await fetch(`${FINBOT_BASE}/api/v1/accounts`);
+    const accounts = await finbotResponse.json();
+    
+    const result = {
+      query,
+      response: {
+        module: 'finbot',
+        context: { accounts },
+      },
+    };
+    
+    // Cache'e kaydet (60 saniye TTL)
+    await redis.setex(cacheKey, 60, JSON.stringify(result));
+    
+    logger.info('MCP query processed', { module: 'finbot', query });
+    res.json(result);
+  })
+);
+
+// Error handler
+app.use(errorHandler);
+```
+
+**MCP Server Kuralları:**
+- ✅ Authentication middleware zorunlu
+- ✅ RBAC permission check zorunlu
+- ✅ Gerçek backend API çağrıları (mock data değil)
+- ✅ Redis cache kullanımı
+- ✅ Error handling middleware
+- ✅ Structured logging
+- ✅ Environment variable'dan port alınmalı
+
+---
+
+## 📁 Dosya Yapısı Kuralları
+
+AI asistanı yeni dosya oluştururken şu yapıyı izlemelidir:
+
+- `src/routes/**/*.ts` → Route handlers (Express Router)
+- `src/services/**/*.ts` → Business logic
+- `src/middleware/**/*.ts` → Express middleware
+- `src/mcp/**/*.ts` → MCP Server implementations
+- `src/db/**/*.ts` → Database schema & connection
+- `src/utils/**/*.ts` → Utility functions
+- `src/schemas/**/*.ts` → Zod validation schemas
+
+---
+
+## 📁 Dosya/Glob Bazlı Kurallar
+
+### `src/routes/**/*.ts`
+
+```typescript
+// ✅ Doğru Route Yapısı
+import { Router } from 'express';
+import { z } from 'zod';
+import { logger } from '@/utils/logger.js';
+import { exampleService } from '@/services/exampleService.js';
+import { asyncHandler } from '@/middleware/errorHandler.js';
+
+const router = Router();
+
+const createSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+router.post('/', asyncHandler(async (req, res) => {
+  const validated = createSchema.parse(req.body);
+  const result = await exampleService.create(validated);
+  logger.info('Resource created', { id: result.id });
+  res.status(201).json(result);
+}));
+
+export { router as exampleRoutes };
+```
+
+**Kurallar:**
+- ✅ Router export edilmeli
+- ✅ Zod validation şeması tanımlı
+- ✅ Service katmanı kullanılmalı (direct DB access ❌)
+- ✅ Swagger annotations eklenmeli
+- ✅ asyncHandler kullanılmalı
+
+### `src/services/**/*.ts`
+
+```typescript
+// ✅ Doğru Service Yapısı
+import { db } from '@/db/index.js';
+import { users } from '@/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { logger } from '@/utils/logger.js';
+
+export const userService = {
+  async findById(id: string): Promise<User | null> {
+    try {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, id),
+      });
+      return user ?? null;
+    } catch (error) {
+      logger.error('Failed to find user', { id, error });
+      throw error;
+    }
+  },
+};
+```
+
+**Kurallar:**
+- ✅ Business logic burada olmalı
+- ✅ Drizzle ORM kullanılmalı
+- ✅ Error handling ve logging zorunlu
+- ✅ Type safety sağlanmalı
+
+### `src/mcp/**/*.ts` (MCP Servers)
+
+```typescript
+// ✅ Doğru MCP Server Yapısı
+import express from 'express';
+import { logger } from '@/utils/logger.js';
+import { authenticate } from '@/middleware/auth.js';
+import { redis } from '@/services/storage/redisClient.js';
+
+const app = express();
+app.use(express.json());
+app.use(authenticate); // Zorunlu!
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', service: 'mcp-server' });
+});
+
+// Query endpoint (cache + real API)
+app.post('/query', async (req, res) => {
+  const cacheKey = `mcp:query:${JSON.stringify(req.body)}`;
+  const cached = await redis.get(cacheKey);
+  if (cached) return res.json(JSON.parse(cached));
+  
+  // Gerçek API çağrısı
+  const result = await fetch(`${BACKEND_API}/endpoint`);
+  await redis.setex(cacheKey, 60, JSON.stringify(result));
+  res.json(result);
+});
+
+export default app;
+```
+
+**MCP Server Kuralları:**
+- ✅ Authentication middleware zorunlu
+- ✅ RBAC permission check
+- ✅ Redis cache kullanımı
+- ✅ Gerçek backend API çağrıları
+- ✅ Error handling
+- ✅ Structured logging
+
+---
+
+## 🎨 Frontend Kuralları (Next.js 16 + React 19)
+
+### Component Yapısı
+
+```typescript
+// ✅ Doğru Component Yapısı
+'use client';
+
+import { FC } from 'react';
+
+interface UserCardProps {
+  id: string;
+  name: string;
+  email: string;
+  onEdit?: (id: string) => void;
+}
+
+export const UserCard: FC<UserCardProps> = ({ id, name, email, onEdit }) => {
+  return (
+    <div className="p-4 bg-white rounded-lg shadow">
+      <h3 className="text-lg font-semibold">{name}</h3>
+      <p className="text-gray-600">{email}</p>
+      {onEdit && (
+        <button onClick={() => onEdit(id)}>Edit</button>
+      )}
+    </div>
+  );
+};
+```
+
+**Kurallar:**
+- ✅ TypeScript interface kullanılmalı (props için)
+- ✅ Functional components tercih edilmeli
+- ✅ Tailwind CSS class'ları kullanılmalı
+- ✅ Props optional ise `?` ile işaretlenmeli
+- ✅ 'use client' directive gerekli yerlerde
+
+---
+
+## 🔧 Backend Kuralları (Node.js + Express)
+
+### API Endpoint Yapısı
+
+```typescript
+// ✅ Doğru Endpoint Yapısı
+import { Router } from 'express';
+import { z } from 'zod';
+import { logger } from '@/utils/logger.js';
+import { exampleService } from '@/services/exampleService.js';
+import { asyncHandler } from '@/middleware/errorHandler.js';
+import { withAuth } from '@/rbac/decorators.js';
+
+const router = Router();
+
+const createExampleSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  value: z.number().positive('Value must be positive'),
+});
+
+/**
+ * @swagger
+ * /api/v1/example:
+ *   post:
+ *     summary: Create a new example
+ */
+router.post('/',
+  ...withAuth('example.create', 'write'),
+  asyncHandler(async (req, res) => {
+    const validated = createExampleSchema.parse(req.body);
+    const result = await exampleService.create(validated);
+    
+    logger.info('Example created', { 
+      id: result.id,
+      name: validated.name,
+    });
+    
+    res.status(201).json(result);
+  })
+);
+
+export { router as exampleRoutes };
+```
+
+---
+
+## 🧪 Testing Kuralları
+
+### Unit Test Yapısı
+
+```typescript
+// ✅ Doğru Test Yapısı
+import { describe, it, expect, beforeEach } from 'vitest';
+import { userService } from '@/services/userService.js';
+
+describe('userService', () => {
+  describe('findById', () => {
+    it('should return user when user exists', async () => {
+      // Arrange
+      const userId = '123';
+      
+      // Act
+      const user = await userService.findById(userId);
+      
+      // Assert
+      expect(user).toBeDefined();
+      expect(user?.id).toBe(userId);
+    });
+  });
+});
+```
+
+**Kurallar:**
+- ✅ AAA pattern kullanılmalı (Arrange, Act, Assert)
+- ✅ Test naming: `should [expected behavior] when [condition]`
+- ✅ Her test case tek bir şeyi test etmeli
+- ✅ Test dosyası `*.test.ts` formatında olmalı
+
+---
+
+## 🔒 Security Kuralları
+
+### Input Validation
+
+```typescript
+// ✅ Doğru Validation
+import { z } from 'zod';
+
+const createUserSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain uppercase letter')
+    .regex(/[a-z]/, 'Password must contain lowercase letter')
+    .regex(/[0-9]/, 'Password must contain number'),
+});
+
+export async function createUser(data: unknown) {
+  const validated = createUserSchema.parse(data); // Throws if invalid
+  // Process validated data
+}
+```
+
+### SQL Injection Prevention
+
+```typescript
+// ✅ Doğru - Drizzle ORM (Type-safe, SQL injection proof)
+import { eq } from 'drizzle-orm';
+
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+});
+
+// ❌ YANLIŞ - Raw SQL (NEVER DO THIS)
+// const user = await db.query(`SELECT * FROM users WHERE id = '${userId}'`);
+```
+
+---
+
+## 📊 Logging Kuralları
+
+### Structured Logging
+
+```typescript
+// ✅ Doğru Logging
+logger.info('User created', {
+  userId: user.id,
+  email: user.email,
+  timestamp: new Date().toISOString(),
+  action: 'create_user',
+});
+
+logger.error('Failed to process payment', {
+  orderId,
+  userId,
+  error: error.message,
+  stack: error.stack,
+  context: { amount, currency },
+});
+
+// ❌ YANLIŞ
+console.log('User created:', user); // ❌ Never use console.log
+console.error('Error:', error);     // ❌ Never use console.error
+```
+
+**Kurallar:**
+- ✅ Structured logging (JSON format)
+- ✅ Context bilgisi eklenmeli
+- ✅ Sensitive data log'lanmamalı
+- ✅ Log levels: `debug`, `info`, `warn`, `error`
+
+---
+
+## 🚀 Performance Kuralları
+
+### Async Operations
+
+```typescript
+// ✅ Doğru - Parallel execution
+const [users, posts, comments] = await Promise.all([
+  getUserById(id),
+  getPostsByUserId(id),
+  getCommentsByUserId(id),
+]);
+
+// ❌ YANLIŞ - Sequential execution
+const users = await getUserById(id);      // ❌ Slow
+const posts = await getPostsByUserId(id); // ❌ Slow
+const comments = await getCommentsByUserId(id); // ❌ Slow
+```
+
+### Database Optimization
+
+```typescript
+// ✅ Doğru - Select only needed fields
+const projects = await db.query.seoProjects.findMany({
+  where: eq(seoProjects.status, 'active'),
+  columns: {
+    id: true,
+    name: true,
+    domain: true,
+  },
+  limit: 100,
+});
+
+// ❌ YANLIŞ - Select all fields
+const projects = await db.query.seoProjects.findMany(); // ❌ Too much data
+```
+
+---
+
+## 🗂️ Dosya Organizasyonu Kuralları
+
+```
+src/
+├── config/          # Configuration files
+├── db/              # Database
+├── middleware/      # Express middleware
+├── routes/          # API routes
+├── services/        # Business logic
+├── mcp/             # MCP Servers (4 adet)
+├── schemas/         # Zod validation
+└── utils/           # Utilities
+```
+
+**Kurallar:**
+- ✅ Her klasörün tek bir sorumluluğu olmalı
+- ✅ Services → Business logic
+- ✅ Routes → HTTP handlers
+- ✅ MCP → Model Context Protocol servers
+- ✅ Middleware → Cross-cutting concerns
+- ✅ Utils → Reusable helpers
+
+---
+
+## ✅ YAPILMASI GEREKENLER
+
+### TypeScript
+- ✅ Her zaman explicit types kullanın
+- ✅ Null safety için null checks yapın
+- ✅ Path aliases (`@/`) kullanın
+- ✅ File extensions ekleyin (`.js`)
+- ✅ Generic types'ı uygun yerlerde kullanın
+
+### Error Handling
+- ✅ Her async fonksiyon için try-catch
+- ✅ asyncHandler middleware kullanın
+- ✅ Özel error class'ları kullanın
+- ✅ Error'ları log'layın
+- ✅ User-friendly messages, detayları log'da
+
+### Validation
+- ✅ Zod schemas kullanın
+- ✅ API endpoints'de validation
+- ✅ Drizzle ORM kullanın (SQL injection koruması)
+
+### Logging
+- ✅ Structured logging (logger utility)
+- ✅ Context bilgisi ekleyin
+- ✅ Sensitive data log'lamayın
+
+### Testing
+- ✅ Her feature için unit test
+- ✅ Test coverage %70+ (hedef %80+)
+- ✅ Integration testler için testcontainers
+- ✅ AAA pattern kullanın
+
+### MCP Servers
+- ✅ Authentication middleware zorunlu
+- ✅ RBAC permission check
+- ✅ Gerçek backend API entegrasyonu (mock değil)
+- ✅ Redis cache kullanımı
+- ✅ Error handling ve logging
+
+---
+
+## ❌ YAPILMAMASI GEREKENLER
+
+1. ❌ **`any` type kullanmayın** - Her zaman explicit types
+2. ❌ **`console.log` kullanmayın** - Logger utility kullanın
+3. ❌ **Raw SQL queries** - Drizzle ORM kullanın
+4. ❌ **Hardcoded secrets** - Environment variables
+5. ❌ **Main branch'e direkt commit** - PR açın
+6. ❌ **Büyük PR'lar** (1000+ satır) - Küçük, odaklanmış PR'lar
+7. ❌ **Test yazmadan PR** - Her feature için test
+8. ❌ **Relative imports** (`../../`) - Path aliases kullanın
+9. ❌ **Synchronous DB operations** - async/await kullanın
+10. ❌ **Unhandled promises** - Her zaman handle edin
+11. ❌ **MCP server'larda mock data** - Gerçek API çağrıları kullanın
+12. ❌ **MCP server'larda authentication eksik** - Her zaman auth ekleyin
+
+---
+
+## 🔍 Kod Review Checklist
+
+PR açmadan önce kontrol edin:
+
+- [ ] TypeScript types tanımlı (no `any`)
+- [ ] Linting geçiyor (`pnpm lint`)
+- [ ] Tests geçiyor (`pnpm test`)
+- [ ] Test coverage %70+ (`pnpm test:coverage`)
+- [ ] Error handling var (try-catch veya asyncHandler)
+- [ ] Input validation yapıldı (Zod)
+- [ ] Logging eklendi (logger, not console)
+- [ ] Dokümantasyon güncellendi (README, JSDoc)
+- [ ] Security kontrolü yapıldı
+- [ ] No hardcoded secrets
+- [ ] Path aliases kullanıldı (`@/`)
+- [ ] Drizzle ORM kullanıldı (no raw SQL)
+- [ ] MCP server'larda authentication var
+- [ ] MCP server'larda gerçek API çağrıları var
+
+---
+
+## 📚 Referans Dokümantasyon
+
+### Önemli Dosyalar (Odaklanma İçin)
+
+1. **`MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`** - MCP analiz ve planlar (ŞU ANKİ AKTİF GÖREV)
+2. **`DESE_JARVIS_CONTEXT.md`** - Proje context bilgileri
+3. **`docs/SPRINT_2.6_DAY_3_SUMMARY.md`** - Sprint 2.6 Gün 3 özeti
+4. **`README.md`** - Proje dokümantasyonu
+5. **`CODING_STANDARDS.md`** - Detaylı kod standartları
+
+### Diğer Referanslar
+- `CONTRIBUTING.md` - Katkıda bulunma rehberi
+- `RELEASE_NOTES_v6.8.0.md` - Release notları
+
+---
+
+## 🔄 Güncelleme Notları
+
+### v6.8.0 (2025-01-27)
+- ✅ MCP Server kuralları eklendi
+- ✅ Odaklanma rehberi eklendi
+- ✅ Şu anki aktif görev belirtildi
+- ✅ Authentication ve cache kuralları eklendi
+- ✅ Gerçek API entegrasyonu kuralları eklendi
+
+---
+
+**Son Güncelleme:** 2025-01-27  
+**Versiyon:** 6.8.0  
+**Geçerlilik:** Dese EA Plan v6.8.0+

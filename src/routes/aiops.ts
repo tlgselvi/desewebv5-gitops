@@ -8,14 +8,31 @@ const agent = new TelemetryAgent();
 /**
  * GET /api/v1/aiops/collect
  * Collect AIOps metrics and detect drift
+ * Query params:
+ *   - threshold: Optional drift threshold (default: 0.05)
  */
 router.get('/collect', async (req: Request, res: Response): Promise<void> => {
   try {
-    const telemetryData = await agent.getSystemState();
+    // Get threshold from query params (optional, default 0.05)
+    const threshold = req.query.threshold 
+      ? parseFloat(req.query.threshold as string) 
+      : 0.05;
+
+    // Validate threshold
+    if (isNaN(threshold) || threshold < 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid threshold. Must be a positive number.',
+      });
+      return;
+    }
+
+    const telemetryData = await agent.getSystemState(threshold);
     
     logger.info('AIOps telemetry data collected', {
       avgLatency: telemetryData.avgLatency,
       drift: telemetryData.drift,
+      threshold,
     });
 
     res.status(200).json({

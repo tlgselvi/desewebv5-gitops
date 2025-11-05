@@ -1,0 +1,97 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: only-signed-images
+  annotations:
+    policies.kyverno.io/title: Only Signed Images
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      This policy ensures that only signed container images are allowed to be deployed.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: verify-image-signature
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          - Deployment
+          - StatefulSet
+          - DaemonSet
+          - Job
+          - CronJob
+    verifyImages:
+    - imageReferences:
+      - "*"
+      attestors:
+      - count: 1
+        entries:
+        - keys:
+            publicKeys: |
+              -----BEGIN PUBLIC KEY-----
+              MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
+              -----END PUBLIC KEY-----
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: no-latest-tag
+  annotations:
+    policies.kyverno.io/title: No Latest Tag
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      This policy prevents the use of the 'latest' tag in container images.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: no-latest-tag
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          - Deployment
+          - StatefulSet
+          - DaemonSet
+          - Job
+          - CronJob
+    validate:
+      message: "Using 'latest' tag is not allowed. Please use a specific version."
+      pattern:
+        spec:
+          containers:
+          - image: "!*:latest"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-namespace-labels
+  annotations:
+    policies.kyverno.io/title: Require Namespace Labels
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      This policy ensures that namespaces have required labels.
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: require-namespace-labels
+    match:
+      any:
+      - resources:
+          kinds:
+          - Namespace
+    validate:
+      message: "Namespace must have required labels: environment, team, cost-center"
+      pattern:
+        metadata:
+          labels:
+            environment: "?*"
+            team: "?*"
+            cost-center: "?*"

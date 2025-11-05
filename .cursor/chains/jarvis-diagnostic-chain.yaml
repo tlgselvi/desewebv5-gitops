@@ -1,0 +1,93 @@
+# JARVIS Diagnostic Chain - Cursor AI
+# Version: 1.0.0
+# Protocol: upgrade-protocol-v1.2
+
+name: jarvis-diagnostic-chain
+description: Automated diagnostic chain for DESE EA Plan v6.8.0
+
+steps:
+  - name: context-cleanup
+    description: Clean up old .cursor/memory files
+    script: |
+      # Remove files older than 30 days
+      Get-ChildItem -Path ".cursor/memory" -File | 
+        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } | 
+        Remove-Item -Force
+    output: context_cleanup_report.json
+
+  - name: log-archive
+    description: Archive old log files
+    script: |
+      if (Test-Path "logs") {
+        $archiveDate = (Get-Date).ToString("yyyy-MM-dd")
+        $archivePath = "logs/archive/$archiveDate"
+        New-Item -ItemType Directory -Force -Path $archivePath | Out-Null
+        Get-ChildItem -Path "logs" -File -Filter "*.log" | 
+          Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | 
+          Move-Item -Destination $archivePath -Force
+      }
+    output: log_archive_report.json
+
+  - name: mcp-connectivity-audit
+    description: Check MCP server connectivity
+    script: |
+      $mcpServers = @(
+        @{ Name = "FinBot"; Port = 5555; Endpoint = "/finbot/health" },
+        @{ Name = "MuBot"; Port = 5556; Endpoint = "/mubot/health" },
+        @{ Name = "DESE"; Port = 5557; Endpoint = "/dese/health" },
+        @{ Name = "Observability"; Port = 5558; Endpoint = "/observability/health" }
+      )
+      
+      $results = @()
+      foreach ($server in $mcpServers) {
+        try {
+          $response = Invoke-WebRequest -Uri "http://localhost:$($server.Port)$($server.Endpoint)" -TimeoutSec 5 -ErrorAction Stop
+          $results += @{
+            Name = $server.Name
+            Port = $server.Port
+            Status = "healthy"
+            ResponseTime = $response.Headers.'X-Response-Time'
+          }
+        } catch {
+          $results += @{
+            Name = $server.Name
+            Port = $server.Port
+            Status = "unhealthy"
+            Error = $_.Exception.Message
+          }
+        }
+      }
+      $results | ConvertTo-Json | Out-File "reports/mcp_connectivity_$(Get-Date -Format 'yyyyMMdd').json"
+    output: mcp_connectivity_report.json
+
+  - name: context-stats-report
+    description: Generate context statistics report
+    script: |
+      $stats = @{
+        timestamp = (Get-Date).ToISOString()
+        memoryFiles = (Get-ChildItem -Path ".cursor/memory" -File).Count
+        memorySize = (Get-ChildItem -Path ".cursor/memory" -File | Measure-Object -Property Length -Sum).Sum
+        chainFiles = (Get-ChildItem -Path ".cursor/chains" -File).Count
+        scriptFiles = (Get-ChildItem -Path "scripts" -File -Filter "*.ps1").Count
+      }
+      $stats | ConvertTo-Json | Out-File "reports/context_stats_$(Get-Date -Format 'yyyyMMdd').json"
+    output: context_stats_report.json
+
+  - name: metrics-push
+    description: Push metrics to Prometheus
+    script: |
+      $promUrl = $env:PROMETHEUS_URL ?? "http://localhost:9090"
+      $metrics = @{
+        jarvis_diagnostic_run_total = 1
+        jarvis_diagnostic_timestamp = [DateTimeOffset]::Now.ToUnixTimeSeconds()
+      }
+      # Metrics push logic (placeholder)
+      Write-Host "Metrics would be pushed to: $promUrl"
+    output: metrics_push_report.json
+
+metadata:
+  version: "1.0.0"
+  protocol: "upgrade-protocol-v1.2"
+  lastUpdated: "2025-01-27"
+  author: "DESE JARVIS System"
+

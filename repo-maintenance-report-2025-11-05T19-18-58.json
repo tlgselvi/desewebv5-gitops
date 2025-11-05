@@ -1,0 +1,17 @@
+{
+  "backupBranch": "backup/auto-clean-2025-11-05T19-18-58",
+  "archivePath": "archive\\docs-2025-11-05T19-18-58",
+  "codeVersion": "5.0.0",
+  "mdVersions": [
+    "5.0"
+  ],
+  "updatedFiles": [
+    "README.md",
+    "README.md",
+    "docs/CHANGELOG.md"
+  ],
+  "archivedFiles": [],
+  "testsPassed": false,
+  "warnings": [],
+  "manualReviewRequired": []
+}

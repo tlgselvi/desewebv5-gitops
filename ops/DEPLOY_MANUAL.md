@@ -1,4 +1,7 @@
-# EA Plan v5.6 - Manuel Deployment Komutları
+# EA Plan v6.8.0 - Manuel Deployment Komutları
+
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
 
 ## ✅ Tamamlanan Adımlar
 - [x] Git commit: "release: EA Plan v5.6 Stable"

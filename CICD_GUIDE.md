@@ -1,5 +1,8 @@
 # 🚀 CI/CD ve Health Check Optimizasyon Rehberi
 
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
+
 ## 📋 İçindekiler
 
 1. [Genel Bakış](#genel-bakış)

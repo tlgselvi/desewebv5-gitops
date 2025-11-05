@@ -1,4 +1,7 @@
-# EA Plan v5.6 - Post-Deployment Validation
+# EA Plan v6.8.0 - Post-Deployment Validation
+
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
 
 ## Hızlı Başlangıç
 

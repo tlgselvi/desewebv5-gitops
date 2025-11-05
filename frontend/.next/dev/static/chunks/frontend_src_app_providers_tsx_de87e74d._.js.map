@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///C:/desesonpro/desewebv5/frontend/src/app/providers.tsx"],"sourcesContent":["\"use client\";\r\nimport { QueryClient, QueryClientProvider } from \"@tanstack/react-query\";\r\nimport { ReactNode, useState } from \"react\";\r\n\r\nexport default function Providers({ children }: { children: ReactNode }) {\r\n  const [queryClient] = useState(() => new QueryClient());\r\n  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;\r\n}\r\n"],"names":[],"mappings":";;;;;AACA;AAAA;AACA;;;AAFA;;;AAIe,SAAS,UAAU,EAAE,QAAQ,EAA2B;;IACrE,MAAM,CAAC,YAAY,GAAG,IAAA,qLAAQ;8BAAC,IAAM,IAAI,2MAAW;;IACpD,qBAAO,yMAAC,4NAAmB;QAAC,QAAQ;kBAAc;;;;;;AACpD;GAHwB;KAAA","debugId":null}}]
+}

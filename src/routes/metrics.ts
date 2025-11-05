@@ -12,10 +12,16 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const { action } = req.body;
     
-    if (action) {
-      recordUserAction(action);
-      logger.info('User action recorded', { action });
+    // Validate action parameter
+    if (!action || action.trim() === '') {
+      res.status(400).json({ 
+        error: 'Action parameter is required and cannot be empty',
+      });
+      return;
     }
+    
+    recordUserAction(action);
+    logger.info('User action recorded', { action });
     
     res.status(200).json({ status: 'logged' });
   } catch (error) {

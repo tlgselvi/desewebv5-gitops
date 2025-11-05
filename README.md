@@ -1,10 +1,18 @@
-# Dese EA Plan v5.0
+# Dese EA Plan v6.8.0
 
-CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+**Version:** v6.8.0  
+**Last Update:** 2025-01-27
+
+EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot + DESE)
 
 ## 🚀 Özellikler
 
-### SEO Modülleri
+### Ana Modüller
+- **FinBot**: Finance Engine (FastAPI, Python 3.11) - Cost & ROI Forecasting
+- **MuBot**: Accounting Engine (Express.js, TypeScript) - Multi-Source Data Ingestion
+- **DESE**: Analytics Layer (Next.js 16 + React 19) - Realtime Metrics Dashboard
+
+### SEO Modülleri (Legacy)
 - **SEO Analyzer**: Core Web Vitals, Lighthouse ve meta denetimi
 - **Content Generator**: E-E-A-T uyumlu içerik ve landing page üretimi
 - **Local SEO Manager**: Google Business, yerel backlink, yorum yönetimi
@@ -13,11 +21,11 @@ CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planla
 - **Sprint Manager**: 3 sprintlik SEO Kanban planlama
 
 ### Teknoloji Stack
-- **Frontend**: React 18 + TypeScript + Vite + Tailwind
-- **Backend**: Node.js + Express + PostgreSQL (Drizzle ORM)
+- **Frontend**: Next.js 16 + React 19 + TypeScript + Tailwind CSS
+- **Backend**: Node.js + Express + FastAPI + PostgreSQL (Drizzle ORM)
 - **Testing**: Vitest + Supertest + Playwright
-- **Packaging**: pnpm
-- **Infrastructure**: Docker + Kubernetes + Helm
+- **Packaging**: pnpm 8.15.0
+- **Infrastructure**: Docker + Kubernetes + Helm + ArgoCD
 - **Monitoring**: Prometheus + Grafana + Loki + Tempo
 - **GitOps**: ArgoCD + Kustomize
 
@@ -170,7 +178,14 @@ API dokümantasyonu Swagger UI ile erişilebilir:
 
 ### Ana Endpoints
 
-- `GET /health` - Health check
+**Health & Status:**
+- `GET /health` - Comprehensive health check (Database, Redis, Services)
+- `GET /health/ready` - Readiness probe (Database + Redis check)
+- `GET /health/live` - Liveness probe
+- `GET /metrics` - Prometheus metrics
+- `GET /metrics/aiops` - AIOps specific metrics
+
+**API Endpoints:**
 - `GET /api/v1/projects` - SEO projeleri
 - `POST /api/v1/seo/analyze` - SEO analizi
 - `POST /api/v1/content/generate` - İçerik üretimi
@@ -234,15 +249,52 @@ src/
 
 ## 🤝 Katkıda Bulunma
 
-1. Fork yapın
+Projeye katkıda bulunmak için detaylı rehberimize bakın:
+
+📖 **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Katkıda bulunma rehberi  
+📐 **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Kod standartları ve best practices
+
+### Hızlı Başlangıç
+
+1. Fork yapın ve repository'yi klonlayın
 2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
+3. Değişikliklerinizi yapın ve testlerinizi yazın
+4. Commit yapın (Conventional Commits formatında)
+5. Push yapın ve Pull Request oluşturun
+
+Detaylar için [CONTRIBUTING.md](./CONTRIBUTING.md) dosyasına bakın.
+
+## 📚 Ek Dokümantasyon
+
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Katkıda bulunma rehberi
+- **[CODING_STANDARDS.md](./CODING_STANDARDS.md)** - Kod standartları ve best practices
+- **[CICD_GUIDE.md](./CICD_GUIDE.md)** - CI/CD pipeline rehberi
+- **[PROJE_KONTROL_RAPORU.md](./PROJE_KONTROL_RAPORU.md)** - Proje kontrol raporu
+- **[PROJE_DURUM_RAPORU_2025.md](./PROJE_DURUM_RAPORU_2025.md)** - Proje durum raporu
 
 ## 📄 Lisans
 
 Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+## 🔧 Troubleshooting
+
+### kubectl exec TTY Uyarıları
+
+CI/CD pipeline'larında veya script'lerde `kubectl exec -it` kullanırken "Unable to use a TTY" uyarısı alıyorsanız:
+
+**Çözüm:** Non-interactive komutlar (`curl`, `wget`, vb.) için `-it` parametresini kaldırın.
+
+```bash
+# ❌ Yanlış (TTY uyarısı verir)
+kubectl exec -it <pod-name> -n <namespace> -- curl http://localhost:8080/health
+
+# ✅ Doğru (CI/CD güvenli)
+kubectl exec <pod-name> -n <namespace> -- curl -s http://localhost:8080/health
+```
+
+**Detaylı kılavuz:** [`ops/KUBECTL_TROUBLESHOOTING.md`](ops/KUBECTL_TROUBLESHOOTING.md)
+
+**CI/CD Dokümantasyonu:** [`CICD_GUIDE.md`](CICD_GUIDE.md)
 
 ## 📞 İletişim
 
