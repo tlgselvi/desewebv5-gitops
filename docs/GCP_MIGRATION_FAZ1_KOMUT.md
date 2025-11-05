@@ -11,7 +11,7 @@
 ### Windows PowerShell (Tek Satır)
 
 ```powershell
-gcloud sql instances create dese-ea-plan-db --database-version=POSTGRES_15 --region=europe-west3 --tier=db-g1-small --root-password="GUVENLI_SIFRENIZ_BURAYA" --storage-type=SSD --storage-size=20GB --storage-auto-increase --backup-start-time=03:00 --enable-bin-log --maintenance-window-day=SUN --maintenance-window-hour=4 --maintenance-release-channel=production --deletion-protection --labels=project=dese-ea-plan,version=v6.8.0,environment=production
+gcloud sql instances create dese-ea-plan-db --database-version=POSTGRES_15 --region=europe-west3 --tier=db-g1-small --root-password="GUVENLI_SIFRENIZ_BURAYA" --storage-type=SSD --storage-size=20GB --storage-auto-increase --backup-start-time=03:00 --maintenance-window-day=SUN --maintenance-window-hour=4 --maintenance-release-channel=production --deletion-protection
 ```
 
 ### Windows PowerShell (Çok Satır - Okunabilir)
@@ -46,12 +46,10 @@ gcloud sql instances create dese-ea-plan-db \
   --storage-size=20GB \
   --storage-auto-increase \
   --backup-start-time=03:00 \
-  --enable-bin-log \
   --maintenance-window-day=SUN \
   --maintenance-window-hour=4 \
   --maintenance-release-channel=production \
-  --deletion-protection \
-  --labels=project=dese-ea-plan,version=v6.8.0,environment=production
+  --deletion-protection
 ```
 
 ---
