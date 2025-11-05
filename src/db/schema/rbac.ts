@@ -11,7 +11,10 @@ export const permissions = pgTable('permissions', {
   id: uuid('id').defaultRandom().primaryKey(),
   resource: text('resource').notNull(), // finbot.accounts, finbot.transactions, budgets, seo
   action: text('action').notNull(),     // read | write | delete | *
+  description: text('description'),       // Human-readable description of the permission
+  category: text('category'),            // Category: finance, seo, analytics, system, etc.
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   uq: primaryKey({ columns: [t.id] }),
 }));

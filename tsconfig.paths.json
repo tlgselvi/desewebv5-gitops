@@ -1,0 +1,1 @@
+{"resolveFullPaths": true, "replacers": {"@/(.+)": "./$1.js"}}

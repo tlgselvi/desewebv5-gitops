@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db, seoProjects, users } from '@/db/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { authenticate, authorize } from '@/middleware/auth.js';
 import { cacheMiddleware } from '@/middleware/cache.js';
@@ -68,7 +68,8 @@ router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
     ? (ownerId as string | undefined)
     : authenticatedReq.user?.id;
 
-  let query = db
+  // Build query with conditions
+  let queryBuilder = db
     .select({
       id: seoProjects.id,
       name: seoProjects.name,
@@ -91,15 +92,16 @@ router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
     .from(seoProjects)
     .leftJoin(users, eq(seoProjects.ownerId, users.id));
 
-  if (effectiveOwnerId) {
-    query = query.where(eq(seoProjects.ownerId, effectiveOwnerId));
+  // Apply where conditions
+  if (effectiveOwnerId && status) {
+    queryBuilder = (queryBuilder as any).where(and(eq(seoProjects.ownerId, effectiveOwnerId), eq(seoProjects.status, status as string)));
+  } else if (effectiveOwnerId) {
+    queryBuilder = (queryBuilder as any).where(eq(seoProjects.ownerId, effectiveOwnerId));
+  } else if (status) {
+    queryBuilder = (queryBuilder as any).where(eq(seoProjects.status, status as string));
   }
 
-  if (status) {
-    query = query.where(eq(seoProjects.status, status as string));
-  }
-
-  const projects = await query;
+  const projects = await queryBuilder;
 
   res.json({ projects });
 }));
@@ -261,12 +263,12 @@ router.post('/', asyncHandler(async (req, res) => {
     }
   }
 
-  const project = await db
+  const project = await (db
     .insert(seoProjects)
     .values({
       ...validatedData,
       ownerId,
-    })
+    }) as any)
     .returning();
 
   logger.info('Project created', {

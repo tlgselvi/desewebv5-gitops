@@ -17,10 +17,21 @@ async function upsertRole(name: RoleName): Promise<string> {
   return row.id;
 }
 
-async function upsertPermission(resource: string, action: string): Promise<string> {
+async function upsertPermission(
+  resource: string,
+  action: string,
+  description?: string,
+  category?: string
+): Promise<string> {
   const [row] = await db
     .insert(permissions)
-    .values({ resource, action })
+    .values({
+      resource,
+      action,
+      description: description || null,
+      category: category || null,
+      updatedAt: new Date(),
+    })
     .onConflictDoNothing()
     .returning({ id: permissions.id });
   
@@ -28,6 +39,7 @@ async function upsertPermission(resource: string, action: string): Promise<strin
     return row.id;
   }
 
+  // Try to find by both resource and action
   const [found] = await db
     .select({ id: permissions.id })
     .from(permissions)
@@ -35,7 +47,35 @@ async function upsertPermission(resource: string, action: string): Promise<strin
     .limit(1);
   
   if (!found) {
-    throw new Error(`Failed to find permission: ${resource}:${action}`);
+    // If not found, try to insert again (might be a race condition)
+    const [newRow] = await db
+      .insert(permissions)
+      .values({
+        resource,
+        action,
+        description: description || null,
+        category: category || null,
+        updatedAt: new Date(),
+      })
+      .returning({ id: permissions.id });
+    
+    if (!newRow) {
+      throw new Error(`Failed to create or find permission: ${resource}:${action}`);
+    }
+    
+    return newRow.id;
+  }
+  
+  // Update existing permission with description/category if provided
+  if (description || category) {
+    await db
+      .update(permissions)
+      .set({
+        description: description || undefined,
+        category: category || undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(permissions.id, found.id));
   }
   
   return found.id;
@@ -49,7 +89,22 @@ export async function seedRbac(): Promise<void> {
     logger.debug('Role upserted', { roleName, roleId });
 
     for (const p of perms) {
-      const permId = await upsertPermission(p.resource, p.action);
+      // Determine category based on resource
+      const category = p.resource.startsWith('finbot')
+        ? 'finance'
+        : p.resource === 'seo'
+          ? 'seo'
+          : p.resource === '*'
+            ? 'system'
+            : 'analytics';
+      
+      // Create description
+      const description =
+        p.resource === '*'
+          ? 'Full system access'
+          : `${p.action} access to ${p.resource}`;
+
+      const permId = await upsertPermission(p.resource, p.action, description, category);
       await db
         .insert(rolePermissions)
         .values({ roleId, permissionId: permId })
@@ -58,6 +113,7 @@ export async function seedRbac(): Promise<void> {
         roleName,
         resource: p.resource,
         action: p.action,
+        permissionId: permId,
       });
     }
   }
@@ -65,15 +121,20 @@ export async function seedRbac(): Promise<void> {
   logger.info('RBAC seed completed');
 }
 
-if (require.main === module) {
+// ESM module check - run if executed directly
+const isMainModule = import.meta.url.endsWith(process.argv[1]?.replace(/\\/g, '/')) ||
+                     process.argv[1]?.includes('seed.ts');
+
+if (isMainModule || process.argv[1]?.includes('seed')) {
   seedRbac()
     .then(() => {
+      console.log('✅ RBAC seed completed successfully');
       logger.info('RBAC seed script completed successfully');
       process.exit(0);
     })
     .catch((e) => {
+      console.error('❌ RBAC seed failed:', e);
       logger.error('RBAC seed script failed', { error: e });
-      console.error(e);
       process.exit(1);
     });
 }

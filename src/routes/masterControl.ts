@@ -391,7 +391,17 @@ router.post('/execute', asyncHandler(async (req, res) => {
     });
 
     const validated = WorkflowSchema.parse(req.body);
-    const workflowResult = await masterControl.executeWorkflow(validated);
+    // Ensure workflow array is present (required by WorkflowExecutionRequest)
+    if (!validated.workflow || validated.workflow.length === 0) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'workflow array is required and must not be empty',
+      });
+    }
+    const workflowResult = await masterControl.executeWorkflow({
+      ...validated,
+      workflow: validated.workflow || [],
+    } as import('@/services/masterControl.js').WorkflowExecutionRequest);
 
     res.status(200).json(workflowResult);
   } else {

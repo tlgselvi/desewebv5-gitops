@@ -50,8 +50,8 @@ export class AnomalyDetector {
       p75: this.getPercentile(sorted, 75, len),
       p95: this.getPercentile(sorted, 95, len),
       p99: this.getPercentile(sorted, 99, len),
-      mean: mean(sorted) as number,
-      std: std(sorted) as number
+      mean: mean(sorted) as unknown as number,
+      std: std(sorted) as unknown as number
     };
   }
 

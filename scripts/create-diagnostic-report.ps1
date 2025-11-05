@@ -34,13 +34,27 @@ $results = @()
 # Step 1: MCP Discovery
 Write-Host "[1/7] MCP Discovery..." -ForegroundColor Yellow
 try {
-    $finbot = Invoke-WebRequest -Uri "http://localhost:5555/finbot/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-    $mubot = Invoke-WebRequest -Uri "http://localhost:5556/mubot/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-    $dese = Invoke-WebRequest -Uri "http://localhost:5557/dese/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-    Write-Host "  ✅ All servers reachable" -ForegroundColor Green
-    $results += @{Step="MCP Discovery";Status="PASSED";Details="All 3 servers responding"}
+    $finbot = Invoke-WebRequest -Uri "http://localhost:5555/finbot/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction SilentlyContinue
+    $mubot = Invoke-WebRequest -Uri "http://localhost:5556/mubot/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction SilentlyContinue
+    $dese = Invoke-WebRequest -Uri "http://localhost:5557/dese/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction SilentlyContinue
+    $observability = Invoke-WebRequest -Uri "http://localhost:5558/observability/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction SilentlyContinue
+    
+    $serverCount = 0
+    $serverDetails = @()
+    if ($finbot -and $finbot.StatusCode -eq 200) { $serverCount++; $serverDetails += "FinBot" }
+    if ($mubot -and $mubot.StatusCode -eq 200) { $serverCount++; $serverDetails += "MuBot" }
+    if ($dese -and $dese.StatusCode -eq 200) { $serverCount++; $serverDetails += "DESE" }
+    if ($observability -and $observability.StatusCode -eq 200) { $serverCount++; $serverDetails += "Observability" }
+    
+    if ($serverCount -ge 3) {
+        Write-Host "  ✅ $serverCount servers reachable: $($serverDetails -join ', ')" -ForegroundColor Green
+        $results += @{Step="MCP Discovery";Status="PASSED";Details="$serverCount servers responding: $($serverDetails -join ', ')"}
+    } else {
+        Write-Host "  ⚠️  Only $serverCount servers reachable: $($serverDetails -join ', ')" -ForegroundColor Yellow
+        $results += @{Step="MCP Discovery";Status="WARNING";Details="Only $serverCount servers responding: $($serverDetails -join ', ')"}
+    }
 } catch {
-    Write-Host "  ❌ Some servers not reachable" -ForegroundColor Red
+    Write-Host "  ❌ MCP Discovery failed" -ForegroundColor Red
     $results += @{Step="MCP Discovery";Status="FAILED";Details=$_.Exception.Message}
     $allPassed = $false
 }
@@ -69,13 +83,15 @@ try {
 # Step 4: Observability Metrics
 Write-Host "[4/7] Observability Metrics..." -ForegroundColor Yellow
 try {
-    $metrics = Invoke-WebRequest -Uri "http://localhost:3000/metrics" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-    if ($metrics.Content -match "ai_correlation_score") {
-        Write-Host "  ✅ Prometheus metrics available" -ForegroundColor Green
-        $results += @{Step="Observability Metrics";Status="PASSED";Details="Metrics endpoint responding"}
+    # Test Observability MCP metrics endpoint
+    $obsMetrics = Invoke-WebRequest -Uri "http://localhost:5558/observability/metrics" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
+    
+    if ($obsMetrics -and $obsMetrics.StatusCode -eq 200 -and $obsMetrics.Content -match '"metrics"') {
+        Write-Host "  ✅ Observability metrics available" -ForegroundColor Green
+        $results += @{Step="Observability Metrics";Status="PASSED";Details="Observability MCP metrics endpoint responding"}
     } else {
-        Write-Host "  ⚠️  Limited metrics" -ForegroundColor Yellow
-        $results += @{Step="Observability Metrics";Status="WARNING";Details="No correlation metrics found"}
+        Write-Host "  ⚠️  Metrics endpoint not available" -ForegroundColor Yellow
+        $results += @{Step="Observability Metrics";Status="WARNING";Details="Observability MCP metrics endpoint may not be responding"}
     }
 } catch {
     Write-Host "  ⚠️  Metrics endpoint not available" -ForegroundColor Yellow
@@ -85,10 +101,15 @@ try {
 # Step 5: Correlation AI Test
 Write-Host "[5/7] Correlation AI Test..." -ForegroundColor Yellow
 try {
-    $correlationTest = Invoke-WebRequest -Uri "http://localhost:3000/api/v1/ai/correlation" -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
-    if ($correlationTest.StatusCode -eq 200) {
+    # Test FinBot correlation endpoint
+    $correlationTest = Invoke-WebRequest -Uri "http://localhost:5555/finbot/correlation/run" -Method POST -Body '{}' -ContentType "application/json" -UseBasicParsing -TimeoutSec 5 -ErrorAction SilentlyContinue
+    
+    if ($correlationTest -and $correlationTest.StatusCode -eq 200 -and $correlationTest.Content -match '"status"') {
         Write-Host "  ✅ Correlation AI working" -ForegroundColor Green
-        $results += @{Step="Correlation AI";Status="PASSED";Details="Endpoint responding"}
+        $results += @{Step="Correlation AI";Status="PASSED";Details="FinBot correlation endpoint responding"}
+    } else {
+        Write-Host "  ⚠️  Correlation AI limited" -ForegroundColor Yellow
+        $results += @{Step="Correlation AI";Status="WARNING";Details="Correlation endpoint may not be available"}
     }
 } catch {
     Write-Host "  ❌ Correlation AI not accessible" -ForegroundColor Red

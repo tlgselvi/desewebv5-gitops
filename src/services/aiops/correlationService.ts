@@ -45,7 +45,7 @@ export async function computeCorrelation(): Promise<{
 }> {
   try {
     // Get recent metrics from Redis window
-    const recent = await redis.lRange('metrics:window', -50, -1);
+    const recent = await redis.lrange('metrics:window', -50, -1);
     
     if (recent.length < 10) {
       logger.warn('Insufficient data for correlation', {
@@ -139,9 +139,9 @@ export async function storeMetricPoint(
       timestamp: timestamp || Date.now(),
     };
 
-    await redis.lPush('metrics:window', JSON.stringify(dataPoint));
+    await redis.lpush('metrics:window', JSON.stringify(dataPoint));
     // Keep only last 1000 points
-    await redis.lTrim('metrics:window', 0, 999);
+    await redis.ltrim('metrics:window', 0, 999);
 
     logger.debug('Metric data point stored', {
       metricA,

@@ -2,6 +2,11 @@ import client from 'prom-client';
 import { register } from '@/middleware/prometheus.js';
 
 /**
+ * Prometheus Configuration
+ */
+export const PROM_URL = process.env.PROMETHEUS_URL || 'http://localhost:9090';
+
+/**
  * FinBot-specific Prometheus metrics
  */
 export const finbotMetrics = {

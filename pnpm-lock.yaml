@@ -67,7 +67,7 @@ dependencies:
     version: 6.10.1
   openai:
     specifier: ^4.20.1
-    version: 4.104.0(zod@3.25.76)
+    version: 4.104.0(ws@8.18.3)(zod@3.25.76)
   postgres:
     specifier: ^3.4.3
     version: 3.4.7
@@ -101,6 +101,9 @@ dependencies:
   winston-daily-rotate-file:
     specifier: ^4.7.1
     version: 4.7.1(winston@3.18.3)
+  ws:
+    specifier: ^8.16.0
+    version: 8.18.3
   zod:
     specifier: ^3.22.4
     version: 3.25.76
@@ -6557,7 +6560,7 @@ packages:
       is-wsl: 2.2.0
     dev: false
 
-  /openai@4.104.0(zod@3.25.76):
+  /openai@4.104.0(ws@8.18.3)(zod@3.25.76):
     resolution: {integrity: sha512-p99EFNsA/yX6UhVO93f5kJsDRLAg+CTA2RBqdHK4RtK8u5IJw32Hyb2dTGKbnnFmnuoBv5r7Z2CURI9sGZpSuA==}
     hasBin: true
     peerDependencies:
@@ -6576,6 +6579,7 @@ packages:
       form-data-encoder: 1.7.2
       formdata-node: 4.4.1
       node-fetch: 2.7.0
+      ws: 8.18.3
       zod: 3.25.76
     transitivePeerDependencies:
       - encoding

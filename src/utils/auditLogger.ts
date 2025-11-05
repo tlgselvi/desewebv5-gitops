@@ -103,17 +103,17 @@ export function auditLog(action: string, options?: {
     const startTime = Date.now();
 
     // Override res.end to capture response
-    const originalEnd = res.end;
-    res.end = function(chunk?: any, encoding?: any) {
+    const originalEnd = res.end.bind(res);
+    res.end = function(chunk?: any, encoding?: any, cb?: () => void): Response {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
-
+      
       // Get resource ID if needed
       const resourceId = options?.getResourceId
         ? options.getResourceId(req)
         : (req.params?.id || req.body?.id);
 
-      // Log audit event
+      // Log audit event (async, don't wait)
       logAuditEvent(
         createAuditEntryFromRequest(req, action, {
           resourceType: options?.resourceType,

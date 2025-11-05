@@ -104,6 +104,32 @@ app.get('/finbot/context', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /finbot/correlation/run
+ * Correlation AI endpoint
+ */
+app.post('/finbot/correlation/run', async (req: Request, res: Response) => {
+  try {
+    logger.info('Correlation AI run requested', {
+      body: req.body,
+    });
+
+    res.json({
+      status: 'ok',
+      correlation: 'mock',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Correlation AI run error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.status(500).json({
+      error: 'internal_error',
+      message: 'Failed to run correlation AI',
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   logger.info(`FinBot MCP Server started`, {

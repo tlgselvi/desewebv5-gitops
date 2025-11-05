@@ -30,8 +30,8 @@ export const requestLogger = (req: RequestWithUser, res: Response, next: NextFun
   });
 
   // Override res.end to log response
-  const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  const originalEnd = res.end.bind(res);
+  res.end = function(chunk?: any, encoding?: any): Response {
     const duration = Date.now() - (req.startTime || 0);
     
     logger.info('Outgoing Response', {
@@ -44,7 +44,7 @@ export const requestLogger = (req: RequestWithUser, res: Response, next: NextFun
     });
 
     // Call original end method
-    originalEnd.call(this, chunk, encoding);
+    return originalEnd(chunk, encoding);
   };
 
   next();

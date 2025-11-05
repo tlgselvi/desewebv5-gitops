@@ -26,8 +26,8 @@ export class CorrelationUtils {
       const my = mean(y) as number;
 
       const numerator = x.reduce((s, xi, i) => s + (xi - mx) * (y[i] - my), 0);
-      const stdX = std(x) as number;
-      const stdY = std(y) as number;
+      const stdX = std(x) as unknown as number;
+      const stdY = std(y) as unknown as number;
       const denominator = (x.length - 1) * stdX * stdY;
 
       return denominator === 0 ? 0 : numerator / denominator;

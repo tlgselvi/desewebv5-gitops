@@ -3,6 +3,8 @@ import { Server as HTTPServer } from 'http';
 import { logger } from '@/utils/logger.js';
 import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
 import { Event } from '@/bus/schema.js';
+import { wsConnections, wsBroadcastTotal, wsLatency, streamConsumerLag } from '@/config/prometheus.js';
+import { getStreamStats } from '@/metrics/realtime.js';
 
 /**
  * WebSocket Gateway for Real-time Event Broadcasting
@@ -11,7 +13,9 @@ import { Event } from '@/bus/schema.js';
  * Supports authentication via JWT token in query string or upgrade header.
  */
 
-interface AuthenticatedWebSocket extends WebSocket {
+// Authenticated WebSocket with additional properties
+  // Using intersection type - TypeScript will merge WebSocket methods automatically
+type AuthenticatedWebSocket = WebSocket & {
   userId?: string;
   isAlive?: boolean;
 }
@@ -72,38 +76,39 @@ export class WebSocketGateway {
    * Setup WebSocket event handlers
    */
   private setupEventHandlers(): void {
-    this.wss.on('connection', (ws: AuthenticatedWebSocket, req) => {
+    this.wss.on('connection', (ws: WebSocket, req) => {
+      const authenticatedWs = ws as AuthenticatedWebSocket;
       // Extract token from query string
       const url = new URL(req.url || '', 'http://localhost');
       const token = url.searchParams.get('token');
 
       if (!token) {
         logger.warn('WebSocket connection rejected: no token');
-        ws.close(1008, 'Authentication required');
+        authenticatedWs.close(1008, 'Authentication required');
         return;
       }
 
       // TODO: Validate JWT token (reuse authenticate middleware logic)
       // For now, accept the connection
-      ws.userId = 'anonymous'; // Will be set after JWT validation
-      ws.isAlive = true;
+      authenticatedWs.userId = 'anonymous'; // Will be set after JWT validation
+      authenticatedWs.isAlive = true;
 
-      this.clients.add(ws);
+      this.clients.add(authenticatedWs);
 
       logger.info('WebSocket client connected', {
-        clientId: ws.userId,
+        clientId: authenticatedWs.userId,
         totalClients: this.clients.size,
       });
 
       // Record ping/pong latency
       const sentAt = Date.now();
       try {
-        ws.ping();
+        authenticatedWs.ping();
       } catch (error) {
         logger.error('Error sending ping', { error });
       }
 
-      ws.on('pong', () => {
+      authenticatedWs.on('pong', () => {
         const latency = Date.now() - sentAt;
         this.recordLatency(latency);
         // Update Prometheus metric
@@ -111,15 +116,15 @@ export class WebSocketGateway {
       });
 
       // Handle incoming messages
-      ws.on('message', (data: Buffer) => {
+      authenticatedWs.on('message', (data: Buffer) => {
         try {
           const message = JSON.parse(data.toString());
-          this.handleClientMessage(ws, message);
+          this.handleClientMessage(authenticatedWs, message);
         } catch (error) {
           logger.error('Error parsing WebSocket message', {
             error: error instanceof Error ? error.message : String(error),
           });
-          ws.send(
+          authenticatedWs.send(
             JSON.stringify({
               type: 'error',
               message: 'Invalid message format',
@@ -129,25 +134,25 @@ export class WebSocketGateway {
       });
 
       // Handle client disconnect
-      ws.on('close', () => {
-        this.clients.delete(ws);
+      authenticatedWs.on('close', () => {
+        this.clients.delete(authenticatedWs);
         logger.info('WebSocket client disconnected', {
-          clientId: ws.userId,
+          clientId: authenticatedWs.userId,
           totalClients: this.clients.size,
         });
       });
 
       // Handle errors
-      ws.on('error', (error) => {
+      (authenticatedWs as WebSocket).on('error', (error) => {
         logger.error('WebSocket error', {
-          clientId: ws.userId,
+          clientId: authenticatedWs.userId,
           error: error instanceof Error ? error.message : String(error),
         });
-        this.clients.delete(ws);
+        this.clients.delete(authenticatedWs);
       });
 
       // Send welcome message
-      ws.send(
+      authenticatedWs.send(
         JSON.stringify({
           type: 'connected',
           message: 'WebSocket connection established',
@@ -213,13 +218,13 @@ export class WebSocketGateway {
           logger.debug('Terminating dead WebSocket connection', {
             clientId: ws.userId,
           });
-          ws.terminate();
-          this.clients.delete(ws);
-          return;
-        }
+        (ws as WebSocket).terminate();
+        this.clients.delete(ws);
+        return;
+      }
 
-        ws.isAlive = false;
-        ws.ping();
+      ws.isAlive = false;
+      (ws as WebSocket).ping();
       });
     }, 30000); // 30 seconds
 
@@ -314,7 +319,7 @@ export class WebSocketGateway {
     let errorCount = 0;
 
     this.clients.forEach((ws) => {
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState === 1) { // WebSocket.OPEN = 1
         try {
           ws.send(message);
           sentCount++;
@@ -353,7 +358,7 @@ export class WebSocketGateway {
     let sentCount = 0;
 
     this.clients.forEach((ws) => {
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState === 1) { // WebSocket.OPEN = 1
         if (!filter || filter(ws)) {
           try {
             ws.send(messageStr);

@@ -5,6 +5,8 @@ export type Resource =
   | 'finbot.transactions'
   | 'finbot.budgets'
   | 'seo'
+  | 'system.permissions'
+  | 'system.audit'
   | '*';
 
 export interface Permission {

@@ -80,7 +80,7 @@ router.post('/login', asyncHandler(async (req, res) => {
         role: 'admin',
       },
       config.security.jwtSecret,
-      { expiresIn: config.security.jwtExpiresIn }
+      { expiresIn: config.security.jwtExpiresIn } as jwt.SignOptions
     );
 
     return res.json({
@@ -165,7 +165,7 @@ router.post('/login', asyncHandler(async (req, res) => {
     config.security.jwtSecret,
     {
       expiresIn: config.security.jwtExpiresIn,
-    }
+    } as jwt.SignOptions
   );
 
   logger.info('User logged in successfully', { userId: user.id, email: user.email });

@@ -226,7 +226,21 @@ router.post(
         return;
       }
 
-      const permission = await permissionService.create(validated);
+      // Ensure required fields are present (already validated by schema, but double-check)
+      if (!validated.resource || !validated.action) {
+        res.status(400).json({
+          error: 'Validation error',
+          message: 'resource and action are required fields',
+        });
+        return;
+      }
+
+      const permission = await permissionService.create({
+        resource: validated.resource,
+        action: validated.action,
+        description: validated.description,
+        category: validated.category,
+      });
 
       // Audit log
       await logAuditEvent({

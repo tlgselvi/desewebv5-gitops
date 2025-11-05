@@ -1,5 +1,4 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import fetch from 'node-fetch';
 import { redis } from '@/services/storage/redisClient.js';
 import { AuthenticatedRequest } from '@/middleware/auth.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
@@ -75,7 +74,11 @@ router.get(
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 5000, // 5 second timeout
+        signal: (() => {
+          const controller = new AbortController();
+          setTimeout(() => controller.abort(), 5000);
+          return controller.signal;
+        })()
       });
 
       if (!response.ok) {
@@ -179,14 +182,19 @@ router.get(
       if (accountId) queryParams.append('accountId', accountId as string);
       if (limit) queryParams.append('limit', limit as string);
 
+      const controller1 = new AbortController();
+      const timeoutId1 = setTimeout(() => controller1.abort(), 5000);
+      
       const response = await fetch(
         `${FINBOT_BASE}/api/v1/finbot/transactions?${queryParams.toString()}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          timeout: 5000,
-        }
+          signal: controller1.signal,
+        } as RequestInit
       );
+      
+      clearTimeout(timeoutId1);
 
       if (!response.ok) {
         logger.error('FinBot transactions fetch failed', {
@@ -252,11 +260,16 @@ router.get(
         return;
       }
 
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), 5000);
+      
       const response = await fetch(`${FINBOT_BASE}/api/v1/finbot/budgets`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        timeout: 5000,
-      });
+        signal: controller2.signal,
+      } as RequestInit);
+      
+      clearTimeout(timeoutId2);
 
       if (!response.ok) {
         logger.error('FinBot budgets fetch failed', {
@@ -311,11 +324,16 @@ router.get(
   ...withAuth('finbot.accounts', 'read'), // Health check requires minimal read permission
   asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
+      const controller3 = new AbortController();
+      const timeoutId3 = setTimeout(() => controller3.abort(), 3000);
+      
       const response = await fetch(`${FINBOT_BASE}/api/v1/finbot/health`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        timeout: 3000, // Shorter timeout for health check
-      });
+        signal: controller3.signal,
+      } as RequestInit);
+      
+      clearTimeout(timeoutId3);
 
       if (!response.ok) {
         logger.warn('FinBot health check failed', {

@@ -20,7 +20,7 @@ services:
 
   # PostgreSQL database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     environment:
       - POSTGRES_DB=dese_ea_plan_v5
       - POSTGRES_USER=dese

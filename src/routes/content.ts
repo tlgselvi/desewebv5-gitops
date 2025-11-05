@@ -270,7 +270,20 @@ router.get('/templates', asyncHandler(async (req, res) => {
 router.post('/templates', asyncHandler(async (req, res) => {
   const validatedData = TemplateCreateSchema.parse(req.body);
 
-  const template = await contentGenerator.createTemplate(validatedData);
+  // Ensure required fields are present
+  if (!validatedData.name || !validatedData.type || !validatedData.template) {
+    return res.status(400).json({
+      error: 'Validation error',
+      message: 'name, type, and template are required fields',
+    });
+  }
+
+  const template = await contentGenerator.createTemplate({
+    name: validatedData.name,
+    type: validatedData.type,
+    template: validatedData.template,
+    variables: validatedData.variables,
+  });
 
   contentLogger.info('Content template created', {
     templateId: template.id,

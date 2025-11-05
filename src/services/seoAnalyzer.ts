@@ -1,5 +1,5 @@
 import lighthouse from 'lighthouse';
-import puppeteer from 'puppeteer';
+import puppeteer, { type Browser } from 'puppeteer';
 import { URL } from 'url';
 import { z } from 'zod';
 import { db, seoMetrics, seoProjects } from '@/db/index.js';
@@ -33,7 +33,7 @@ export type SeoAnalysisRequest = z.infer<typeof SeoAnalysisRequestSchema>;
 export type CoreWebVitals = z.infer<typeof CoreWebVitalsSchema>;
 
 export class SeoAnalyzer {
-  private browser: puppeteer.Browser | null = null;
+  private browser: Browser | null = null;
 
   async initialize(): Promise<void> {
     try {
@@ -88,10 +88,10 @@ export class SeoAnalyzer {
 
       // Run Lighthouse
       const lighthouseOptions = {
-        logLevel: 'error',
+        logLevel: 'error' as const,
         output: 'json',
         onlyCategories: categories,
-        port: new URL(await this.browser!.wsEndpoint()).port,
+        port: parseInt(new URL(await this.browser!.wsEndpoint()).port, 10),
       };
 
       const result = await lighthouse(url, lighthouseOptions);
