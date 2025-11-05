@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
 	// Enable compression
 	compress: true,
 	
+	// Development error overlay
+	onDemandEntries: {
+		maxInactiveAge: 25 * 1000,
+		pagesBufferLength: 2,
+	},
+	
+	// React strict mode for better error detection
+	reactStrictMode: true,
+	
 	// Optimize headers
 	async headers() {
 		return [

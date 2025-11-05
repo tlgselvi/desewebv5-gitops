@@ -6,6 +6,7 @@ import { Sidebar } from './components/sidebar'
 import { Header } from './components/header'
 import { WebVitalsClient } from './components/WebVitalsClient'
 import { SessionProviderClient } from './components/SessionProviderClient'
+import { GlobalErrorHandler } from './components/GlobalErrorHandler'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <GlobalErrorHandler />
         <SessionProviderClient>
           <ThemeProvider
             attribute="class"

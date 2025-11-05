@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiMethods } from "@/api/client";
+import { apiMethods, getErrorMessage } from "@/api/client";
+import { logger } from "@/utils/logger";
+import { isAxiosError } from "axios";
 
 interface Project {
   id: string;
@@ -31,8 +33,12 @@ export default function Dashboard() {
         let projectsData: { projects: Project[] } = { projects: [] };
         try {
           projectsData = await apiMethods.get<{ projects: Project[] }>("/projects?status=active");
-        } catch (projectsError: any) {
-          console.warn("Failed to fetch projects:", projectsError?.response?.status || projectsError.message);
+        } catch (projectsError: unknown) {
+          const errorMessage = getErrorMessage(projectsError);
+          logger.warn("Failed to fetch projects", {
+            error: errorMessage,
+            status: isAxiosError(projectsError) ? projectsError.response?.status : undefined,
+          });
           // Continue with empty projects array if fetch fails
           projectsData = { projects: [] };
         }
@@ -49,9 +55,11 @@ export default function Dashboard() {
           if (healthResponse.ok) {
             healthData = await healthResponse.json();
           }
-        } catch (healthError) {
+        } catch (healthError: unknown) {
           // Health check is optional, just log a warning
-          console.warn("Health check failed (non-critical):", healthError);
+          logger.debug("Health check failed (non-critical)", {
+            error: healthError instanceof Error ? healthError.message : String(healthError),
+          });
         }
 
         setProjects(projectsData.projects?.slice(0, 5) || []);
@@ -65,8 +73,11 @@ export default function Dashboard() {
             ? Math.round(projectsData.projects.reduce((sum, p) => sum + (p.targetDomainAuthority || 0), 0) / projectsData.projects.length)
             : 0,
         });
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+      } catch (error: unknown) {
+        logger.error("Error fetching dashboard data", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         // Set empty stats on error
         setStats({
           totalProjects: 0,

@@ -4,9 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:watch": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "lint:watch": "eslint . --watch",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "dev:full": "concurrently \"npm run dev\" \"npm run lint:watch\" \"npm run type-check:watch\""
   },
   "dependencies": {
     "axios": "^1.13.0",
@@ -28,6 +33,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "docdash": "^2.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",

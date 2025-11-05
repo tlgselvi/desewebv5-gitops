@@ -55,8 +55,31 @@ async function fetchAudit(filters: any) {
       'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
     },
   });
-  if (!res.ok) throw new Error("audit_fetch_failed");
-  return (await res.json()).data as any[];
+  if (!res.ok) {
+    // Handle authentication errors
+    if (res.status === 401 || res.status === 403) {
+      // Clear invalid token
+      localStorage.removeItem('token');
+      // Redirect to login page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      throw new Error('Authentication required. Please login.');
+    }
+    
+    const errorText = await res.text();
+    let errorMessage = "audit_fetch_failed";
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.error || errorJson.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = res.statusText || errorMessage;
+    }
+    throw new Error(`${errorMessage} (${res.status})`);
+  }
+  const json = await res.json();
+  return (json.data || json) as any[];
 }
 
 async function exportMyData() {
@@ -309,11 +332,25 @@ export default function AdminAuditPrivacy() {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [auditRows, setAuditRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const buffer = useEventBuffer();
 
   const refresh = async (f = filters) => {
     setLoading(true);
-    try { setAuditRows(await fetchAudit(f)); } finally { setLoading(false); }
+    setError(null);
+    try { 
+      setAuditRows(await fetchAudit(f)); 
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch audit logs');
+      console.error('Audit fetch error:', err);
+      // If it's an auth error, the fetchAudit function will redirect
+      // So we don't need to show error message for auth errors
+      if (err.message?.includes('Authentication required')) {
+        return; // Redirect is happening
+      }
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   useEffect(() => { refresh(); }, []);
@@ -361,6 +398,16 @@ export default function AdminAuditPrivacy() {
         </TabsList>
 
         <TabsContent value="audit" className="grid gap-4">
+          {error && !error.includes('Authentication required') && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-red-700">
+                  <span className="text-lg">⚠️</span>
+                  <p className="text-sm">{error}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">

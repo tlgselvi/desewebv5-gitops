@@ -58,7 +58,7 @@ const router = Router();
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  '/audit',
+  '/',
   ...withAuth('*', 'read'), // Only admin can read audit logs
   asyncHandler(async (req, res) => {
     const { userId, resource, action, from, to, status } = req.query as Record<

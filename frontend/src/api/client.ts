@@ -1,4 +1,5 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
+import { logger } from "@/utils/logger";
 
 export interface ApiError {
   error: string;
@@ -71,16 +72,19 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      if (process.env.NODE_ENV === "development") {
-        console.warn("🔐 Authentication Error: Token expired or invalid. Redirecting to login...");
-      }
+      logger.warn("Authentication Error: Token expired or invalid. Redirecting to login...", {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+      });
 
       // Clear token and redirect to login
-      localStorage.removeItem("token");
-      
-      // Only redirect if we're not already on the login page
-      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
-        window.location.href = "/login";
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        
+        // Only redirect if we're not already on the login page
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
+        }
       }
 
       return Promise.reject(error);
@@ -89,7 +93,11 @@ api.interceptors.response.use(
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
       const message = error.response.data?.message || "Access denied";
-      console.error("Forbidden:", message);
+      logger.error("Forbidden", {
+        message,
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+      });
       // Could show a toast notification here
     }
 
@@ -97,7 +105,12 @@ api.interceptors.response.use(
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers["retry-after"];
       const message = error.response.data?.message || "Too many requests. Please try again later.";
-      console.warn("Rate limit exceeded:", message, retryAfter ? `Retry after ${retryAfter}s` : "");
+      logger.warn("Rate limit exceeded", {
+        message,
+        retryAfter,
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+      });
       // Could implement exponential backoff retry here
     }
 
@@ -108,76 +121,67 @@ api.interceptors.response.use(
         status: error.response.status,
         message: error.response.data?.message || "Internal server error",
         url: originalRequest?.url,
+        baseURL: originalRequest?.baseURL,
         method: originalRequest?.method?.toUpperCase(),
-        timestamp: new Date().toISOString(),
         data: error.response.data,
       };
 
-      if (process.env.NODE_ENV === "development") {
-        console.group(`🚨 Server Error ${errorDetails.status}`);
-        console.error("Message:", errorDetails.message);
-        console.error("URL:", `${originalRequest?.baseURL}${errorDetails.url}`);
-        console.error("Method:", errorDetails.method || "N/A");
-        console.error("Timestamp:", errorDetails.timestamp);
-        if (errorDetails.data) {
-          console.error("Response Data:", errorDetails.data);
-        }
-        console.groupEnd();
-      } else {
-        console.error("Server error:", errorDetails.message);
-      }
+      logger.group(`Server Error ${errorDetails.status}`, () => {
+        logger.error("Server error occurred", {
+          status: errorDetails.status,
+          message: errorDetails.message,
+          url: `${errorDetails.baseURL}${errorDetails.url}`,
+          method: errorDetails.method || "N/A",
+          responseData: errorDetails.data,
+        });
+      });
     }
 
     // Handle network errors with detailed logging
     if (!error.response) {
       const errorMessage = error.message || "Network error";
+      const fullUrl = `${originalRequest?.baseURL || ''}${originalRequest?.url || ''}`;
       const errorDetails = {
         type: "Network Error",
         message: errorMessage,
         code: error.code,
         url: originalRequest?.url,
         baseURL: originalRequest?.baseURL,
+        fullUrl,
         method: originalRequest?.method?.toUpperCase(),
-        timestamp: new Date().toISOString(),
-        stack: error.stack,
       };
 
-      // Detailed console logging for development
+      // Log network error with context (only in development)
+      // Note: Network errors are expected when backend is down, so we log them gracefully
       if (process.env.NODE_ENV === "development") {
-        console.group("🚨 Network Error Details");
-        console.error("Type:", errorDetails.type);
-        console.error("Message:", errorDetails.message);
-        console.error("Code:", errorDetails.code || "N/A");
-        console.error("URL:", `${errorDetails.baseURL}${errorDetails.url}`);
-        console.error("Method:", errorDetails.method || "N/A");
-        console.error("Timestamp:", errorDetails.timestamp);
-        if (error.stack) {
-          console.error("Stack:", error.stack);
-        }
-        console.groupEnd();
+        logger.group("⚠️ Network Error (Backend may be offline)", () => {
+          logger.error("Request failed", {
+            method: errorDetails.method,
+            url: errorDetails.fullUrl,
+            code: errorDetails.code,
+            message: errorDetails.message,
+          });
+          
+          // Provide troubleshooting tips for common network errors
+          if (error.code === "ECONNREFUSED" || errorMessage.includes("Network Error") || error.code === "ERR_NETWORK") {
+            logger.warn("💡 Troubleshooting", {
+              currentBaseURL: getBaseURL(),
+              configuredApiUrl: process.env.NEXT_PUBLIC_API_URL || "not set",
+              check: [
+                "✓ Backend server running on http://localhost:3001?",
+                "✓ Docker containers (PostgreSQL, Redis) running?",
+                "✓ CORS configured correctly?",
+                "✓ NEXT_PUBLIC_API_URL set correctly?",
+              ],
+            });
+          }
+        });
       } else {
-        // Production: simple error
-        console.error("Network error:", errorMessage);
-      }
-      
-      // Provide more helpful error message
-      if (error.code === "ECONNREFUSED" || errorMessage.includes("Network Error")) {
-        const troubleshooting = [
-          "Backend server may be down. Please check:",
-          "- Backend is running on http://localhost:3001",
-          "- Docker containers (PostgreSQL, Redis) are running",
-          "- CORS is configured correctly",
-          "- NEXT_PUBLIC_API_URL is set correctly",
-          `- Current baseURL: ${getBaseURL()}`,
-        ];
-        
-        if (process.env.NODE_ENV === "development") {
-          console.group("💡 Troubleshooting Tips");
-          troubleshooting.forEach((tip) => console.warn(tip));
-          console.groupEnd();
-        } else {
-          console.error(troubleshooting.join("\n"));
-        }
+        // In production, log more concisely
+        logger.error("Network request failed", {
+          code: error.code,
+          url: originalRequest?.url,
+        });
       }
     }
 

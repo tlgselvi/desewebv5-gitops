@@ -38,10 +38,19 @@ export default function PerformanceMetricsPanel() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const res = await api.get("/metrics", {
-          responseType: "text",
+        // Metrics endpoint is at /metrics (not /api/v1/metrics)
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${baseUrl}/metrics`, {
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          },
         });
-        const parsedMetrics = parsePrometheusMetrics(res.data);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const text = await response.text();
+        const parsedMetrics = parsePrometheusMetrics(text);
         setMetrics(parsedMetrics);
         setError(null);
       } catch (err) {

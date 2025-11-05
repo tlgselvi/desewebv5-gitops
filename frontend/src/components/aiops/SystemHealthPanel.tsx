@@ -30,7 +30,18 @@ export default function SystemHealthPanel() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await apiMethods.get<HealthData>("/health");
+        // Health endpoint is at /health (not /api/v1/health)
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const response = await fetch(`${baseUrl}/health`, {
+          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json() as HealthData;
         setHealthData(data);
         setError(null);
       } catch (err) {
@@ -75,6 +86,14 @@ export default function SystemHealthPanel() {
       </div>
     );
   }
+
+  // Ensure services object exists with defaults (in case of error response)
+  const services = healthData.services || {
+    database: false,
+    redis: false,
+    openai: false,
+    lighthouse: false,
+  };
 
   const isHealthy = healthData.status === "healthy";
   const memoryUsagePercent = Math.round(
@@ -123,26 +142,26 @@ export default function SystemHealthPanel() {
           <p className="font-semibold text-gray-700 mb-2">Services:</p>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <span className={healthData.services.database ? "text-green-600" : "text-red-600"}>
-                {healthData.services.database ? "✅" : "❌"}
+              <span className={services.database ? "text-green-600" : "text-red-600"}>
+                {services.database ? "✅" : "❌"}
               </span>
               <span className="text-gray-600">Database</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={healthData.services.redis ? "text-green-600" : "text-red-600"}>
-                {healthData.services.redis ? "✅" : "❌"}
+              <span className={services.redis ? "text-green-600" : "text-red-600"}>
+                {services.redis ? "✅" : "❌"}
               </span>
               <span className="text-gray-600">Redis</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={healthData.services.openai ? "text-green-600" : "text-red-600"}>
-                {healthData.services.openai ? "✅" : "❌"}
+              <span className={services.openai ? "text-green-600" : "text-red-600"}>
+                {services.openai ? "✅" : "❌"}
               </span>
               <span className="text-gray-600">OpenAI</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className={healthData.services.lighthouse ? "text-green-600" : "text-red-600"}>
-                {healthData.services.lighthouse ? "✅" : "❌"}
+              <span className={services.lighthouse ? "text-green-600" : "text-red-600"}>
+                {services.lighthouse ? "✅" : "❌"}
               </span>
               <span className="text-gray-600">Lighthouse</span>
             </div>
