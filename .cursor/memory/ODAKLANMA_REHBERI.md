@@ -105,6 +105,7 @@
 - ✅ **FinBot Consumer Business Logic** (Event handlers + DLQ)
 - ✅ **WebSocket Gateway JWT Validation** (Topic subscription/unsubscription)
 - ✅ **Python Servislerinde Mock Data Kaldırıldı** (5 servis gerçek API entegrasyonu)
+- ✅ **Sprint 2.6 Tamamlandı** (Gün 4-5: Alert Dashboard UI + Sprint Review)
 
 ### Devam Eden Görevler
 
@@ -112,10 +113,11 @@
 
 ### Bekleyen Görevler (Opsiyonel)
 
-- ⏳ Sprint 2.6 Gün 4 - Alert Dashboard
-- ⏳ Sprint 2.6 Gün 5 - Sprint Review
+- ✅ Sprint 2.6 Gün 4 - Alert Dashboard ✅
+- ✅ Sprint 2.6 Gün 5 - Sprint Review ✅
 - ⏳ MCP Server Performance optimizasyonu
 - ⏳ Test dosyalarını oluşturma (opsiyonel)
+- ⏳ Sprint 2.7 planlaması (gelecek)
 
 ---
 
