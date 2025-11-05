@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EA Plan v5.4 - AIOps Decision Engine
+EA Plan v6.8.0 - AIOps Decision Engine
 Enhanced anomaly detection with IsolationForest + Prophet
 Cross-correlation analysis and automated response triggers
 """

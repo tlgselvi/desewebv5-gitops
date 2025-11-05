@@ -17,20 +17,20 @@
 ### 1. Build & Tag
 ```bash
 # Backend
-docker build -t $REGISTRY_URL/cpt-ajan-backend:v5.6-stable .
-docker push $REGISTRY_URL/cpt-ajan-backend:v5.6-stable
+docker build -t $REGISTRY_URL/dese-ea-plan-v6.8.0:latest .
+docker push $REGISTRY_URL/dese-ea-plan-v6.8.0:latest
 
 # Frontend
 cd frontend
-docker build -t $REGISTRY_URL/cpt-ajan-frontend:v5.6-stable .
-docker push $REGISTRY_URL/cpt-ajan-frontend:v5.6-stable
+docker build -t $REGISTRY_URL/dese-ea-plan-frontend-v6.8.0:latest .
+docker push $REGISTRY_URL/dese-ea-plan-frontend-v6.8.0:latest
 ```
 
 ### 2. Git Tag
 ```bash
 git add .
-git commit -m "release: EA Plan v5.6 Stable"
-git tag v5.6-stable
+git commit -m "release: EA Plan v6.8.0"
+git tag v6.8.0
 git push origin main --tags
 ```
 

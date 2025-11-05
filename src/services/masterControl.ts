@@ -10,7 +10,7 @@ import { existsSync } from "fs";
 const execAsync = promisify(exec);
 
 /**
- * EA Plan Master Control v6.7 - Self-Updating Orchestrator
+ * EA Plan Master Control v6.8.0 - Self-Updating Orchestrator
  * Mode: Persistent Orchestrator + Rules-Compliant + Self-Updating
  */
 
@@ -240,7 +240,7 @@ export class MasterControlService {
   private readonly namespaceMonitoring = "monitoring";
   private readonly namespaceWeb = "ea-web";
   private readonly version =
-    process.env.APP_VERSION?.replace("v", "") || "6.7.0";
+    process.env.APP_VERSION?.replace("v", "") || "6.8.0";
 
   /**
    * Step 1: Environment Verification
@@ -2448,7 +2448,7 @@ spec:
               if (statusOutput.trim()) {
                 await execAsync("git add .");
                 await execAsync(
-                  `git commit -m "EA Plan v6.7: Workflow execution auto-commit" || true`,
+                  `git commit -m "EA Plan v6.8.0: Workflow execution auto-commit" || true`,
                 );
 
                 try {

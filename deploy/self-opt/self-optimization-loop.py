@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EA Plan v5.5.4 - Self-Optimization Loop
+EA Plan v6.8.0 - Self-Optimization Loop
 Closed-loop learning and model tuning for AIOps + FinOps + SEO
 """
 

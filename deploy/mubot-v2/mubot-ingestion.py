@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EA Plan v5.5.2 - MuBot v2.0 Multi-Source Data Ingestion
+EA Plan v6.8.0 - MuBot v2.0 Multi-Source Data Ingestion
 Collects metrics from 15+ sources (SEO, Cloud, System, Network)
 Exports data quality metrics to Prometheus
 """

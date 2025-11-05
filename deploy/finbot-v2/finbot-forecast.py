@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EA Plan v5.5.1 - FinBot v2.0 Cost & ROI Forecasting
+EA Plan v6.8.0 - FinBot v2.0 Cost & ROI Forecasting
 Prophet-based cost trend prediction with ROI optimization
 """
 

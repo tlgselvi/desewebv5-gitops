@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-EA Plan v5.3.1 - SEO Rank Drift Analyzer
+EA Plan v6.8.0 - SEO Rank Drift Analyzer
 Monitors keyword rankings using Ahrefs + GSC APIs
 Exports metrics to Prometheus for anomaly detection
 """

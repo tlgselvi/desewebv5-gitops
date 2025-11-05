@@ -4,8 +4,8 @@
 **Last Update:** 2025-01-27
 
 ## ✅ Tamamlanan Adımlar
-- [x] Git commit: "release: EA Plan v5.6 Stable"
-- [x] Git tag oluşturuldu: v5.6-stable
+- [x] Git commit: "release: EA Plan v6.8.0"
+- [x] Git tag oluşturuldu: v6.8.0
 
 ## ⚠️ Manuel Yapılması Gereken Adımlar
 
@@ -31,10 +31,10 @@ export REGISTRY_URL=registry.your-domain.com
 #### Backend
 ```bash
 # Build
-docker build -t $REGISTRY_URL/cpt-ajan-backend:v5.6-stable .
+docker build -t $REGISTRY_URL/dese-ea-plan-v6.8.0:latest .
 
 # Push
-docker push $REGISTRY_URL/cpt-ajan-backend:v5.6-stable
+docker push $REGISTRY_URL/dese-ea-plan-v6.8.0:latest
 ```
 
 #### Frontend
@@ -42,10 +42,10 @@ docker push $REGISTRY_URL/cpt-ajan-backend:v5.6-stable
 cd frontend
 
 # Build
-docker build -t $REGISTRY_URL/cpt-ajan-frontend:v5.6-stable .
+docker build -t $REGISTRY_URL/dese-ea-plan-frontend-v6.8.0:latest .
 
 # Push
-docker push $REGISTRY_URL/cpt-ajan-frontend:v5.6-stable
+docker push $REGISTRY_URL/dese-ea-plan-frontend-v6.8.0:latest
 
 cd ..
 ```
@@ -56,12 +56,12 @@ cd ..
 
 **ops/k8s/backend-deployment.yaml** (satır 23):
 ```yaml
-image: ghcr.io/your-org/cpt-ajan-backend:v5.6-stable
+image: ghcr.io/your-org/dese-ea-plan-v6.8.0:latest
 ```
 
 **ops/k8s/frontend-deployment.yaml** (satır 14):
 ```yaml
-image: ghcr.io/your-org/cpt-ajan-frontend:v5.6-stable
+image: ghcr.io/your-org/dese-ea-plan-frontend-v6.8.0:latest
 ```
 
 ### 5. Kubernetes Deploy

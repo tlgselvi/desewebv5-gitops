@@ -30,7 +30,7 @@ export const logger = winston.createLogger({
   format: logFormat,
   defaultMeta: {
     service: 'dese-ea-plan-v5',
-    version: process.env.npm_package_version || '5.0.0',
+    version: process.env.npm_package_version || '6.8.0',
     environment: config.nodeEnv,
   },
   transports: [

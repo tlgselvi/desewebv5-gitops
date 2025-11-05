@@ -154,7 +154,7 @@ app.get("/health", async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.7.0",
+      process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
     environment: config.nodeEnv,
     database: dbStatus ? "connected" : "disconnected",
     memory: {

@@ -308,7 +308,7 @@ async function githubTagBuild(options: CliOptions): Promise<void> {
 async function phaseUpdate(options: CliOptions): Promise<void> {
   console.log("🚀 Step 3: Deploy Phase 7");
 
-  const targetPhase = options.target || "v6.7";
+  const targetPhase = options.target || "v6.8.0";
 
   try {
     const result = await callAPI("/master-control/execute", "POST", {
@@ -674,7 +674,7 @@ Commands:
 
 Options:
   --strict                     Strict validation mode
-  --target <version>           Target phase version (e.g., v6.7)
+  --target <version>           Target phase version (e.g., v6.8.0)
   --apply_manifests           Apply Kubernetes manifests
   --commit_changes             Auto-commit changes
   --targets <list>             Comma-separated targets (e.g., prometheus,grafana)
@@ -699,7 +699,7 @@ Options:
 Examples:
   master-control rule-verify --strict
   master-control github-tag-build --version v6.8.0-rc --registry ghcr.io/cptsystems
-  master-control phase-update --target v6.7 --apply_manifests --commit_changes
+  master-control phase-update --target v6.8.0 --apply_manifests --commit_changes
   master-control observe --targets prometheus,grafana --verify
   master-control execute --full_cycle --self_update
 
