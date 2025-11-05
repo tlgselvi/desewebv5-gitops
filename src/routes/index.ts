@@ -74,6 +74,28 @@ export function setupRoutes(app: Express): void {
         app.use(`${apiPrefix}/alerts`, alertsRoutes); // Added
         app.use(`${apiPrefix}/permissions`, permissionRoutes);
 
+  // Root route handler (must be before 404 handler)
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'Dese EA Plan v6.8.0 API',
+      version: '6.8.0',
+      description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API',
+      environment: config.nodeEnv,
+      timestamp: new Date().toISOString(),
+      status: 'healthy',
+      api: {
+        version: config.apiVersion,
+        baseUrl: apiPrefix,
+        endpoints: {
+          health: '/health',
+          api: apiPrefix,
+          docs: '/api-docs',
+          metrics: '/metrics',
+        },
+      },
+    });
+  });
+
   // Root API endpoint
   app.get(apiPrefix, (req, res) => {
     res.json({
