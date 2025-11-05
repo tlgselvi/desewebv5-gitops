@@ -1,5 +1,4 @@
-import ws from 'ws';
-const { WebSocket, WebSocketServer } = ws;
+import { WebSocket, WebSocketServer } from 'ws';
 import { Server as HTTPServer } from 'http';
 import { logger } from '@/utils/logger.js';
 import { authenticate, AuthenticatedRequest } from '@/middleware/auth.js';
