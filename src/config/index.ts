@@ -14,12 +14,12 @@ const configSchema = z.object({
 
   // Database Configuration
   database: z.object({
-    url: z.string().default('postgresql://postgres:postgres@localhost:5432/dese_ea_plan_v5'),
+    url: z.string().default('postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5'),
     host: z.string().default('localhost'),
     port: z.coerce.number().default(5432),
     name: z.string().default('dese_ea_plan_v5'),
-    user: z.string().default('postgres'),
-    password: z.string().default('postgres'),
+    user: z.string().default('dese'),
+    password: z.string().default('dese123'),
   }),
 
   // Redis Configuration
