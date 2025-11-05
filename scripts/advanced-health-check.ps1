@@ -129,12 +129,11 @@ try {
     $runningNodes = ($nodes | Select-String "Ready").Count
     
     $healthResults.Cluster = @{
-        Status = "HEALTHY"
+        Status = if ($runningNodes -gt 0) { "READY" } else { "FAILED" }
         Nodes = @{
             Total = (kubectl get nodes --no-headers 2>&1).Count
             Ready = $runningNodes
         }
-        Status = if ($runningNodes -gt 0) { "READY" } else { "FAILED" }
     }
     
     if ($Verbose) {
