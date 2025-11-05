@@ -107,6 +107,7 @@
 - ✅ **Python Servislerinde Mock Data Kaldırıldı** (5 servis gerçek API entegrasyonu)
 - ✅ **Sprint 2.6 Tamamlandı** (Gün 4-5: Alert Dashboard UI + Sprint Review)
 - ✅ **Güvenlik Güncellemeleri** (Deprecated paketler güncellendi)
+- ✅ **JARVIS Diagnostic Scripts** (Phase 1, 2, 3 ve summary template oluşturuldu)
 
 ### Devam Eden Görevler
 
@@ -246,7 +247,7 @@ curl -X POST http://localhost:5555/finbot/query \
 
 **Son Güncelleme:** 2025-01-27 (Saat: Şimdi)  
 **Durum:** ✅ Tüm Kritik Görevler Tamamlandı  
-**Mevcut İlerleme:** ~92% (Tüm kritik görevler + Sprint 2.6 + Güvenlik güncellemeleri tamamlandı)  
+**Mevcut İlerleme:** ~93% (Tüm kritik görevler + Sprint 2.6 + Güvenlik güncellemeleri + JARVIS Scripts tamamlandı)  
 **Son Tamamlanan:** 
 - MCP Server Authentication & Security (Faz 2)
 - Test düzeltmeleri
