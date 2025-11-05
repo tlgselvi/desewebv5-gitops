@@ -1,10 +1,12 @@
 import express, { Request, Response } from "express";
+import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
 import { asyncHandler } from "@/middleware/errorHandler.js";
 import { authenticate, optionalAuth } from "@/middleware/auth.js";
 import { redis } from "@/services/storage/redisClient.js";
 import { config } from "@/config/index.js";
+import { initializeMCPWebSocket, pushContextUpdate } from "./websocket-server.js";
 
 /**
  * MuBot MCP Server
@@ -97,6 +99,9 @@ app.post(
       // Cache response (60 seconds TTL)
       await redis.setex(cacheKey, 60, JSON.stringify(response));
 
+      // Push context update to WebSocket subscribers
+      await pushContextUpdate("mubot", "ingestion", response.response.context);
+
       res.json(response);
     } catch (error) {
       logger.error("MuBot MCP query error", {
@@ -164,11 +169,18 @@ app.use((err: Error, req: Request, res: Response, next: Function) => {
   });
 });
 
+// Create HTTP server for WebSocket support
+const httpServer = createServer(app);
+
+// Initialize WebSocket server
+initializeMCPWebSocket("mubot", httpServer, PORT);
+
 // Start server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   logger.info(`MuBot MCP Server started`, {
     port: PORT,
     endpoint: `/mubot`,
+    wsEndpoint: `/mubot/ws`,
     version: "1.0.0",
     backendUrl: BACKEND_BASE,
   });

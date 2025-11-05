@@ -1,10 +1,13 @@
 import express, { Request, Response } from "express";
+import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
 import { asyncHandler } from "@/middleware/errorHandler.js";
 import { authenticate, optionalAuth } from "@/middleware/auth.js";
 import { redis } from "@/services/storage/redisClient.js";
 import { config } from "@/config/index.js";
+import { initializeMCPWebSocket } from "./websocket-server.js";
+import { getAggregatedContext, selectContextByPriority } from "./context-aggregator.js";
 
 /**
  * Observability MCP Server
@@ -282,11 +285,75 @@ app.use((err: Error, req: Request, res: Response, next: Function) => {
   });
 });
 
+/**
+ * POST /observability/aggregate
+ * Aggregate context from multiple MCP modules
+ * Requires authentication
+ */
+app.post(
+  "/observability/aggregate",
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { query, modules, priority, mergeStrategy, context } = req.body;
+
+    logger.info("Context aggregation requested", {
+      query,
+      modules,
+      priority,
+      mergeStrategy,
+    });
+
+    const authToken = req.headers.authorization?.replace("Bearer ", "");
+
+    try {
+      const aggregated = await getAggregatedContext(
+        {
+          query: query || "",
+          modules,
+          priority,
+          mergeStrategy,
+          context,
+        },
+        authToken
+      );
+
+      // If priority is specified, select context by priority
+      let selectedContext = aggregated.merged;
+      if (priority && priority !== "auto") {
+        selectedContext = selectContextByPriority(aggregated, priority);
+      }
+
+      res.json({
+        query,
+        aggregated: {
+          modules: aggregated.modules,
+          context: selectedContext,
+          priorities: aggregated.priorities,
+          timestamps: aggregated.timestamps,
+          metadata: aggregated.metadata,
+        },
+      });
+    } catch (error) {
+      logger.error("Context aggregation error", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  })
+);
+
+// Create HTTP server for WebSocket support
+const httpServer = createServer(app);
+
+// Initialize WebSocket server
+initializeMCPWebSocket("observability", httpServer, PORT);
+
 // Start server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   logger.info(`Observability MCP Server started`, {
     port: PORT,
     endpoint: `/observability`,
+    wsEndpoint: `/observability/ws`,
     version: "1.0.0",
     backendUrl: BACKEND_BASE,
     prometheusUrl: PROMETHEUS_BASE,
