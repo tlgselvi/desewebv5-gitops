@@ -5,7 +5,7 @@ metadata:
   namespace: dese-ea-plan-v5
   labels:
     app.kubernetes.io/name: dese-ea-plan-v5
-    app.kubernetes.io/version: "5.0.0"
+    app.kubernetes.io/version: "6.8.0"
     app.kubernetes.io/component: api
     app.kubernetes.io/part-of: cpt-optimization
 spec:
@@ -18,12 +18,12 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: dese-ea-plan-v5
-        app.kubernetes.io/version: "5.0.0"
+        app.kubernetes.io/version: "6.8.0"
         app.kubernetes.io/component: api
         app.kubernetes.io/part-of: cpt-optimization
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "3000"
+        prometheus.io/port: "3001"
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: dese-ea-plan-v5
@@ -33,11 +33,23 @@ spec:
         fsGroup: 1001
       containers:
       - name: dese-ea-plan-v5
-        image: dese-ea-plan-v5:5.0.0
+        image: dese-ea-plan-v5:6.8.0
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 3000
+        - containerPort: 3001
           name: http
+          protocol: TCP
+        - containerPort: 5555
+          name: finbot-mcp
+          protocol: TCP
+        - containerPort: 5556
+          name: mubot-mcp
+          protocol: TCP
+        - containerPort: 5557
+          name: dese-mcp
+          protocol: TCP
+        - containerPort: 5558
+          name: observability-mcp
           protocol: TCP
         env:
         - name: NODE_ENV

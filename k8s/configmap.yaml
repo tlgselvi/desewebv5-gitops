@@ -5,10 +5,10 @@ metadata:
   namespace: dese-ea-plan-v5
   labels:
     app.kubernetes.io/name: dese-ea-plan-v5
-    app.kubernetes.io/version: "5.0.0"
+    app.kubernetes.io/version: "6.8.0"
 data:
   NODE_ENV: "production"
-  PORT: "3000"
+  PORT: "3001"
   API_VERSION: "v1"
   CORS_ORIGIN: "https://dese.ai"
   TARGET_REGION: "Türkiye"

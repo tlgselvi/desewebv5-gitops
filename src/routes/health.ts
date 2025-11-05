@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { checkDatabaseConnection } from '@/db/index.js';
+import { redis } from '@/services/storage/redisClient.js';
 import { logger } from '@/utils/logger.js';
 
 const router = Router();
@@ -31,7 +32,7 @@ router.get('/', async (req, res) => {
       status: dbStatus ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      version: process.env.npm_package_version || '5.0.0',
+      version: process.env.npm_package_version || '6.8.0',
       environment: process.env.NODE_ENV || 'development',
       database: dbStatus ? 'connected' : 'disconnected',
       memory: {
@@ -73,13 +74,34 @@ router.get('/ready', async (req, res) => {
   try {
     const dbStatus = await checkDatabaseConnection();
     
-    if (dbStatus) {
-      res.status(200).json({ status: 'ready' });
+    // Check Redis connection
+    let redisStatus = false;
+    try {
+      await redis.ping();
+      redisStatus = true;
+    } catch (error) {
+      redisStatus = false;
+    }
+    
+    // Ready if both database and Redis are connected
+    if (dbStatus && redisStatus) {
+      res.status(200).json({ 
+        status: 'ready',
+        database: 'connected',
+        redis: 'connected',
+      });
     } else {
-      res.status(503).json({ status: 'not ready' });
+      res.status(503).json({ 
+        status: 'not ready',
+        database: dbStatus ? 'connected' : 'disconnected',
+        redis: redisStatus ? 'connected' : 'disconnected',
+      });
     }
   } catch (error) {
-    res.status(503).json({ status: 'not ready', error: error.message });
+    res.status(503).json({ 
+      status: 'not ready', 
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 

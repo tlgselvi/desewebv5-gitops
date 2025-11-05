@@ -1,4 +1,4 @@
-# Multi-stage build for Dese EA Plan v5.0
+# Multi-stage build for Dese EA Plan v6.8.0
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
@@ -40,15 +40,16 @@ RUN chown -R dese:nodejs logs uploads
 USER dese
 
 # Expose port
-EXPOSE 3000
+# Expose ports (Backend API + MCP Servers)
+EXPOSE 3001 5555 5556 5557 5558
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+# Health check for backend API
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
 CMD ["node", "dist/index.js"]

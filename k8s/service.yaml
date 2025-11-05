@@ -5,18 +5,18 @@ metadata:
   namespace: dese-ea-plan-v5
   labels:
     app.kubernetes.io/name: dese-ea-plan-v5
-    app.kubernetes.io/version: "5.0.0"
+    app.kubernetes.io/version: "6.8.0"
     app.kubernetes.io/component: api
     app.kubernetes.io/part-of: cpt-optimization
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/port: "3000"
+    prometheus.io/port: "3001"
     prometheus.io/path: "/metrics"
 spec:
   type: ClusterIP
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 3001
     protocol: TCP
     name: http
   selector:
@@ -30,7 +30,7 @@ metadata:
   namespace: dese-ea-plan-v5
   labels:
     app.kubernetes.io/name: dese-ea-plan-v5
-    app.kubernetes.io/version: "5.0.0"
+    app.kubernetes.io/version: "6.8.0"
     app.kubernetes.io/component: api
     app.kubernetes.io/part-of: cpt-optimization
 spec:
@@ -38,7 +38,7 @@ spec:
   clusterIP: None
   ports:
   - port: 3000
-    targetPort: 3000
+    targetPort: 3001
     protocol: TCP
     name: http
   selector:
