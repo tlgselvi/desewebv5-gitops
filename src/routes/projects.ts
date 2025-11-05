@@ -68,8 +68,16 @@ router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
     ? (ownerId as string | undefined)
     : authenticatedReq.user?.id;
 
-  // Build query with conditions
-  let queryBuilder = db
+  // Build query with conditions using Drizzle query API
+  const conditions = [];
+  if (effectiveOwnerId) {
+    conditions.push(eq(seoProjects.ownerId, effectiveOwnerId));
+  }
+  if (status) {
+    conditions.push(eq(seoProjects.status, status as string));
+  }
+
+  const projects = await db
     .select({
       id: seoProjects.id,
       name: seoProjects.name,
@@ -90,18 +98,8 @@ router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
       },
     })
     .from(seoProjects)
-    .leftJoin(users, eq(seoProjects.ownerId, users.id));
-
-  // Apply where conditions
-  if (effectiveOwnerId && status) {
-    queryBuilder = (queryBuilder as any).where(and(eq(seoProjects.ownerId, effectiveOwnerId), eq(seoProjects.status, status as string)));
-  } else if (effectiveOwnerId) {
-    queryBuilder = (queryBuilder as any).where(eq(seoProjects.ownerId, effectiveOwnerId));
-  } else if (status) {
-    queryBuilder = (queryBuilder as any).where(eq(seoProjects.status, status as string));
-  }
-
-  const projects = await queryBuilder;
+    .leftJoin(users, eq(seoProjects.ownerId, users.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
 
   res.json({ projects });
 }));
