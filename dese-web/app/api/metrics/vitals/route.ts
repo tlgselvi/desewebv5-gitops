@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
 // Simple in-memory store for Web Vitals (in production, use Redis or database)
 const webVitalsStore: Array<{
@@ -38,7 +39,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Log for debugging (in production, send to your observability platform)
-    console.log(`Web Vitals: ${name}=${value}ms (${rating})`)
+    logger.info(`Web Vitals: ${name}`, {
+      metric: name,
+      value,
+      rating,
+      timestamp,
+      url,
+    })
     
     // In a real implementation, you would:
     // 1. Send to OpenTelemetry collector
@@ -48,7 +55,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
     
   } catch (error) {
-    console.error('Web Vitals API error:', error)
+    logger.error('Web Vitals API error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

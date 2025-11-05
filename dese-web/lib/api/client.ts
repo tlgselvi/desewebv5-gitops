@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logger } from "@/lib/utils/logger";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1",
@@ -11,11 +12,17 @@ export const api = axios.create({
 // Request interceptor for logging
 api.interceptors.request.use(
   (config) => {
-    console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    logger.info(`API ${config.method?.toUpperCase()} ${config.url}`, {
+      method: config.method,
+      url: config.url,
+    });
     return config;
   },
   (error) => {
-    console.error('[API] Request error:', error);
+    logger.error('API Request error', error, {
+      url: error.config?.url,
+      method: error.config?.method,
+    });
     return Promise.reject(error);
   }
 );
@@ -26,7 +33,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('[API] Response error:', error.response?.data || error.message);
+    logger.error('API Response error', error, {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
     return Promise.reject(error);
   }
 );

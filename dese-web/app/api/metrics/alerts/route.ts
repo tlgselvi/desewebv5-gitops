@@ -1,16 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
-// In-memory store for alerts (in production, use Redis or database)
-const alertsStore: Array<{
+interface AlertMetrics {
+  lcp?: number
+  tbt?: number
+  tti?: number
+  performance?: number
+  accessibility?: number
+  seo?: number
+  timestamp?: string
+}
+
+interface AlertRecord {
   id: string
   type: string
   severity: string
   drift: number
-  metrics: any
+  metrics: AlertMetrics
   timestamp: string
   suggestions: string[]
   status: 'active' | 'acknowledged' | 'resolved'
-}> = []
+}
+
+// In-memory store for alerts (in production, use Redis or database)
+const alertsStore: AlertRecord[] = []
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,10 +60,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Log for debugging (in production, send to monitoring system)
-    console.log(`🚨 AIOps Alert: ${type} (${severity})`, {
-      drift: `${drift.toFixed(1)}%`,
+    logger.info(`AIOps Alert: ${type} (${severity})`, {
+      alertId: alertRecord.id,
+      type,
+      severity,
+      drift: drift.toFixed(1),
       timestamp: alertRecord.timestamp,
-      suggestions: suggestions?.length || 0
+      suggestionsCount: suggestions?.length || 0,
+      metrics: alertRecord.metrics,
     })
     
     // In a real implementation, you would:
@@ -66,7 +83,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('AIOps Alert API error:', error)
+    logger.error('AIOps Alert API error', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AlertTriangle, TrendingUp, TrendingDown, Activity } from 'lucide-react'
+import { logger } from '@/lib/utils/logger'
 
 interface PerformanceMetrics {
   lcp: number
@@ -73,12 +74,19 @@ export function AIOpsFeedback({ metrics }: AIOpsFeedbackProps) {
           timestamp: new Date().toISOString(),
           suggestions: newSuggestions
         })
-      }).catch(console.error)
+      }).catch((error) => {
+        logger.error('Failed to send AIOps alert', error, {
+          type: 'performance_drift',
+          severity: 'high',
+          drift: avgDrift,
+        });
+      })
 
-      // Log to console for debugging
-      console.warn(`🚨 AIOps Alert: Performance drift detected (${avgDrift.toFixed(1)}%)`, {
+      // Log performance drift alert
+      logger.warn(`AIOps Alert: Performance drift detected (${avgDrift.toFixed(1)}%)`, {
         metrics,
-        suggestions: newSuggestions
+        suggestions: newSuggestions,
+        drift: avgDrift,
       })
     }
   }, [metrics])
