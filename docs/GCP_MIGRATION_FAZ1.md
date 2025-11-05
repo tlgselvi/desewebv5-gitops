@@ -52,7 +52,7 @@ PostgreSQL 15+ veritabanını Google Cloud SQL'de barındırmak için yeni bir i
 
 ```bash
 # Önce projenizi ayarlayın
-gcloud config set project [PROJE_ID_BURAYA]
+gcloud config set project [481605933519]
 
 # Proje ID'nizi kontrol edin
 gcloud config get-value project
@@ -78,7 +78,19 @@ gcloud sql instances create dese-ea-plan-db \
   --labels=project=dese-ea-plan,version=v6.8.0,environment=production
 ```
 
-### 3. Script ile Oluşturma (Önerilen)
+### 3. Script ile Oluşturma
+
+#### Windows PowerShell (Parametreli - Önerilen)
+
+```powershell
+.\scripts\gcp-cloud-sql-create-direct.ps1 -Password "GüvenliŞifre123!"
+```
+
+#### Windows PowerShell (İnteraktif)
+
+```powershell
+.\scripts\gcp-cloud-sql-create-ready.ps1
+```
 
 #### Linux/Mac (Bash)
 
@@ -87,17 +99,11 @@ chmod +x scripts/gcp-cloud-sql-create.sh
 ./scripts/gcp-cloud-sql-create.sh
 ```
 
-#### Windows (PowerShell)
-
-```powershell
-.\scripts\gcp-cloud-sql-create.ps1
-```
-
 ---
 
 ## ✅ Şifre Güvenliği
 
-**⚠️ ÖNEMLİ:** Komutta `<GUVENLI_BIR_SIFRE_YAZIN>` yerine güçlü bir şifre kullanın:
+**⚠️ ÖNEMLİ:** Komutta `<Topr@k2580>` yerine güçlü bir şifre kullanın:
 
 ### Şifre Gereksinimleri:
 - ✅ Minimum 12 karakter

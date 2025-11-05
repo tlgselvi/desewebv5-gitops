@@ -1,0 +1,92 @@
+# Google Cloud SQL PostgreSQL Instance Oluşturma Scripti (Parametreli)
+# Dese EA Plan v6.8.0 - Cloud Migration Faz 1
+# Tarih: 2025-01-27
+# Kullanım: .\scripts\gcp-cloud-sql-create-direct.ps1 -Password "GüvenliŞifre123!"
+
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$Password
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "🚀 Google Cloud SQL PostgreSQL Instance Oluşturma" -ForegroundColor Green
+Write-Host "==================================================" -ForegroundColor Green
+Write-Host ""
+
+# Şifre validasyonu
+if ($Password.Length -lt 12) {
+    Write-Host "❌ Hata: Şifre minimum 12 karakter olmalı!" -ForegroundColor Red
+    exit 1
+}
+
+# Proje kontrolü
+$currentProject = gcloud config get-value project 2>$null
+if (-not $currentProject) {
+    Write-Host "❌ Hata: Google Cloud proje ID'si bulunamadı!" -ForegroundColor Red
+    Write-Host "   Lütfen 'gcloud config set project [PROJE_ID_BURAYA]' komutunu çalıştırın." -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host "✅ Proje ID: $currentProject" -ForegroundColor Green
+Write-Host "📦 Instance oluşturuluyor..." -ForegroundColor Yellow
+Write-Host "   Bu işlem 5-10 dakika sürebilir..." -ForegroundColor Gray
+Write-Host ""
+
+try {
+    gcloud sql instances create dese-ea-plan-db `
+      --database-version=POSTGRES_15 `
+      --region=europe-west3 `
+      --tier=db-g1-small `
+      --root-password="$Password" `
+      --storage-type=SSD `
+      --storage-size=20GB `
+      --storage-auto-increase `
+      --backup-start-time=03:00 `
+      --enable-bin-log `
+      --maintenance-window-day=SUN `
+      --maintenance-window-hour=4 `
+      --maintenance-release-channel=production `
+      --deletion-protection `
+      --labels=project=dese-ea-plan,version=v6.8.0,environment=production
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host ""
+        Write-Host "✅ Instance başarıyla oluşturuldu!" -ForegroundColor Green
+        Write-Host ""
+        
+        # Instance bilgilerini al
+        Write-Host "📋 Instance Bilgileri:" -ForegroundColor Yellow
+        Start-Sleep -Seconds 5  # Instance bilgilerinin hazır olması için bekle
+        
+        $connectionName = gcloud sql instances describe dese-ea-plan-db --format='value(connectionName)' 2>$null
+        $ipAddress = gcloud sql instances describe dese-ea-plan-db --format='value(ipAddresses[0].ipAddress)' 2>$null
+        $state = gcloud sql instances describe dese-ea-plan-db --format='value(state)' 2>$null
+        
+        Write-Host "   Connection Name: $connectionName" -ForegroundColor White
+        Write-Host "   IP Address: $ipAddress" -ForegroundColor White
+        Write-Host "   State: $state" -ForegroundColor White
+        Write-Host ""
+        
+        Write-Host "📝 Sonraki Adımlar:" -ForegroundColor Yellow
+        Write-Host "1. Veritabanı oluşturun:" -ForegroundColor White
+        Write-Host "   gcloud sql databases create dese_db --instance=dese-ea-plan-db" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "2. Environment variable'ı güncelleyin:" -ForegroundColor White
+        Write-Host "   DATABASE_URL=postgresql://postgres:$Password@$ipAddress:5432/dese_db" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "3. Connection test edin:" -ForegroundColor White
+        Write-Host "   psql `"postgresql://postgres:$Password@$ipAddress:5432/dese_db`"" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "⚠️  Şifrenizi güvenli bir yerde saklayın!" -ForegroundColor Yellow
+    } else {
+        Write-Host ""
+        Write-Host "❌ Instance oluşturma başarısız!" -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    Write-Host ""
+    Write-Host "❌ Hata: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
