@@ -89,12 +89,12 @@ export class SeoAnalyzer {
       // Run Lighthouse
       const lighthouseOptions = {
         logLevel: 'error' as const,
-        output: 'json',
+        output: 'json' as const,
         onlyCategories: categories,
         port: parseInt(new URL(await this.browser!.wsEndpoint()).port, 10),
       };
 
-      const result = await lighthouse(url, lighthouseOptions);
+      const result = await lighthouse(url, lighthouseOptions as any);
       await page.close();
 
       if (!result) {

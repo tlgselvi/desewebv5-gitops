@@ -444,7 +444,7 @@ export class ContentGenerator {
     let query = db.select().from(contentTemplates).where(eq(contentTemplates.isActive, true));
     
     if (type) {
-      query = query.where(eq(contentTemplates.type, type));
+      query = (query as any).where(eq(contentTemplates.type, type));
     }
 
     return await query;
@@ -457,7 +457,7 @@ export class ContentGenerator {
       .where(eq(generatedContent.projectId, projectId));
 
     if (contentType) {
-      query = query.where(eq(generatedContent.contentType, contentType));
+      query = (query as any).where(eq(generatedContent.contentType, contentType));
     }
 
     return await query.orderBy(generatedContent.createdAt);

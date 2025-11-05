@@ -131,8 +131,14 @@ export function auditLog(action: string, options?: {
         logger.error('Audit logging failed', { error });
       });
 
-      // Call original end
-      originalEnd.call(this, chunk, encoding);
+      // Call original end method
+      if (typeof chunk === 'function') {
+        return originalEnd(chunk);
+      } else if (typeof encoding === 'function') {
+        return originalEnd(chunk, encoding);
+      } else {
+        return originalEnd(chunk, encoding, cb);
+      }
     };
 
     next();
