@@ -77,7 +77,8 @@ router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
     conditions.push(eq(seoProjects.status, status as string));
   }
 
-  const projects = await db
+  // Build query - Drizzle doesn't support optional where, so we build it conditionally
+  let query = db
     .select({
       id: seoProjects.id,
       name: seoProjects.name,
@@ -98,8 +99,14 @@ router.get('/', cacheMiddleware({ ttl: 60 }), asyncHandler(async (req, res) => {
       },
     })
     .from(seoProjects)
-    .leftJoin(users, eq(seoProjects.ownerId, users.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined);
+    .leftJoin(users, eq(seoProjects.ownerId, users.id));
+
+  // Apply where conditions only if we have any
+  if (conditions.length > 0) {
+    query = query.where(conditions.length === 1 ? conditions[0] : and(...conditions));
+  }
+
+  const projects = await query;
 
   res.json({ projects });
 }));
