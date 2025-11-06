@@ -24,7 +24,8 @@ Dışarıdan gelen trafiği (HTTP/HTTPS) karşılamak ve servislerimize (FinBot,
 | **Release Name** | `ingress-nginx` |
 | **IngressClass** | `nginx` |
 | **LoadBalancer Service** | `ingress-nginx-controller` |
-| **Status** | ✅ Deployed |
+| **External IP** | `34.40.41.232` ✅ |
+| **Status** | ✅ Deployed & Ready |
 
 ---
 

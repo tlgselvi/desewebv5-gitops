@@ -101,7 +101,7 @@ Detaylar: `docs/GCP_MIGRATION_FAZ2_GKE.md`
 - ✅ Namespace: `ingress-nginx`
 - ✅ IngressClass: `nginx`
 - ✅ LoadBalancer Service oluşturuldu
-- ⏳ External IP atanması bekleniyor (2-5 dakika)
+- ✅ External IP atandı: `34.40.41.232`
 
 Detaylar: `docs/GCP_MIGRATION_FAZ3_INGRESS.md`
 
