@@ -64,9 +64,10 @@ gcloud redis instances describe dese-ea-plan-cache --region=europe-west3
 
 ### Host ve Port
 
-Instance detaylarından alınacak:
-- **Host:** `<instance-host-ip>`
+✅ Instance başarıyla oluşturuldu:
+- **Host:** `10.146.144.75`
 - **Port:** `6379` (default Redis port)
+- **State:** `READY` ✅
 
 ---
 
@@ -75,9 +76,9 @@ Instance detaylarından alınacak:
 `.env` dosyanıza ekleyin:
 
 ```env
-REDIS_HOST=<instance-host-ip>
+REDIS_HOST=10.146.144.75
 REDIS_PORT=6379
-REDIS_URL=redis://<instance-host-ip>:6379
+REDIS_URL=redis://10.146.144.75:6379
 ```
 
 ---
