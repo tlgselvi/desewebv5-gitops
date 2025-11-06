@@ -147,21 +147,29 @@ docker-compose logs -f app
 
 ### Google Cloud Deployment
 
-**Faz 1 ve Faz 2 tamamlandı!** Infrastructure hazır:
-- ✅ Cloud SQL PostgreSQL
-- ✅ Memorystore Redis
-- ✅ GKE Cluster
+**Faz 1-4 tamamlandı!** Infrastructure ve configuration hazır:
+- ✅ Cloud SQL PostgreSQL (`dese-ea-plan-db`)
+- ✅ Memorystore Redis (`dese-ea-plan-cache`)
+- ✅ GKE Cluster (`dese-ea-plan-cluster`)
+- ✅ NGINX Ingress Controller (External IP: `34.40.41.232`)
+- ✅ Kubernetes Secrets (Database & Redis)
 
-**Sonraki Adımlar (Faz 3):**
+**Sonraki Adımlar (Faz 5):**
+- Docker image build ve push
 - Application deployment
-- Ingress controller setup
+- Service ve Ingress resource'ları
 - Database migration
 - Monitoring setup
 
 **Scripts:**
 - `scripts/gcp-cloud-sql-create-direct.ps1` - Cloud SQL instance
 - `scripts/gcp-gke-cluster-create.ps1` - GKE cluster
-- Detaylı dokümantasyon: `docs/GCP_MIGRATION_FAZ1_SONUC.md`
+- `scripts/gcp-nginx-ingress-install.ps1` - NGINX Ingress
+- `scripts/gcp-create-secrets.ps1` - Kubernetes Secrets
+
+**Detaylı Dokümantasyon:**
+- `docs/GCP_MIGRATION_DURUM_OZETI.md` - Migration durum özeti
+- `docs/GCP_MIGRATION_FAZ1_SONUC.md` - Faz 1-4 özeti
 
 ### Kubernetes ile Deploy
 
