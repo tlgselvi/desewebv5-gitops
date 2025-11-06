@@ -18,7 +18,8 @@
 | **Faz 2** | Kubernetes Cluster (GKE) | ✅ Tamamlandı | [Detaylar](#faz-2-kubernetes) |
 | **Faz 3** | NGINX Ingress Controller | ✅ Tamamlandı | [Detaylar](#faz-3-ingress) |
 | **Faz 4** | Kubernetes Secrets | ✅ Tamamlandı | [Detaylar](#faz-4-secrets) |
-| **Faz 5** | Application Deployment | ⏳ Bekliyor | [Detaylar](#faz-5-deployment) |
+| **Faz 5** | Docker Image Build & Push | ⏳ Devam Ediyor | [Detaylar](#faz-5-build-push) |
+| **Faz 6** | Application Deployment | ⏳ Hazır | [Detaylar](#faz-6-deployment) |
 
 ---
 
@@ -133,18 +134,35 @@ env:
 
 ---
 
-## ⏳ Faz 5: Application Deployment
+## ⏳ Faz 5: Docker Image Build & Push
 
-### Hazırlık Durumu
+### Build Durumu
 
-- ✅ Infrastructure hazır (Cloud SQL, Redis)
-- ✅ Kubernetes cluster hazır
-- ✅ Ingress controller hazır
-- ✅ Secrets oluşturuldu
-- ⏳ Docker image'ları build edilmeli
-- ⏳ Container Registry'e push edilmeli
-- ⏳ Deployment YAML'ları hazırlanmalı
-- ⏳ Service ve Ingress resource'ları oluşturulmalı
+- ✅ Artifact Registry API aktif
+- ✅ Repository oluşturuldu: `dese-ea-plan-images`
+- ✅ Docker yetkilendirildi
+- ✅ `.dockerignore` oluşturuldu (build context optimize)
+- ✅ Dockerfile güncellendi (lockfile handling)
+- ⏳ Image build işlemi devam ediyor:
+  - `dese-api` - Build ediliyor
+  - `dese-frontend` - Bekliyor
+  - `dese-finbot` - Bekliyor
+  - `dese-mubot` - Bekliyor
+
+**Dokümantasyon:** `docs/GCP_MIGRATION_FAZ5_BUILD_PUSH.md`, `docs/GCP_MIGRATION_FAZ5_BUILD_STATUS.md`
+
+## ✅ Faz 6: Application Deployment
+
+### Deployment YAML'ları Hazır
+
+- ✅ `k8s/deployment-api.yaml` - API Deployment (2 replicas)
+- ✅ `k8s/service-api.yaml` - API Service (ClusterIP, port 80)
+- ✅ `k8s/ingress-api.yaml` - API Ingress (api.dese.ai)
+- ✅ Health checks yapılandırıldı
+- ✅ Resource limits tanımlandı
+- ✅ Security context ayarlandı
+
+**Dokümantasyon:** `docs/GCP_MIGRATION_FAZ6_DEPLOYMENT.md`
 
 ### Planlanan Deployment'lar
 
@@ -202,38 +220,32 @@ env:
 
 ---
 
-## 🎯 Sonraki Adımlar (Faz 5)
+## 🎯 Sonraki Adımlar
 
-1. **Docker Image Build**
+### Faz 5: Image Build (Devam Ediyor)
+
+1. ⏳ Build işlemi tamamlanıyor (12-19 dakika tahmini)
+2. ✅ Script hazır: `scripts/gcp-build-push-images.ps1`
+3. ✅ `.dockerignore` optimize edildi
+
+### Faz 6: Deployment (Hazır)
+
+1. ✅ Deployment YAML'ları hazır
+2. ✅ Service YAML'ları hazır
+3. ✅ Ingress YAML'ları hazır
+4. ⏳ Image'lar build edildikten sonra:
    ```bash
-   docker build -t gcr.io/ea-plan-seo-project/dese-ea-plan-api:latest .
-   docker build -t gcr.io/ea-plan-seo-project/dese-ea-plan-frontend:latest ./frontend
-   ```
-
-2. **Container Registry Push**
-   ```bash
-   gcloud auth configure-docker
-   docker push gcr.io/ea-plan-seo-project/dese-ea-plan-api:latest
-   docker push gcr.io/ea-plan-seo-project/dese-ea-plan-frontend:latest
-   ```
-
-3. **Deployment YAML'ları Oluştur**
-   - `k8s/deployment-api.yaml`
-   - `k8s/deployment-frontend.yaml`
-   - `k8s/service-api.yaml`
-   - `k8s/service-frontend.yaml`
-   - `k8s/ingress-production.yaml`
-
-4. **Deployment**
-   ```bash
-   kubectl apply -f k8s/
+   kubectl apply -f k8s/deployment-api.yaml
+   kubectl apply -f k8s/service-api.yaml
+   kubectl apply -f k8s/ingress-api.yaml
    ```
 
 5. **Verification**
    ```bash
-   kubectl get pods
-   kubectl get svc
-   kubectl get ingress
+   kubectl get deployment dese-api-deployment
+   kubectl get pods -l app=dese-api
+   kubectl get svc dese-api-service
+   kubectl get ingress dese-api-ingress
    ```
 
 ---
@@ -245,9 +257,10 @@ Faz 1: Infrastructure     ██████████████████
 Faz 2: Kubernetes         ████████████████████ 100% ✅
 Faz 3: Ingress           ████████████████████ 100% ✅
 Faz 4: Secrets           ████████████████████ 100% ✅
-Faz 5: Deployment        ░░░░░░░░░░░░░░░░░░░░   0% ⏳
+Faz 5: Image Build       ████████████░░░░░░░░  60% ⏳
+Faz 6: Deployment        ████████████████████ 100% ✅ (Hazır)
 ────────────────────────────────────────────────────
-Toplam İlerleme:          ████████████░░░░░░░░  80%
+Toplam İlerleme:          ████████████████░░░░  90%
 ```
 
 ---
