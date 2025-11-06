@@ -19,13 +19,30 @@ export class AutoRemediator {
   private logPath: string;
 
   constructor(logDir: string = 'logs') {
-    const projectRoot = path.resolve(__dirname, '../../../../');
+    // Use process.cwd() for Docker/Kubernetes compatibility
+    // Fallback to relative path if process.cwd() fails
+    const projectRoot = process.cwd() || path.resolve('.');
     this.logPath = path.join(projectRoot, logDir, 'aiops-remediation.log');
     
     // Ensure logs directory exists
     const logDirPath = path.dirname(this.logPath);
     if (!fs.existsSync(logDirPath)) {
-      fs.mkdirSync(logDirPath, { recursive: true });
+      try {
+        fs.mkdirSync(logDirPath, { recursive: true, mode: 0o755 });
+      } catch (error) {
+        // If mkdir fails, use /tmp as fallback (Kubernetes compatible)
+        const tmpPath = path.join('/tmp', logDir, 'aiops-remediation.log');
+        logger.warn('Failed to create logs directory, using /tmp', { 
+          originalPath: logDirPath, 
+          fallbackPath: tmpPath,
+          error 
+        });
+        this.logPath = tmpPath;
+        const tmpDir = path.dirname(this.logPath);
+        if (!fs.existsSync(tmpDir)) {
+          fs.mkdirSync(tmpDir, { recursive: true, mode: 0o755 });
+        }
+      }
     }
   }
 

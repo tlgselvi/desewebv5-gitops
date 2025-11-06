@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: dese-api
-        image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v6.8.0-fix1
+        image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v6.8.0-fix2
         imagePullPolicy: Always
         ports:
         - name: http
