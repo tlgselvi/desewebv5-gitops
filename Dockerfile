@@ -65,4 +65,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 # Start the application
 # Use tsx for runtime TypeScript execution (temporary until build errors are fixed)
-CMD ["tsx", "src/index.ts"]
+# Use pnpm exec to run tsx from node_modules
+CMD ["pnpm", "exec", "tsx", "src/index.ts"]
