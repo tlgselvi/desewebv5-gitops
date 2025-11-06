@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dese-api-deployment
+  namespace: default
+  labels:
+    app: dese-api
+    version: v6.8.0
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dese-api
+  template:
+    metadata:
+      labels:
+        app: dese-api
+        version: v6.8.0
+        component: backend
+    spec:
+      containers:
+      - name: dese-api
+        image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v6.8.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 3001
+          protocol: TCP
+        - name: mcp-finbot
+          containerPort: 5555
+          protocol: TCP
+        - name: mcp-mubot
+          containerPort: 5556
+          protocol: TCP
+        - name: mcp-dese
+          containerPort: 5557
+          protocol: TCP
+        - name: mcp-observability
+          containerPort: 5558
+          protocol: TCP
+        
+        # Environment variables from Secrets
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: dese-db-secret
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: dese-redis-secret
+              key: REDIS_URL
+        - name: PORT
+          value: "3001"
+        - name: NODE_ENV
+          value: "production"
+        
+        # Resource limits
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Health checks
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3001
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        
+        # Startup probe (for slow starting containers)
+        startupProbe:
+          httpGet:
+            path: /health/live
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+          successThreshold: 1
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
