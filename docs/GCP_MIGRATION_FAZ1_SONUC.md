@@ -113,12 +113,24 @@ Detaylar: `docs/GCP_MIGRATION_FAZ3_INGRESS.md`
 
 Detaylar: `docs/GCP_MIGRATION_FAZ4_SECRETS.md`
 
-## 🎯 Faz 5 Hazırlık
+## ⏳ Faz 5: Docker Image Build & Push ⏳
 
-Secrets hazır. Şimdi Faz 5'e geçebiliriz:
-- Application deployment (Docker images)
+- ✅ Script'ler hazır: `scripts/gcp-build-push-images.sh` ve `.ps1`
+- ✅ Artifact Registry repository planlandı: `dese-ea-plan-images`
+- ⏳ Image'lar build edilmeli ve push edilmeli:
+  - `dese-api` (Backend API)
+  - `dese-frontend` (Frontend)
+  - `dese-finbot` (FinBot Python Service)
+  - `dese-mubot` (MuBot Python Service)
+
+Detaylar: `docs/GCP_MIGRATION_FAZ5_BUILD_PUSH.md`
+
+## 🎯 Faz 6 Hazırlık
+
+Image'lar hazır olduktan sonra Faz 6'ya geçebiliriz:
 - Deployment YAML'larını hazırlama
 - Service ve Ingress resource'ları oluşturma
+- Kubernetes deployment
 - Database migration
 - Connection testleri
 - Monitoring setup
