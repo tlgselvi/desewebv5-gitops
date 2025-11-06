@@ -39,6 +39,37 @@ EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot 
 - Kubernetes >= 1.25
 - Helm >= 3.10
 
+## ☁️ Google Cloud Infrastructure
+
+**Proje ID:** `ea-plan-seo-project`  
+**Region:** `europe-west3` (Frankfurt)
+
+### ✅ Oluşturulan Kaynaklar
+
+#### Faz 1: Infrastructure
+- ✅ **Cloud SQL PostgreSQL:** `dese-ea-plan-db`
+  - Version: `POSTGRES_15`
+  - Database: `dese_db`
+  - IP: `34.159.32.249`
+  - Connection: `postgresql://postgres:GüvenliŞifre123!@34.159.32.249:5432/dese_db`
+
+- ✅ **Memorystore Redis:** `dese-ea-plan-cache`
+  - Version: `REDIS_7_0`
+  - Host: `10.146.144.75`
+  - Port: `6379`
+  - Connection: `redis://10.146.144.75:6379`
+
+#### Faz 2: Kubernetes
+- ✅ **GKE Cluster:** `dese-ea-plan-cluster`
+  - Region: `europe-west3`
+  - Nodes: `3` (e2-small)
+  - Version: `1.33.5-gke.1162000`
+  - Status: `RUNNING` ✅
+
+**Detaylar:** `docs/GCP_MIGRATION_FAZ1_SONUC.md`, `docs/GCP_MIGRATION_FAZ2_GKE.md`
+
+---
+
 ## 🛠️ Kurulum
 
 ### Geliştirme Ortamı
@@ -60,10 +91,37 @@ cp env.example .env
 # .env dosyasını düzenleyin
 ```
 
+**Google Cloud için environment variables:**
+```env
+# Database (Cloud SQL)
+DATABASE_URL=postgresql://postgres:GüvenliŞifre123!@34.159.32.249:5432/dese_db
+
+# Redis (Memorystore)
+REDIS_HOST=10.146.144.75
+REDIS_PORT=6379
+REDIS_URL=redis://10.146.144.75:6379
+
+# Kubernetes
+GKE_CLUSTER_NAME=dese-ea-plan-cluster
+GKE_REGION=europe-west3
+GKE_PROJECT=ea-plan-seo-project
+```
+
 4. **Veritabanını kurun**
+
+**Local Development:**
 ```bash
 # PostgreSQL'i başlatın
 docker-compose up -d postgres redis
+
+# Migration'ları çalıştırın
+pnpm db:migrate
+```
+
+**Google Cloud (Production):**
+```bash
+# kubectl context'i ayarlayın
+gcloud container clusters get-credentials dese-ea-plan-cluster --region=europe-west3
 
 # Migration'ları çalıştırın
 pnpm db:migrate
@@ -86,6 +144,24 @@ docker-compose build app
 # Logları görüntüleyin
 docker-compose logs -f app
 ```
+
+### Google Cloud Deployment
+
+**Faz 1 ve Faz 2 tamamlandı!** Infrastructure hazır:
+- ✅ Cloud SQL PostgreSQL
+- ✅ Memorystore Redis
+- ✅ GKE Cluster
+
+**Sonraki Adımlar (Faz 3):**
+- Application deployment
+- Ingress controller setup
+- Database migration
+- Monitoring setup
+
+**Scripts:**
+- `scripts/gcp-cloud-sql-create-direct.ps1` - Cloud SQL instance
+- `scripts/gcp-gke-cluster-create.ps1` - GKE cluster
+- Detaylı dokümantasyon: `docs/GCP_MIGRATION_FAZ1_SONUC.md`
 
 ### Kubernetes ile Deploy
 
