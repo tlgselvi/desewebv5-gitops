@@ -12,26 +12,28 @@ spec:
   selector:
     app: dese-api
   ports:
+  # HTTP API (standart port 80, container'daki 3001'e yönlendirir)
   - name: http
-    port: 3001
-    targetPort: 3001
     protocol: TCP
+    port: 80
+    targetPort: 3001
+  # MCP Servers (opsiyonel - gerekirse eklenebilir)
   - name: mcp-finbot
+    protocol: TCP
     port: 5555
     targetPort: 5555
-    protocol: TCP
   - name: mcp-mubot
+    protocol: TCP
     port: 5556
     targetPort: 5556
-    protocol: TCP
   - name: mcp-dese
+    protocol: TCP
     port: 5557
     targetPort: 5557
-    protocol: TCP
   - name: mcp-observability
+    protocol: TCP
     port: 5558
     targetPort: 5558
-    protocol: TCP
   sessionAffinity: ClientIP
   sessionAffinityConfig:
     clientIP:

@@ -20,7 +20,7 @@ spec:
           service:
             name: dese-api-service
             port:
-              number: 3001
+              number: 80
   tls:
   - hosts:
     - api.dese.ai
