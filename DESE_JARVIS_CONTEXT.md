@@ -1,16 +1,16 @@
 # DESE JARVIS Context
 
-> **Proje:** Dese EA Plan v6.8.0  
-> **Context Version:** 1.0  
-> **Last Updated:** 2025-01-27  
+> **Proje:** Dese EA Plan v6.8.1  
+> **Context Version:** 1.1  
+> **Last Updated:** 2025-11-07  
 > **Protocol:** upgrade-protocol-v1.2  
-> **Tamamlanma:** 100% (Tüm görevler tamamlandı, detaylar için `EKSIKLER_VE_TAMAMLAMA_DURUMU.md`)
+> **Tamamlanma:** 100% (GCP migrasyonu tamamlandı, canlı durum için `EKSIKLER_VE_TAMAMLAMA_DURUMU.md`)
 
 ---
 
 ## 🎯 Proje Özeti
 
-**Dese EA Plan v6.8.0** - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+**Dese EA Plan v6.8.1** - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
 
 ### Ana Modüller
 - **FinBot**: Finance Engine (FastAPI, Python 3.11) - Cost & ROI Forecasting
@@ -119,53 +119,42 @@ desewebv5/
 
 ---
 
-## 🚀 MCP Servers
+## 🚀 MCP Servers (Production)
 
-> **ÖNEMLİ:** Şu anda MCP server'lar temel yapıda. Gerçek backend entegrasyonu ve authentication eksik.
-> **Detaylı plan:** `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`
-> **Aktif görev:** `.cursor/memory/AKTIF_GOREV.md`
+> **ÖNEMLİ:** Tüm MCP modülleri gerçek backend API'leri, Redis cache, authentication ve izleme katmanlarıyla canlıda çalışıyor. Ayrıntılı operasyon özeti için `EKSIKLER_VE_TAMAMLAMA_DURUMU.md` ve `MCP_GERCEK_DURUM.md`.
 
 ### FinBot MCP Server
 - **Port:** 5555
-- **Health:** `http://localhost:5555/finbot/health`
+- **Health:** `https://api.poolfab.com.tr/finbot/health`
 - **Purpose:** Finance forecasting and ROI analysis
-- **Durum:** ⚠️ Mock data döndürüyor, gerçek entegrasyon eksik
+- **Durum:** ✅ Canlı backend analytics + metrics entegrasyonu, 60 sn cache, WebSocket yayınları
 - **Dosya:** `src/mcp/finbot-server.ts`
 
 ### MuBot MCP Server
 - **Port:** 5556
-- **Health:** `http://localhost:5556/mubot/health`
-- **Purpose:** Accounting and data ingestion
-- **Durum:** ⚠️ Mock data döndürüyor, gerçek entegrasyon eksik
+- **Health:** `https://api.poolfab.com.tr/mubot/health`
+- **Purpose:** Accounting and multi-source data ingestion
+- **Durum:** ✅ Ingestion & accounting API entegrasyonu, Redis cache, WebSocket yayınları
 - **Dosya:** `src/mcp/mubot-server.ts`
 
 ### DESE MCP Server
 - **Port:** 5557
-- **Health:** `http://localhost:5557/dese/health`
-- **Purpose:** Analytics and metrics
-- **Durum:** ⚠️ Mock data döndürüyor, gerçek entegrasyon eksik
+- **Health:** `https://api.poolfab.com.tr/dese/health`
+- **Purpose:** AIOps telemetry, anomaly & correlation analytics
+- **Durum:** ✅ Gerçek zamanlı AIOps API entegrasyonu, cache, WebSocket yayınları
 - **Dosya:** `src/mcp/dese-server.ts`
 
 ### Observability MCP Server
 - **Port:** 5558
-- **Health:** `http://localhost:5558/observability/health`
-- **Purpose:** Monitoring and observability metrics
-- **Durum:** ⚠️ Mock data döndürüyor, gerçek entegrasyon eksik
+- **Health:** `https://api.poolfab.com.tr/observability/health`
+- **Purpose:** Monitoring & observability metrics
+- **Durum:** ✅ Prometheus + Google metrics entegrasyonu, metrics push pipeline aktif
 - **Dosya:** `src/mcp/observability-server.ts`
 
-### MCP Server İyileştirmeleri (Aktif Görev)
-
-**Öncelik:** 🔴 Yüksek  
-**Durum:** ⏳ Planlama tamamlandı, implementasyona başlanacak
-
-**Gerekli İyileştirmeler:**
-1. Gerçek backend API entegrasyonu (mock data yerine)
-2. Authentication & Security (JWT, RBAC)
-3. Error handling & Logging
-4. Redis caching
-5. Monitoring & Metrics
-
-**Detaylı plan:** `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`
+### Operasyon Notu
+- Günlük Jarvis efficiency chain → MCP connectivity + metrics raporu
+- Prometheus/Grafana dashboard’ları poolfab.com.tr üzerinden izleniyor
+- LLM benchmark adımı sonraki sürümde etkinleşecek (placeholder)
 
 ---
 
@@ -390,6 +379,7 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 - `EKSIKLER_VE_TAMAMLAMA_DURUMU.md` - Tüm eksikler listesi ⭐⭐
 - `MCP_GERCEK_DURUM.md` - MCP gerçek durum
 - `GUNCELLEME_OZETI_v6.8.0.md` - Versiyon güncelleme özeti
+- `RELEASE_NOTES_v6.8.1.md` - Sprint 2.7 teknik borç güncellemesi
 - `.cursor/memory/JARVIS_DURUMU.md` - JARVIS durumu ⭐
 - `.cursor/chains/JARVIS_CHAIN.md` - JARVIS chain bilgileri ⭐
 
@@ -405,7 +395,7 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 
 ### Never Delete
 - Docker volumes: `desewebv5_postgres_data`, `desewebv5_redis_data`
-- Kubernetes image tags: `fix`, `6.8.0`
+- Kubernetes image tags: `fix`, `6.8.0`, `6.8.1`
 - Production containers and services
 
 ### Always Use
@@ -436,12 +426,11 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 ### Recent Optimizations
 - ✅ WSL2 memory optimized (15.5GB → 6GB)
 - ✅ WSL2 processors optimized (12 → 4)
-- ✅ Docker cleanup completed (~21 GB freed)
+- ✅ 2025-11-07 19:50: `docker image prune -f` + `docker container prune -f` çalıştırıldı (394 MB serbest bırakıldı)
 - ✅ Build cache cleaned
 
 ### Known Issues
-- Kubernetes pods in `CrashLoopBackOff` (dese-ea-plan-v5)
-- Some unused Docker images (safe to clean)
+- Bilinen aktif sorun yok; rutin izleme Jarvis raporlarıyla sürüyor.
 
 ---
 
@@ -460,8 +449,8 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 
 ---
 
-**Context Version:** 1.0  
-**Last Updated:** 2025-11-05  
+**Context Version:** 1.1  
+**Last Updated:** 2025-11-07  
 **Maintained by:** DESE JARVIS System  
 **Protocol:** upgrade-protocol-v1.2
 

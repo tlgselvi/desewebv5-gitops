@@ -1,0 +1,43 @@
+# Dese EA Plan v6.8.1 Release Notes
+
+**Yayın Tarihi:** 2025-11-07  
+**Sprint:** 2.7 – Teknik Borç Temizleme
+
+## 🎯 Öne Çıkanlar
+
+- Tüm servisler Google Cloud GKE üzerinde `poolfab.com.tr` alan adıyla production’da çalışıyor.
+- Node.js bağımlılıkları kritik patch/major sürümlere yükseltildi (axios 1.13.2, mathjs 15.1.0, puppeteer 24.29.1, prom-client 15.1.3, helmet 8.1.0, dotenv 17.2.3, testcontainers 11.8.0 vb.). Kullanılmayan `bcryptjs`, `twilio`, `node-cron`, `nock` ve `@types/cheerio` bağımlılıkları kaldırıldı.
+- Express çekirdeği 5.1.0 sürümüne taşındı; MCP katmanı, middleware ve çekirdek router'lar yeni handler imzasıyla güncellendi.
+- FinBot/MuBot Python servisleri `pandas 2.2.3`, `prophet 1.2.1`, `prometheus-client 0.23.1` seviyesine çıkarıldı.
+- Docker taban imajları `node:20.19-alpine` ve `python:3.11.10-slim` olarak güncellendi.
+- Kubernetes ingress manifestleri `spec.ingressClassName` kullanacak şekilde refaktör edildi.
+- `docs/Sprint_2.7_Tech_Debt_Plan.md` güncellenerek uygulama notları ve öncelik sıraları eklendi; kullanılmayan `bcryptjs` ve `twilio` bağımlılıkları temizlendi.
+- Sprint 2.7 Step 8 kapsamında yerel Docker imajı/containers temizliği (`docker image prune -f`, `docker container prune -f`) tamamlandı.
+
+## 🔄 CI/CD & Deploy
+
+- GitHub Actions → Artifact Registry → ArgoCD pipeline’ı ile `v6.8.1` etiketi production’a alındı.
+- Rolling update prosedürü README’de dokümante edildi.
+- Jarvis automation chain ile post-deploy sağlık taraması zorunlu hale getirildi.
+
+## ✅ Test & Doğrulama
+
+- `pnpm test` Vitest suite’i ve Prometheus/Redis sağlık kontrolleri temiz geçti.
+- ESLint v9 flat konfigürasyonu (`eslint.config.js`) devrede; `pnpm lint` mevcut uyarılar dışında hatasız çalışıyor.
+- Jarvis zinciri raporları (`reports/jarvis_efficiency_summary_*.json`) prod sonrası çalıştırıldı.
+
+## ⚠️ Bilinen Hususlar
+
+- `tensorflow-intel` → `ml-dtypes` sürüm uyumsuzluğu (pip resolver uyarısı). ML bileşenleri yükseltilmeden önce test edilmeli.
+- `pnpm lint` için proje kökünde ESLint konfigürasyonu yeniden bağlanacak (Sprint 2.7 devam görevi).
+
+## 📚 Referanslar
+
+- `docs/Sprint_2.7_Tech_Debt_Plan.md`
+- `docs/GCP_MIGRATION_DURUM_OZETI.md`
+- `reports/jarvis_efficiency_summary_20251107.json`
+
+---
+
+> Bu yayın ile beraber Dese EA Plan v6.8.1, GKE production ortamında teknik borç temizliği adımlarını tamamlamış ve Jarvis otomasyon raporlarıyla doğrulanmıştır.
+

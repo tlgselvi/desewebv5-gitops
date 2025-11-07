@@ -1,7 +1,7 @@
-# Dese EA Plan v6.8.0
+# Dese EA Plan v6.8.1
 
-**Version:** v6.8.0  
-**Last Update:** 2025-01-27
+**Version:** v6.8.1 (Sprint 2.7)
+**Last Update:** 2025-11-07
 
 EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot + DESE)
 
@@ -22,12 +22,12 @@ EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot 
 
 ### Teknoloji Stack
 - **Frontend**: Next.js 16 + React 19 + TypeScript + Tailwind CSS
-- **Backend**: Node.js + Express + FastAPI + PostgreSQL (Drizzle ORM)
-- **Testing**: Vitest + Supertest + Playwright
-- **Packaging**: pnpm 8.15.0
-- **Infrastructure**: Docker + Kubernetes + Helm + ArgoCD
-- **Monitoring**: Prometheus + Grafana + Loki + Tempo
-- **GitOps**: ArgoCD + Kustomize
+- **Backend**: Node.js 20 LTS + Express 5.x + FastAPI + PostgreSQL (Drizzle ORM)
+- **Testing**: Vitest + Supertest + Playwright + Jarvis Automation Chain
+- **Packaging**: pnpm 8.15.0 (Corepack destekli)
+- **Infrastructure**: Docker + Google Kubernetes Engine + Helm + ArgoCD
+- **Monitoring**: Prometheus + Grafana + Loki + Tempo + Cloud Logging
+- **GitOps**: ArgoCD + Kustomize + GitHub Actions
 
 ## 📋 Gereksinimler
 
@@ -39,34 +39,34 @@ EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot 
 - Kubernetes >= 1.25
 - Helm >= 3.10
 
-## ☁️ Google Cloud Infrastructure
+## ☁️ Google Cloud Production Altyapısı
 
-**Proje ID:** `ea-plan-seo-project`  
-**Region:** `europe-west3` (Frankfurt)
+- **Proje ID:** `ea-plan-seo-project`
+- **Region:** `europe-west3` (Frankfurt)
+- **Alan Adı:** `poolfab.com.tr`
 
-### ✅ Oluşturulan Kaynaklar
+### Kaynak Özeti
 
-#### Faz 1: Infrastructure
-- ✅ **Cloud SQL PostgreSQL:** `dese-ea-plan-db`
-  - Version: `POSTGRES_15`
-  - Database: `dese_db`
-  - IP: `34.159.32.249`
-  - Connection: `postgresql://postgres:GüvenliŞifre123!@34.159.32.249:5432/dese_db`
+| Katman | Kaynak | Durum |
+| --- | --- | --- |
+| Veri | Cloud SQL PostgreSQL `dese-ea-plan-db` (Postgres 15) | ✅ Production |
+| Cache | Memorystore Redis `dese-ea-plan-cache` (Redis 7) | ✅ Production |
+| Orkestrasyon | GKE `dese-ea-plan-cluster` (1.33.5-gke.1162000) | ✅ 3×e2-small |
+| Ağ | Cloud Armor + NGINX Ingress Controller | ✅ Aktif |
+| CI/CD | GitHub Actions → Artifact Registry → ArgoCD | ✅ Production |
 
-- ✅ **Memorystore Redis:** `dese-ea-plan-cache`
-  - Version: `REDIS_7_0`
-  - Host: `10.146.144.75`
-  - Port: `6379`
-  - Connection: `redis://10.146.144.75:6379`
+### Canlı Uç Noktalar
 
-#### Faz 2: Kubernetes
-- ✅ **GKE Cluster:** `dese-ea-plan-cluster`
-  - Region: `europe-west3`
-  - Nodes: `3` (e2-small)
-  - Version: `1.33.5-gke.1162000`
-  - Status: `RUNNING` ✅
+| Servis | URL |
+| --- | --- |
+| Backend API | `https://api.poolfab.com.tr` |
+| Frontend | `https://app.poolfab.com.tr` |
+| FinBot MCP | `https://finbot.poolfab.com.tr` |
+| MuBot MCP | `https://mubot.poolfab.com.tr` |
+| Observability MCP | `https://observability.poolfab.com.tr` |
+| Jarvis Health | `https://jarvis.poolfab.com.tr/health` |
 
-**Detaylar:** `docs/GCP_MIGRATION_FAZ1_SONUC.md`, `docs/GCP_MIGRATION_FAZ2_GKE.md`
+Detaylı migrasyon adımları: `docs/GCP_MIGRATION_DURUM_OZETI.md`, `docs/GCP_MIGRATION_FAZ5_BUILD_STATUS.md`, `docs/GCP_MIGRATION_FAZ6_DEPLOYMENT.md`
 
 ---
 
@@ -91,15 +91,15 @@ cp env.example .env
 # .env dosyasını düzenleyin
 ```
 
-**Google Cloud için environment variables:**
+**Google Cloud için örnek environment variables:** (Secret Manager/ConfigMap ile yönetilir)
 ```env
 # Database (Cloud SQL)
-DATABASE_URL=postgresql://postgres:GüvenliŞifre123!@34.159.32.249:5432/dese_db
+DATABASE_URL=postgresql://<USER>:<PASSWORD>@<PUBLIC_IP>:5432/dese_db
 
 # Redis (Memorystore)
-REDIS_HOST=10.146.144.75
+REDIS_HOST=<MEMORYSTORE_HOST>
 REDIS_PORT=6379
-REDIS_URL=redis://10.146.144.75:6379
+REDIS_URL=redis://<MEMORYSTORE_HOST>:6379
 
 # Kubernetes
 GKE_CLUSTER_NAME=dese-ea-plan-cluster
@@ -147,29 +147,15 @@ docker-compose logs -f app
 
 ### Google Cloud Deployment
 
-**Faz 1-4 tamamlandı!** Infrastructure ve configuration hazır:
-- ✅ Cloud SQL PostgreSQL (`dese-ea-plan-db`)
-- ✅ Memorystore Redis (`dese-ea-plan-cache`)
-- ✅ GKE Cluster (`dese-ea-plan-cluster`)
-- ✅ NGINX Ingress Controller (External IP: `34.40.41.232`)
-- ✅ Kubernetes Secrets (Database & Redis)
-
-**Sonraki Adımlar (Faz 5):**
-- Docker image build ve push
-- Application deployment
-- Service ve Ingress resource'ları
-- Database migration
-- Monitoring setup
-
-**Scripts:**
-- `scripts/gcp-cloud-sql-create-direct.ps1` - Cloud SQL instance
-- `scripts/gcp-gke-cluster-create.ps1` - GKE cluster
-- `scripts/gcp-nginx-ingress-install.ps1` - NGINX Ingress
-- `scripts/gcp-create-secrets.ps1` - Kubernetes Secrets
-
-**Detaylı Dokümantasyon:**
-- `docs/GCP_MIGRATION_DURUM_OZETI.md` - Migration durum özeti
-- `docs/GCP_MIGRATION_FAZ1_SONUC.md` - Faz 1-4 özeti
+- **Durum:** Faz 1-6 tamamlandı. Docker imajları Artifact Registry’den çekiliyor, ArgoCD production ortama otomatik deploy ediyor.
+- **Rolling Update Adımları:**
+  1. `pnpm version patch` + `git push` (GitHub Actions build/publish)
+  2. Artifact Registry `dese-ea-plan/*` repolarına `v6.8.1` etiketi ile push
+  3. ArgoCD sync (staging → prod); `kubectl rollout status deployment/<svc>` kontrolü
+  4. Jarvis zinciri ile MCP sağlık raporu + Prometheus/Grafana dashboard doğrulaması
+  5. (Opsiyonel) Yerel sistem temizliği: `docker image prune -f` + `docker container prune -f`
+- **Script Referansları:** `scripts/gcp-*.ps1`, `scripts/jarvis-efficiency-chain.ps1`
+- **Migrasyon Dokümanları:** `docs/GCP_MIGRATION_DURUM_OZETI.md`, `docs/GCP_MIGRATION_FAZ5_BUILD_STATUS.md`, `docs/GCP_MIGRATION_FAZ6_DEPLOYMENT.md`
 
 ### Kubernetes ile Deploy
 
@@ -190,22 +176,28 @@ kubectl apply -f k8s/deployment.yaml
 # Service'leri uygulayın
 kubectl apply -f k8s/service.yaml
 
-# Ingress'i uygulayın
-kubectl apply -f k8s/ingress.yaml
+# Servis bazlı ingress manifestlerini uygulayın
+kubectl apply -f k8s/ingress-api.yaml
+kubectl apply -f k8s/ingress-frontend.yaml
+kubectl apply -f k8s/ingress-finbot.yaml
+kubectl apply -f k8s/ingress-mubot.yaml
 ```
 
-### Helm ile Deploy
+### Helm & GitOps
 
-```bash
-# Helm chart'ı yükleyin
-helm install dese-ea-plan-v5 ./helm/dese-ea-plan-v5
+- Helm chart: `helm/dese-ea-plan-v5`
+- GitOps repo: `gitops/apps/`
+- ArgoCD projeleri: `dese-api`, `dese-frontend`, `dese-finbot`, `dese-mubot`, `observability`
+- `argocd app sync dese-api` komutu staging/prod rollout takibinde kullanılır.
 
-# Güncelleme yapın
-helm upgrade dese-ea-plan-v5 ./helm/dese-ea-plan-v5
+## 🧠 Jarvis Automation Chain
 
-# Kaldırın
-helm uninstall dese-ea-plan-v5
-```
+- **Script:** `scripts/jarvis-efficiency-chain.ps1`
+- **Raporlar:** `reports/jarvis_efficiency_summary_*.json`, `reports/mcp_connectivity_*.json`, `reports/context_stats_*.json`
+- **Koşum:** `pwsh -ExecutionPolicy Bypass -File scripts/jarvis-efficiency-chain.ps1`
+- **Kontroller:** MCP health (`/health`), Prometheus `up` metriği, Redis gecikmesi, PostgreSQL pool, GKE pod durumu
+
+Jarvis zinciri çıktılarını Prometheus/Grafana panelleri ile birleştirerek Sprint 2.7 teknik borç temizliği sonrasında otomatik sağlık taraması sağlanır.
 
 ## 🧪 Test
 
@@ -258,7 +250,7 @@ pnpm test:auto:ui
 
 API dokümantasyonu Swagger UI ile erişilebilir:
 - Development: http://localhost:3000/api-docs
-- Production: https://api.dese.ai/api-docs
+- Production: https://api.poolfab.com.tr/api-docs
 
 ### Ana Endpoints
 
@@ -355,6 +347,8 @@ Detaylar için [CONTRIBUTING.md](./CONTRIBUTING.md) dosyasına bakın.
 - **[CICD_GUIDE.md](./CICD_GUIDE.md)** - CI/CD pipeline rehberi
 - **[PROJE_KONTROL_RAPORU.md](./PROJE_KONTROL_RAPORU.md)** - Proje kontrol raporu
 - **[PROJE_DURUM_RAPORU_2025.md](./PROJE_DURUM_RAPORU_2025.md)** - Proje durum raporu
+- **[PYTHON_RUNTIME_SETUP.md](./docs/PYTHON_RUNTIME_SETUP.md)** - FinBot & MuBot sanal ortam rehberi
+- **[RELEASE_NOTES_v6.8.1.md](./RELEASE_NOTES_v6.8.1.md)** - Sprint 2.7 / Teknik borç güncellemeleri
 
 ## 📄 Lisans
 

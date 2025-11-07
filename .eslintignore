@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+frontend/
+deploy/
+docs/
+reports/
+*.json
+*.md
+

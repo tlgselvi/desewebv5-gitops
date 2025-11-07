@@ -75,34 +75,44 @@ export const analyticsLogger = createModuleLogger('analytics');
 export const monitoringLogger = createModuleLogger('monitoring');
 export const securityLogger = createModuleLogger('security');
 
+type LogMetadata = Record<string, unknown>;
+
 // Performance logging utility
-export const logPerformance = (operation: string, startTime: number, metadata?: Record<string, any>) => {
+export const logPerformance = (
+  operation: string,
+  startTime: number,
+  metadata?: LogMetadata
+): void => {
   const duration = Date.now() - startTime;
   logger.info(`Performance: ${operation}`, {
     operation,
     duration: `${duration}ms`,
-    ...metadata,
+    ...(metadata ?? {}),
   });
 };
 
 // Error logging utility
-export const logError = (error: Error, context?: Record<string, any>) => {
+export const logError = (error: Error, context?: LogMetadata): void => {
   logger.error('Application Error', {
     error: {
       name: error.name,
       message: error.message,
       stack: error.stack,
     },
-    context,
+    context: context ?? {},
   });
 };
 
 // Audit logging utility
-export const logAudit = (action: string, userId?: string, metadata?: Record<string, any>) => {
+export const logAudit = (
+  action: string,
+  userId?: string,
+  metadata?: LogMetadata
+): void => {
   logger.info('Audit Log', {
     action,
     userId,
     timestamp: new Date().toISOString(),
-    ...metadata,
+    ...(metadata ?? {}),
   });
 };

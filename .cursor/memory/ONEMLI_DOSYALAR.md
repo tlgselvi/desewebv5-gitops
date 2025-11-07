@@ -1,7 +1,7 @@
-# 📁 Önemli Dosyalar - Dese EA Plan v6.8.0
+# 📁 Önemli Dosyalar - Dese EA Plan v6.8.1
 
-**Son Güncelleme:** 2025-01-27  
-**Durum:** Güncel
+**Son Güncelleme:** 2025-11-07  
+**Durum:** Güncel (Production state)
 
 ---
 
@@ -57,18 +57,17 @@
    - `BACKEND_RULES.md` - Backend kuralları
    - `TESTING_RULES.md` - Testing kuralları
 
-3. **`EKSIKLER_VE_TAMAMLAMA_DURUMU.md`** ⭐⭐ (YENİ - ÇOK ÖNEMLİ)
-   - Tüm eksiklerin detaylı listesi
-   - Gerçek tamamlanma durumu (~80-85%)
-   - Öncelik sırası ve tahmini süreler
-   - 14 eksik kategori listelenmiş
+3. **`EKSIKLER_VE_TAMAMLAMA_DURUMU.md`** ⭐⭐
+   - Canlı migrasyon sonrası %100 tamamlama özeti
+   - GCP ortamı (poolfab.com, Prometheus, Google entegrasyonları)
+   - Operasyon planı ve rutin bakım notları
 
-4. **`MCP_GERCEK_DURUM.md`** ⭐
-   - MCP server'ların gerçek durumu
-   - Mock data kullanımı
-   - Eksik implementasyonlar
+4. **`MCP_GERCEK_DURUM.md`** ⭐⭐
+   - MCP modüllerinin canlı durumu (FinBot, MuBot, DESE, Observability)
+   - Prometheus + Google metrics entegrasyonu
+   - Jarvis otomasyon akışına referans
 
-5. **`GUNCELLEME_OZETI_v6.8.0.md`** ⭐ (YENİ)
+5. **`GUNCELLEME_OZETI_v6.8.0.md`** ⭐ (Güncel)
    - Versiyon güncelleme özeti
    - Silinen dosyalar listesi
    - Güncellenen dosyalar listesi
@@ -94,16 +93,14 @@
    - Aktif görevler
    - Sonraki adımlar
 
-7. **`.cursor/memory/JARVIS_DURUMU.md`** ⭐ (YENİ)
-   - JARVIS dosyaları durumu
-   - Eksik dosyalar listesi
-   - Mevcut alternatifler
-   - Health check bilgileri
+7. **`.cursor/memory/JARVIS_DURUMU.md`** ⭐
+   - Jarvis script/dokümantasyon durumu (tamamlandı)
+   - Günlük efficiency chain & metrics raporları
+   - Otomasyon planı (cron, Prometheus doğrulaması)
 
-8. **`.cursor/chains/JARVIS_CHAIN.md`** ⭐ (YENİ)
-   - JARVIS chain adımları
-   - MCP health check bilgileri
-   - Eksik scriptler listesi
+8. **`.cursor/chains/JARVIS_CHAIN.md`** ⭐
+   - Jarvis chain adımları
+   - Günlük otomasyonun referans akışı
 
 ### Sprint ve Dokümantasyon
 
@@ -111,7 +108,7 @@
    - Sprint 2.6 Gün 3 özeti
    - Tamamlanan görevler
 
-7. **`RELEASE_NOTES_v6.8.0.md`**
+7. **`RELEASE_NOTES_v6.8.1.md`**
    - Release notları
    - Versiyon bilgileri
    - Gerçek tamamlanma durumu (~80-85%)
@@ -148,9 +145,9 @@ desewebv5/
 ├── EKSIKLER_VE_TAMAMLAMA_DURUMU.md ⭐⭐ Tüm eksikler listesi (YENİ)
 ├── MCP_KAPSAMLI_ANALIZ_VE_PLAN.md  ⭐ Aktif görev planı
 ├── MCP_GERCEK_DURUM.md             ⭐ MCP gerçek durum
-├── GUNCELLEME_OZETI_v6.8.0.md      ⭐ Versiyon güncelleme özeti (YENİ)
+├── GUNCELLEME_OZETI_v6.8.0.md      ⭐ Versiyon güncelleme özeti
 ├── DESE_JARVIS_CONTEXT.md          ⭐ Proje context
-├── RELEASE_NOTES_v6.8.0.md         ⭐ Release notları
+├── RELEASE_NOTES_v6.8.1.md         ⭐ Release notları
 ├── .cursorrules                     ⭐ Cursor AI kuralları
 ├── .cursor/
 │   ├── chains/
@@ -215,5 +212,5 @@ desewebv5/
 
 ---
 
-**Son Güncelleme:** 2025-01-27
+**Son Güncelleme:** 2025-11-07
 

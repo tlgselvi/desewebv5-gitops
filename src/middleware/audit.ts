@@ -1,3 +1,4 @@
+import type { BufferEncoding } from 'node:buffer';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '@/utils/logger.js';
 
@@ -21,7 +22,11 @@ export const auditMiddleware = (
   // Log after response is sent
   const originalEnd = res.end;
   
-  res.end = function(chunk?: any, encoding?: any): Response {
+  res.end = function (
+    chunk?: unknown,
+    encoding?: BufferEncoding,
+    cb?: () => void
+  ): Response {
     // Extract user information if available
     const userId = req.user?.id || 'anonymous';
     const userEmail = req.user?.email || 'anonymous';
@@ -40,7 +45,7 @@ export const auditMiddleware = (
     });
 
     // Call original end method
-    return originalEnd.call(this, chunk, encoding);
+    return originalEnd.call(this, chunk, encoding, cb);
   };
 
   next();
