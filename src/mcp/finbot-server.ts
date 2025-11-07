@@ -173,7 +173,6 @@ app.get(
 
     const context = {
       module: "finbot",
-        version: "v6.8.1",
       version: "v6.8.1",
       endpoints: [
         "/api/v1/analytics/dashboard",

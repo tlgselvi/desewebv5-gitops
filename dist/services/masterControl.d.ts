@@ -1,5 +1,5 @@
 /**
- * EA Plan Master Control v6.8.0 - Self-Updating Orchestrator
+ * EA Plan Master Control v6.8.1 - Self-Updating Orchestrator
  * Mode: Persistent Orchestrator + Rules-Compliant + Self-Updating
  */
 export interface EnvironmentStatus {

@@ -102,7 +102,7 @@ app.post("/dese/query", authenticate, asyncHandler(async (req, res) => {
             query,
             response: {
                 module: "dese",
-                version: "v6.8.0",
+                version: "v6.8.1",
                 context: {
                     aiops: aiopsData || context?.aiops || {},
                     anomalies: context?.anomalies || [],
@@ -145,7 +145,7 @@ app.get("/dese/context", authenticate, asyncHandler(async (req, res) => {
     }
     const context = {
         module: "dese",
-        version: "v6.8.0",
+        version: "v6.8.1",
         endpoints: [
             "/api/v1/aiops/collect",
             "/api/v1/aiops/health",

@@ -361,7 +361,7 @@ router.get(
  *                           type: boolean
  *                         version:
  *                           type: string
- *                           description: Version tag for GitHub and Docker (e.g., v6.8.0-rc)
+ *                           description: Version tag for GitHub and Docker (e.g., v6.8.1-rc)
  *                         image_name:
  *                           type: string
  *                           description: Docker image name

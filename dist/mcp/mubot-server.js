@@ -107,7 +107,7 @@ app.get("/mubot/context", authenticate, asyncHandler(async (req, res) => {
     }
     const context = {
         module: "mubot",
-        version: "v6.8.0",
+        version: "v6.8.1",
         endpoints: [
             "/api/v1/mubot/data-ingestion",
             "/api/v1/mubot/data-quality",

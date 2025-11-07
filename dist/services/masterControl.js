@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 export class MasterControlService {
     namespaceMonitoring = "monitoring";
     namespaceWeb = "ea-web";
-    version = process.env.APP_VERSION?.replace("v", "") || "6.8.0";
+    version = process.env.APP_VERSION?.replace("v", "") || "6.8.1";
     /**
      * Step 1: Environment Verification
      */
@@ -781,7 +781,7 @@ spec:
             pushed: false,
         };
         try {
-            const tagVersion = version || "v6.8.0-rc";
+            const tagVersion = version || "v6.8.1-rc";
             const imageNameFinal = imageName || process.env.DOCKER_IMAGE_NAME || "dese-ea-plan-v5";
             const registryFinal = registry || process.env.DOCKER_REGISTRY || "docker.io";
             // Create GitHub tag
@@ -1856,7 +1856,7 @@ spec:
                             break;
                         }
                         case "github-tag-build": {
-                            const version = step.version || "v6.8.0-rc";
+                            const version = step.version || "v6.8.1-rc";
                             const imageName = step.image_name || process.env.DOCKER_IMAGE_NAME;
                             const registry = step.registry || process.env.DOCKER_REGISTRY;
                             const buildStatus = await this.createGitHubTagAndBuildDocker(version, imageName, registry);
@@ -1929,7 +1929,7 @@ spec:
                             const { stdout: statusOutput } = await execAsync("git status --porcelain");
                             if (statusOutput.trim()) {
                                 await execAsync("git add .");
-                                await execAsync(`git commit -m "EA Plan v6.8.0: Workflow execution auto-commit" || true`);
+                                await execAsync(`git commit -m "EA Plan v6.8.1: Workflow execution auto-commit" || true`);
                                 try {
                                     const { stdout: branch } = await execAsync("git branch --show-current");
                                     if (branch.trim()) {
@@ -1955,7 +1955,7 @@ spec:
                         await this.performSelfUpdate([
                             {
                                 type: "pipeline",
-                                description: "Workflow execution self-update - v6.8.0-rc",
+                                description: "Workflow execution self-update - v6.8.1-rc",
                             },
                         ]);
                         logger.info("Self-update completed");
@@ -2084,7 +2084,7 @@ spec:
                 request.workflow.some((s) => s.step === "github-tag-build")) {
                 summary.tag =
                     request.workflow.find((s) => s.step === "github-tag-build")
-                        ?.version || "v6.8.0-rc";
+                        ?.version || "v6.8.1-rc";
             }
             result.summary = summary;
             // Full cycle completion if enabled

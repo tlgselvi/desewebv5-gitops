@@ -113,7 +113,7 @@ app.get("/health", async (req, res) => {
         status: dbStatus ? "healthy" : "unhealthy",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        version: process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
+        version: process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
         environment: config.nodeEnv,
         database: dbStatus ? "connected" : "disconnected",
         memory: {
@@ -174,10 +174,10 @@ setImmediate(() => {
 });
 // Start server with database connection test
 const server = httpServer.listen(config.port, async () => {
-    logger.info(`🚀 Dese EA Plan v6.8.0 server started`, {
+    logger.info(`🚀 Dese EA Plan v6.8.1 server started`, {
         port: config.port,
         environment: config.nodeEnv,
-        version: process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
+        version: process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
         domain: "cpt-optimization",
     });
     // Test database connection on startup

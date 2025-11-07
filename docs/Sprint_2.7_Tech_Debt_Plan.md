@@ -103,5 +103,6 @@ Bu belge, `Dese EA Plan v6.8.1` projesinde Sprint 2.7 kapsamında yapılacak ba�
 - `pnpm outdated` çıktısına göre küçük (patch/minor) yükseltmeler: `vitest` ekosistemi (→4.0.8), `dotenv` (→17.2.3), `helmet` (→8.1.0), `node-cron` (→4.2.1), `prom-client` (→15.1.3).
 - Büyük versiyon zıplaması gerektiren paketler kalmadı; kalan güncellemeler minor seviyede izleniyor.
 - 2025-11-07 19:50 itibarıyla `docker image prune -f` ve `docker container prune -f` komutları çalıştırıldı; 394MB boş alan geri kazanıldı, Step 8 tamamlandı.
-- Bir sonraki adım: major bağımlılık güncellemeleri için kod uyumluluk analizi, yeni Docker imajlarının build/push edilmesi ve GKE rolling update senaryosunun çalıştırılması.
+- Backend (`dese-api`), frontend, FinBot ve MuBot imajları `v6.8.1` ve `latest` etiketleriyle yeniden build edilip Artifact Registry’ye pushlandı; `k8s/` manifestleri yeni tag’lerle güncellendi.
+- Bir sonraki adım: ArgoCD erişim tokenı ile senkronizasyon komutlarını çalıştırıp GKE rolling update senaryosunu doğrulamak.
 

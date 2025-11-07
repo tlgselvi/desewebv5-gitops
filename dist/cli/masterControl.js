@@ -46,7 +46,7 @@ async function initializeMasterContext(options) {
     const initContent = `# EA Plan Master Control v6.8 - Persistent Context
 # Mode: ${options.prompt_append ? "Prompt Append Chain" : "Persistent Orchestrator"}
 # Initialized: ${new Date().toISOString()}
-# Version: ${options.version || "v6.8.0"}
+# Version: ${options.version || "v6.8.1"}
 
 `;
     try {
@@ -135,7 +135,7 @@ async function ruleVerify(options) {
  * Command: github-tag-build (Docker + Git Tag)
  */
 async function githubTagBuild(options) {
-    const version = options.version || "v6.8.0-rc";
+    const version = options.version || "v6.8.1-rc";
     const isStable = version &&
         !version.includes("-rc") &&
         !version.includes("-beta") &&
@@ -256,7 +256,7 @@ async function githubTagBuild(options) {
  */
 async function phaseUpdate(options) {
     console.log("🚀 Step 3: Deploy Phase 7");
-    const targetPhase = options.target || "v6.8.0";
+    const targetPhase = options.target || "v6.8.1";
     try {
         const result = await callAPI("/master-control/execute", "POST", {
             workflow: [
@@ -417,7 +417,7 @@ async function execute(options) {
     if (options.persistent || options.prompt_append) {
         await initializeMasterContext(options);
         if (!options.resume) {
-            await appendToMasterContext("INIT", "Master Control v6.8.0 - Prompt Append Chain initialized", options);
+            await appendToMasterContext("INIT", "Master Control v6.8.1 - Prompt Append Chain initialized", options);
         }
     }
     const isStableRelease = options.stable_release || false;
@@ -430,7 +430,7 @@ async function execute(options) {
             await appendToMasterContext("RESUME", "🔄 Resuming deployment from Step 2 (ArgoCD Sync)", options);
         }
         else {
-            const executionLog = "🚀 EA Plan Master Control v6.8.0 — Full Stable Release Execution\n";
+            const executionLog = "🚀 EA Plan Master Control v6.8.1 — Full Stable Release Execution\n";
             console.log(executionLog);
             await appendToMasterContext("EXECUTION_START", executionLog, options);
             // Step 1: GitHub Tag + Docker Build
@@ -445,7 +445,7 @@ async function execute(options) {
             };
             await githubTagBuild({
                 ...options,
-                version: options.version || "v6.8.0",
+                version: options.version || "v6.8.1",
             });
             console.log = originalConsoleLog;
             await appendToMasterContext("STEP_1", step1Output.join("\n"), options);
@@ -563,7 +563,7 @@ async function main() {
     const args = process.argv.slice(2);
     if (args.length === 0) {
         console.log(`
-EA Plan Master Control CLI v6.8.0-rc
+EA Plan Master Control CLI v6.8.1-rc
 
 Usage:
   master-control <command> [options]
@@ -578,7 +578,7 @@ Commands:
 
 Options:
   --strict                     Strict validation mode
-  --target <version>           Target phase version (e.g., v6.8.0)
+  --target <version>           Target phase version (e.g., v6.8.1)
   --apply_manifests           Apply Kubernetes manifests
   --commit_changes             Auto-commit changes
   --targets <list>             Comma-separated targets (e.g., prometheus,grafana)
@@ -588,7 +588,7 @@ Options:
   --validation                 Enable validation
   --observability_check        Enable observability check
   --auto_commit                Auto-commit changes
-  --version <tag>              Version tag (e.g., v6.8.0-rc)
+  --version <tag>              Version tag (e.g., v6.8.1-rc)
   --image_name <name>          Docker image name
   --registry <url>             Docker registry URL
   --argocd_app <name>          ArgoCD application name
@@ -602,14 +602,14 @@ Options:
 
 Examples:
   master-control rule-verify --strict
-  master-control github-tag-build --version v6.8.0-rc --registry ghcr.io/cptsystems
-  master-control phase-update --target v6.8.0 --apply_manifests --commit_changes
+  master-control github-tag-build --version v6.8.1-rc --registry ghcr.io/cptsystems
+  master-control phase-update --target v6.8.1 --apply_manifests --commit_changes
   master-control observe --targets prometheus,grafana --verify
   master-control execute --full_cycle --self_update
 
 Stable Release Workflow (Individual Steps):
   # 1. GitHub Tag (Stable) + Docker Image Push
-  master-control github-tag-build --version v6.8.0
+  master-control github-tag-build --version v6.8.1
   
   # 2. ArgoCD Sync (Production)
   master-control argocd-sync --argocd_app ea-plan-v6 --sync_timeout 300
@@ -622,7 +622,7 @@ Stable Release Workflow (Individual Steps):
 
 Full Stable Release Execution (Single Command):
   master-control execute --full_cycle --self_update --stable_release \\
-    --version v6.8.0 \\
+    --version v6.8.1 \\
     --registry ghcr.io/cptsystems \\
     --argocd_app ea-plan-v6 \\
     --sync_timeout 300 \\
@@ -634,7 +634,7 @@ Fast Testing (Skip Build):
 
 Production Execution (Full):
   master-control execute --full_cycle --self_update --stable_release \\
-    --version v6.8.0 \\
+    --version v6.8.1 \\
     --registry ghcr.io/cptsystems \\
     --argocd_app ea-plan-v6 \\
     --sync_timeout 300 \\

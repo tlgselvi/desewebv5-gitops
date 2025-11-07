@@ -10,6 +10,7 @@
 - Express çekirdeği 5.1.0 sürümüne taşındı; MCP katmanı, middleware ve çekirdek router'lar yeni handler imzasıyla güncellendi.
 - FinBot/MuBot Python servisleri `pandas 2.2.3`, `prophet 1.2.1`, `prometheus-client 0.23.1` seviyesine çıkarıldı.
 - Docker taban imajları `node:20.19-alpine` ve `python:3.11.10-slim` olarak güncellendi.
+- Backend (`dese-api`), frontend, FinBot ve MuBot Docker imajları `v6.8.1` ve `latest` etiketleriyle Artifact Registry’ye push edildi; Kubernetes manifestleri yeni tag’lerle güncellendi.
 - Kubernetes ingress manifestleri `spec.ingressClassName` kullanacak şekilde refaktör edildi.
 - `docs/Sprint_2.7_Tech_Debt_Plan.md` güncellenerek uygulama notları ve öncelik sıraları eklendi; kullanılmayan `bcryptjs` ve `twilio` bağımlılıkları temizlendi.
 - Sprint 2.7 Step 8 kapsamında yerel Docker imajı/containers temizliği (`docker image prune -f`, `docker container prune -f`) tamamlandı.

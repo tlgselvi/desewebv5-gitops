@@ -144,7 +144,7 @@ app.get("/observability/context", authenticate, asyncHandler(async (req, res) =>
     }
     const context = {
         module: "observability",
-        version: "v6.8.0",
+        version: "v6.8.1",
         endpoints: {
             metrics: "/metrics",
             prometheus: "/api/v1/metrics",

@@ -145,7 +145,7 @@ app.get("/finbot/context", authenticate, asyncHandler(async (req, res) => {
     }
     const context = {
         module: "finbot",
-        version: "v6.8.0",
+        version: "v6.8.1",
         endpoints: [
             "/api/v1/analytics/dashboard",
             "/api/v1/analytics/projects",

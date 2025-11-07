@@ -37,7 +37,7 @@ const configSchema = z.object({
     jwtSecret: z
       .string()
       .default(
-        "ea-plan-master-control-v6.8.0-super-secret-jwt-key-min-32-chars",
+        "ea-plan-master-control-v6.8.1-super-secret-jwt-key-min-32-chars",
       ),
     jwtExpiresIn: z.string().default("24h"),
     bcryptRounds: z.coerce.number().default(12),
