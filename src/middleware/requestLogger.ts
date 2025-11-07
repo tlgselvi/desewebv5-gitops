@@ -29,11 +29,9 @@ export const requestLogger = (req: RequestWithUser, res: Response, next: NextFun
     },
   });
 
-  // Override res.end to log response
-  const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
-    const duration = Date.now() - (req.startTime || 0);
-    
+  res.once('finish', () => {
+    const duration = Date.now() - (req.startTime || Date.now());
+
     logger.info('Outgoing Response', {
       requestId: req.requestId,
       method: req.method,
@@ -42,10 +40,7 @@ export const requestLogger = (req: RequestWithUser, res: Response, next: NextFun
       duration: `${duration}ms`,
       contentLength: res.get('Content-Length'),
     });
-
-    // Call original end method
-    originalEnd.call(this, chunk, encoding);
-  };
+  });
 
   next();
 };

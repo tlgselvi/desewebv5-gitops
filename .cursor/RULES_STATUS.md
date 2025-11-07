@@ -92,3 +92,6 @@ Eğer rules dosyası aktif değilse:
 **Not:** Cursor AI rules dosyasını otomatik olarak okur. Eğer rules aktif değilse, Cursor'ı yeniden başlatmayı deneyin.
 
 
+
+
+

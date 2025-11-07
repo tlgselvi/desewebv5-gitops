@@ -53,18 +53,20 @@ EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot 
 | Cache | Memorystore Redis `dese-ea-plan-cache` (Redis 7) | ✅ Production |
 | Orkestrasyon | GKE `dese-ea-plan-cluster` (1.33.5-gke.1162000) | ✅ 3×e2-small |
 | Ağ | Cloud Armor + NGINX Ingress Controller | ✅ Aktif |
-| CI/CD | GitHub Actions → Artifact Registry → ArgoCD | ✅ Production |
+| Observability | Prometheus + Grafana + Loki + Tempo + Cloud Logging | ✅ Production (metrics push yeşil) |
+| Automation | Jarvis efficiency chain & advanced-health-check scriptleri | ✅ Günlük cron (Sprint 2.7 Step 8 temizliği 2025-11-07) |
+| CI/CD | GitHub Actions → Artifact Registry → ArgoCD | ✅ Production (rolling update pipeline) |
 
 ### Canlı Uç Noktalar
 
-| Servis | URL |
-| --- | --- |
-| Backend API | `https://api.poolfab.com.tr` |
-| Frontend | `https://app.poolfab.com.tr` |
-| FinBot MCP | `https://finbot.poolfab.com.tr` |
-| MuBot MCP | `https://mubot.poolfab.com.tr` |
-| Observability MCP | `https://observability.poolfab.com.tr` |
-| Jarvis Health | `https://jarvis.poolfab.com.tr/health` |
+| Servis | URL | Durum |
+| --- | --- | --- |
+| Backend API | `https://api.poolfab.com.tr` | ✅ Production |
+| Frontend | `https://app.poolfab.com.tr` | ✅ Production |
+| FinBot MCP | `https://finbot.poolfab.com.tr` | ✅ MCP (60 sn cache + WebSocket) |
+| MuBot MCP | `https://mubot.poolfab.com.tr` | ✅ MCP (accounting ingestion) |
+| Observability MCP | `https://observability.poolfab.com.tr` | ✅ Metrics & dashboards |
+| Jarvis Health | `https://jarvis.poolfab.com.tr/health` | ✅ Automation health |
 
 Detaylı migrasyon adımları: `docs/GCP_MIGRATION_DURUM_OZETI.md`, `docs/GCP_MIGRATION_FAZ5_BUILD_STATUS.md`, `docs/GCP_MIGRATION_FAZ6_DEPLOYMENT.md`
 

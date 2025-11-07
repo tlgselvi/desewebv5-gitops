@@ -1,57 +1,44 @@
 # Google Cloud Migration - Faz 5: Build Durumu
 
 **Proje:** Dese EA Plan v6.8.0  
-**Tarih:** 2025-01-27  
+**Tarih:** 2025-11-06  
 **Versiyon:** 6.8.0  
-**Durum:** ⏳ Build İşlemi Devam Ediyor
+**Durum:** ✅ Build İşlemi Tamamlandı
 
 ---
 
-## 🚀 Build İşlemi Başlatıldı
+## 🚀 Build Özeti
 
-### ✅ Hazırlık Tamamlandı
+### ✅ Tamamlanan Adımlar
 
-- ✅ Artifact Registry API aktif edildi
-- ✅ Repository oluşturuldu: `dese-ea-plan-images`
-- ✅ Docker yetkilendirildi
-- ✅ `.dockerignore` oluşturuldu (build context optimize edildi)
-- ✅ Dockerfile güncellendi (lockfile handling)
+- Artifact Registry API etkinleştirildi ve `dese-ea-plan-images` deposu hazır
+- Docker kimlik doğrulaması `gcloud auth configure-docker` ile yapılandırıldı
+- `.dockerignore` güncellenerek build context küçültüldü
+- `dese-api` Dockerfile'ı `--no-frozen-lockfile` fallback'iyle stabilize edildi
+- FinBot için yeni Dockerfile ve `requirements.txt` oluşturularak bilimsel kütüphaneler eklendi (`numpy`, `prophet`, `pandas` vb.)
+- Tüm imajlar `v6.8.0` ve `latest` tag'leri ile Artifact Registry'ye push edildi
 
-### ⏳ Devam Eden İşlemler
+### 📦 Image Durumu
 
-Script şu anda 4 image'ı build edip push ediyor:
+| Image | Dockerfile | Registry Path | Durum |
+|-------|------------|---------------|-------|
+| `dese-api` | `./Dockerfile` | `.../dese-api:{v6.8.0,latest}` | ✅ Push edildi |
+| `dese-frontend` | `./frontend/Dockerfile` | `.../dese-frontend:{v6.8.0,latest}` | ✅ Push edildi |
+| `dese-finbot` | `./deploy/finbot-v2/Dockerfile` | `.../dese-finbot:{v6.8.0,latest}` | ✅ Push edildi |
+| `dese-mubot` | `./deploy/mubot-v2/Dockerfile` | `.../dese-mubot:{v6.8.0,latest}` | ✅ Push edildi |
 
-1. **dese-api** (Backend API)
-   - Dockerfile: `./Dockerfile`
-   - Build durumu: ⏳ Devam ediyor
-   - Registry: `europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api`
-
-2. **dese-frontend** (Frontend)
-   - Dockerfile: `./frontend/Dockerfile`
-   - Build durumu: ⏳ Bekliyor
-   - Registry: `europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-frontend`
-
-3. **dese-finbot** (FinBot Python Service)
-   - Dockerfile: Otomatik oluşturulacak (yoksa)
-   - Build durumu: ⏳ Bekliyor
-   - Registry: `europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-finbot`
-
-4. **dese-mubot** (MuBot Python Service)
-   - Dockerfile: Otomatik oluşturulacak (yoksa)
-   - Build durumu: ⏳ Bekliyor
-   - Registry: `europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-mubot`
+```
+gcloud artifacts docker images list \
+  europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images
+```
 
 ---
 
-## 📊 Build Tahmini Süre
+## 📊 Build Kontrolü
 
-| Image | Tahmini Süre | Durum |
-|-------|--------------|-------|
-| dese-api | 5-8 dakika | ⏳ Build ediliyor |
-| dese-frontend | 3-5 dakika | ⏳ Bekliyor |
-| dese-finbot | 2-3 dakika | ⏳ Bekliyor |
-| dese-mubot | 2-3 dakika | ⏳ Bekliyor |
-| **Toplam** | **12-19 dakika** | ⏳ Devam ediyor |
+- `docker images | grep dese-ea-plan` → yerel cache doğrulaması
+- `gcloud artifacts docker images list .../dese-finbot` → uzaktaki tag doğrulaması
+- CI/Deploy pipeline'ları için `imagePullPolicy: Always` kullanıldı (`dese-finbot` deployment güncellendi)
 
 ---
 
@@ -91,35 +78,19 @@ docker images | grep dese-ea-plan-images
 
 ---
 
-## ⚠️ Olası Sorunlar ve Çözümler
+## ⚠️ Öğrenilen Dersler
 
-### 1. Build Çok Yavaş
-
-**Çözüm:** 
-- `.dockerignore` dosyası oluşturuldu (✅ Yapıldı)
-- Build context optimize edildi
-
-### 2. Lockfile Uyumsuzluğu
-
-**Çözüm:**
-- Dockerfile `--no-frozen-lockfile` kullanıyor (✅ Yapıldı)
-- Fallback mekanizması eklendi
-
-### 3. Memory/Resource Hatası
-
-**Çözüm:**
-- Docker Desktop memory ayarlarını kontrol edin
-- Gerekirse memory limit'ini artırın
+- `pnpm-lock.yaml` uyumsuzlukları için `--no-frozen-lockfile` fallback'i kritik
+- FinBot imajında `numpy` bağımlılığı eksikti; `requirements.txt` tanımlamak crash-loop'u engelledi
+- Prophet derlemeleri için `build-essential`, `python3-dev` ve `libgomp1` paketleri gerekir
 
 ---
 
 ## 📋 Build Sonrası Adımlar
 
-Build tamamlandıktan sonra:
-
-1. ✅ Image'ları doğrula
-2. ⏳ Deployment YAML'larını hazırla
-3. ⏳ Kubernetes deployment (Faz 6)
+1. ✅ Image'lar doğrulandı
+2. ✅ Deployment manifestleri (`dese-finbot-service`, `dese-finbot-ingress`) oluşturuldu
+3. ⏳ Frontend optimizasyonları ve deploy kontrol listesi
 
 ---
 
@@ -141,7 +112,7 @@ europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/
 
 ---
 
-**Son Güncelleme:** 2025-01-27  
+**Son Güncelleme:** 2025-11-06  
 **Versiyon:** 6.8.0  
-**Durum:** ⏳ Build İşlemi Devam Ediyor
+**Durum:** ✅ Tamamlandı
 

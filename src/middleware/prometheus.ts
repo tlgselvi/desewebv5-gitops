@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import client from 'prom-client';
-import { config } from '@/config/index.js';
 
 // Create a Registry to register the metrics
 const register = new client.Registry();
@@ -89,37 +88,29 @@ export const prometheusMiddleware = (req: Request, res: Response, next: NextFunc
   // Increment in-progress requests
   httpRequestInProgress.inc({ method: req.method, route });
 
-  // Override res.end to capture metrics
-  const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any): Response {
+  res.once('finish', () => {
     const duration = (Date.now() - start) / 1000;
     const statusCode = res.statusCode.toString();
 
-    // Record metrics
     httpRequestDuration.observe(
       { method: req.method, route, status_code: statusCode },
       duration
     );
-    
-    httpRequestTotal.inc({ method: req.method, route, status_code: statusCode });
-    
-    // Decrement in-progress requests
-    httpRequestInProgress.dec({ method: req.method, route });
 
-    // Call original end method
-    return originalEnd.call(this, chunk, encoding);
-  };
+    httpRequestTotal.inc({ method: req.method, route, status_code: statusCode });
+    httpRequestInProgress.dec({ method: req.method, route });
+  });
 
   next();
 };
 
 // Metrics endpoint
-export const metricsHandler = async (req: Request, res: Response): Promise<void> => {
+export const metricsHandler = async (_req: Request, res: Response): Promise<void> => {
   try {
     res.set('Content-Type', register.contentType);
     const metrics = await register.metrics();
     res.end(metrics);
-  } catch (error) {
+  } catch {
     res.status(500).end('Error generating metrics');
   }
 };

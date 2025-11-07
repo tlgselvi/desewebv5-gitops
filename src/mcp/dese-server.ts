@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -16,7 +16,7 @@ import { initializeMCPWebSocket, pushContextUpdate } from "./websocket-server.js
  */
 
 const app = express();
-const PORT = process.env.DESE_MCP_PORT || 5557;
+const PORT = Number(process.env.DESE_MCP_PORT ?? 5557);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 
 app.use(express.json());
@@ -41,7 +41,7 @@ app.use("/dese", optionalAuth);
  * Health check endpoint
  */
 app.get("/dese/health", (req: Request, res: Response) => {
-  res.json({
+  return res.json({
     status: "healthy",
     service: "dese-mcp",
     version: "1.0.0",
@@ -143,7 +143,7 @@ app.post(
       // Push context update to WebSocket subscribers
       await pushContextUpdate("dese", "anomalies", response.response.context);
 
-      res.json(response);
+      return res.json(response);
     } catch (error) {
       logger.error("Dese MCP query error", {
         error: error instanceof Error ? error.message : String(error),
@@ -198,19 +198,19 @@ app.get(
     // Cache context (5 minutes TTL)
     await redis.setex(cacheKey, 300, JSON.stringify(context));
 
-    res.json(context);
+    return res.json(context);
   })
 );
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: Function) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error("Dese MCP server error", {
     error: err.message,
     stack: err.stack,
     url: req.url,
   });
   
-  res.status(500).json({
+  return res.status(500).json({
     error: "internal_error",
     message: "Failed to process Dese MCP request",
     timestamp: new Date().toISOString(),

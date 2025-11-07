@@ -26,15 +26,35 @@ export const createError = (message: string, statusCode: number = 500): AppError
   return error;
 };
 
+type ErrorResponse = {
+  error: string;
+  message: string;
+  timestamp: string;
+  path: string;
+  method: string;
+  details?: unknown;
+  stack?: string;
+};
+
+interface RequestWithUser extends Request {
+  user?: {
+    id?: string;
+  };
+}
+
+const hasCodeProperty = (value: unknown): value is { code?: unknown } => {
+  return typeof value === 'object' && value !== null && 'code' in value;
+};
+
 export const errorHandler = (
   error: AppError,
-  req: Request,
+  req: RequestWithUser,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   let statusCode = error.statusCode || 500;
   let message = error.message || 'Internal Server Error';
-  let details: any = undefined;
+  let details: unknown = undefined;
 
   // Handle different error types
   if (error instanceof ZodError) {
@@ -53,7 +73,7 @@ export const errorHandler = (
   } else if (error.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
-  } else if (error.name === 'MongoError' && (error as any).code === 11000) {
+  } else if (error.name === 'MongoError' && hasCodeProperty(error) && error.code === 11000) {
     statusCode = 409;
     message = 'Duplicate field value';
   } else if (error.name === 'JsonWebTokenError') {
@@ -62,10 +82,10 @@ export const errorHandler = (
   } else if (error.name === 'TokenExpiredError') {
     statusCode = 401;
     message = 'Token expired';
-  } else if (error.name === 'MulterError') {
+  } else if (error.name === 'MulterError' && hasCodeProperty(error)) {
     statusCode = 400;
     message = 'File upload error';
-    details = { code: (error as any).code };
+    details = { code: error.code };
   }
 
   // Log error
@@ -84,7 +104,7 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: (req as any).user?.id,
+      user: req.user?.id,
     });
   } else {
     logger.warn('Client Error', {
@@ -98,12 +118,12 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: (req as any).user?.id,
+      user: req.user?.id,
     });
   }
 
   // Send error response
-  const errorResponse: any = {
+  const errorResponse: ErrorResponse = {
     error: error.name || 'Error',
     message,
     timestamp: new Date().toISOString(),
@@ -124,9 +144,11 @@ export const errorHandler = (
 };
 
 // Async error wrapper
-export const asyncHandler = (fn: Function) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown> | unknown,
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    void Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 

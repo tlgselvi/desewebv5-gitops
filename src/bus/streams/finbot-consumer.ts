@@ -31,11 +31,12 @@ async function ensureConsumerGroup(): Promise<void> {
   try {
     await redis.xgroup("CREATE", STREAM_KEY, CONSUMER_GROUP, "0", "MKSTREAM");
     logger.info("FinBot consumer group created", { group: CONSUMER_GROUP });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Group already exists or other error
-    if (error.message && !error.message.includes("BUSYGROUP")) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("BUSYGROUP")) {
       logger.warn("Failed to create consumer group", {
-        error: error.message,
+        error: message,
         group: CONSUMER_GROUP,
       });
     }
@@ -479,7 +480,7 @@ async function processPendingMessages(): Promise<void> {
       CONSUMER_NAME,
     );
 
-    if (pendingMessages.length === 0) {
+    if (!Array.isArray(pendingMessages) || pendingMessages.length === 0) {
       return;
     }
 
@@ -488,9 +489,23 @@ async function processPendingMessages(): Promise<void> {
       consumer: CONSUMER_NAME,
     });
 
-    for (const msg of pendingMessages) {
-      const messageId = msg[0];
-      const idleTime = parseInt(msg[3] || "0");
+    for (const rawPending of pendingMessages as unknown[]) {
+      if (!Array.isArray(rawPending)) {
+        continue;
+      }
+
+      const messageIdRaw = rawPending[0];
+      const idleRaw = rawPending[3];
+
+      const messageId = typeof messageIdRaw === "string" ? messageIdRaw : String(messageIdRaw ?? "");
+      if (!messageId) {
+        continue;
+      }
+
+      const idleTime = Number.parseInt(
+        typeof idleRaw === "string" ? idleRaw : String(idleRaw ?? "0"),
+        10,
+      );
 
       // If message has been idle for more than 5 minutes, claim it
       if (idleTime > 5 * 60 * 1000) {
@@ -503,15 +518,23 @@ async function processPendingMessages(): Promise<void> {
             messageId,
           );
 
-          if (claimed && claimed.length > 0) {
-            const eventData: Record<string, string> = {};
-            const fields = claimed[0][1];
-            
-            for (let i = 0; i < fields.length; i += 2) {
-              eventData[fields[i]] = fields[i + 1];
-            }
+          if (Array.isArray(claimed) && claimed.length > 0) {
+            const claimedEntry = claimed[0];
+            if (Array.isArray(claimedEntry) && claimedEntry.length >= 2) {
+              const fields = claimedEntry[1];
+              if (Array.isArray(fields)) {
+                const eventData: Record<string, string> = {};
+                for (let index = 0; index < fields.length; index += 2) {
+                  const key = fields[index];
+                  const value = fields[index + 1];
+                  if (typeof key === "string" && typeof value === "string") {
+                    eventData[key] = value;
+                  }
+                }
 
-            await processEvent(messageId, eventData);
+                await processEvent(messageId, eventData);
+              }
+            }
           }
         } catch (error) {
           logger.error("Error claiming pending message", {
@@ -547,19 +570,41 @@ async function readAndProcessMessages(): Promise<void> {
       ">",
     );
 
-    if (!messages || messages.length === 0) {
+    if (!Array.isArray(messages) || messages.length === 0) {
       return;
     }
 
-    const streamMessages = messages[0][1];
-    
-    for (const msg of streamMessages) {
-      const messageId = msg[0];
+    const firstStreamEntry = messages[0];
+    if (!Array.isArray(firstStreamEntry) || firstStreamEntry.length < 2) {
+      return;
+    }
+
+    const streamMessages = firstStreamEntry[1];
+    if (!Array.isArray(streamMessages)) {
+      return;
+    }
+
+    for (const rawMessage of streamMessages as unknown[]) {
+      if (!Array.isArray(rawMessage) || rawMessage.length < 2) {
+        continue;
+      }
+
+      const messageIdRaw = rawMessage[0];
+      const fields = rawMessage[1];
+
+      const messageId = typeof messageIdRaw === "string" ? messageIdRaw : String(messageIdRaw ?? "");
+      if (!messageId || !Array.isArray(fields)) {
+        continue;
+      }
+
       const eventData: Record<string, string> = {};
-      const fields = msg[1];
-      
-      for (let i = 0; i < fields.length; i += 2) {
-        eventData[fields[i]] = fields[i + 1];
+
+      for (let index = 0; index < fields.length; index += 2) {
+        const key = fields[index];
+        const value = fields[index + 1];
+        if (typeof key === "string" && typeof value === "string") {
+          eventData[key] = value;
+        }
       }
 
       await processEvent(messageId, eventData);

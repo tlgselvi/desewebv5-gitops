@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -17,7 +17,7 @@ import { getAggregatedContext, selectContextByPriority } from "./context-aggrega
  */
 
 const app = express();
-const PORT = process.env.OBSERVABILITY_MCP_PORT || 5558;
+const PORT = Number(process.env.OBSERVABILITY_MCP_PORT ?? 5558);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 const PROMETHEUS_BASE = process.env.PROMETHEUS_URL || "http://localhost:9090";
 
@@ -43,7 +43,7 @@ app.use("/observability", optionalAuth);
  * Health check endpoint
  */
 app.get("/observability/health", (req: Request, res: Response) => {
-  res.json({
+  return res.json({
     status: "healthy",
     service: "observability-mcp",
     version: "1.0.0",
@@ -141,7 +141,7 @@ app.post(
       // Cache response (30 seconds TTL - metrics change frequently)
       await redis.setex(cacheKey, 30, JSON.stringify(response));
 
-      res.json(response);
+      return res.json(response);
     } catch (error) {
       logger.error("Observability MCP query error", {
         error: error instanceof Error ? error.message : String(error),
@@ -170,7 +170,7 @@ app.get(
 
     const context = {
       module: "observability",
-      version: "v1.0",
+      version: "v6.8.0",
       endpoints: {
         metrics: "/metrics",
         prometheus: "/api/v1/metrics",
@@ -191,7 +191,7 @@ app.get(
     // Cache context (5 minutes TTL)
     await redis.setex(cacheKey, 300, JSON.stringify(context));
 
-    res.json(context);
+    return res.json(context);
   })
 );
 
@@ -248,13 +248,13 @@ app.get(
       // Cache status (1 minute TTL)
       await redis.setex(cacheKey, 60, JSON.stringify(status));
 
-      res.json(status);
+      return res.json(status);
     } catch (error) {
       logger.error("Failed to fetch metrics status", {
         error: error instanceof Error ? error.message : String(error),
       });
       
-      res.json({
+      return res.json({
         backend: {
           connected: false,
           url: `${BACKEND_BASE}/metrics`,
@@ -271,14 +271,14 @@ app.get(
 );
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: Function) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error("Observability MCP server error", {
     error: err.message,
     stack: err.stack,
     url: req.url,
   });
   
-  res.status(500).json({
+  return res.status(500).json({
     error: "internal_error",
     message: "Failed to process Observability MCP request",
     timestamp: new Date().toISOString(),

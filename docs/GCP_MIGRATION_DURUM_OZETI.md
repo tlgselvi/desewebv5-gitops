@@ -3,7 +3,7 @@
 **Proje:** Dese EA Plan v6.8.0  
 **Proje ID:** `ea-plan-seo-project`  
 **Region:** `europe-west3` (Frankfurt)  
-**Tarih:** 2025-01-27  
+**Tarih:** 2025-11-06  
 **Versiyon:** 6.8.0
 
 ---
@@ -18,8 +18,8 @@
 | **Faz 2** | Kubernetes Cluster (GKE) | ✅ Tamamlandı | [Detaylar](#faz-2-kubernetes) |
 | **Faz 3** | NGINX Ingress Controller | ✅ Tamamlandı | [Detaylar](#faz-3-ingress) |
 | **Faz 4** | Kubernetes Secrets | ✅ Tamamlandı | [Detaylar](#faz-4-secrets) |
-| **Faz 5** | Docker Image Build & Push | ⏳ Devam Ediyor | [Detaylar](#faz-5-build-push) |
-| **Faz 6** | Application Deployment | ⏳ Hazır | [Detaylar](#faz-6-deployment) |
+| **Faz 5** | Docker Image Build & Push | ✅ Tamamlandı | [Detaylar](#faz-5-build-push) |
+| **Faz 6** | Application Deployment | ⏳ Devam Ediyor | [Detaylar](#faz-6-deployment) |
 
 ---
 
@@ -99,8 +99,9 @@ redis://10.146.144.75:6379
 
 **DNS Yapılandırması:**
 - `api.dese.ai` → `34.40.41.232`
-- `finbot.dese.ai` → `34.40.41.232`
 - `app.dese.ai` → `34.40.41.232`
+- `finbot.dese.ai` → `34.40.41.232`
+- `mubot.dese.ai` → `34.40.41.232`
 
 **Dokümantasyon:** `docs/GCP_MIGRATION_FAZ3_INGRESS.md`
 
@@ -134,24 +135,38 @@ env:
 
 ---
 
-## ⏳ Faz 5: Docker Image Build & Push
+## ✅ Faz 5: Docker Image Build & Push
 
-### Build Durumu
+### Build Sonuçları
 
 - ✅ Artifact Registry API aktif
-- ✅ Repository oluşturuldu: `dese-ea-plan-images`
-- ✅ Docker yetkilendirildi
-- ✅ `.dockerignore` oluşturuldu (build context optimize)
-- ✅ Dockerfile güncellendi (lockfile handling)
-- ⏳ Image build işlemi devam ediyor:
-  - `dese-api` - Build ediliyor
-  - `dese-frontend` - Bekliyor
-  - `dese-finbot` - Bekliyor
-  - `dese-mubot` - Bekliyor
+- ✅ Repository: `dese-ea-plan-images`
+- ✅ Docker yetkilendirmesi tamam
+- ✅ Tüm servis image’ları `v6.8.0` ve `latest` tag’leriyle push edildi:
+  - `dese-api`
+  - `dese-frontend`
+  - `dese-finbot`
+  - `dese-mubot`
+- ✅ FinBot Dockerfile yeniden yazıldı; bilimsel bağımlılıklar (`numpy`, `prophet` vb.) paketlendi
+- ✅ Build kontrolleri `docker images` ve `gcloud artifacts docker images list` ile doğrulandı
+
+### Registry Özeti
+
+```
+europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/
+├── dese-api:v6.8.0 ✅
+├── dese-api:latest ✅
+├── dese-frontend:v6.8.0 ✅
+├── dese-frontend:latest ✅
+├── dese-finbot:v6.8.0 ✅
+├── dese-finbot:latest ✅
+├── dese-mubot:v6.8.0 ✅
+└── dese-mubot:latest ✅
+```
 
 **Dokümantasyon:** `docs/GCP_MIGRATION_FAZ5_BUILD_PUSH.md`, `docs/GCP_MIGRATION_FAZ5_BUILD_STATUS.md`
 
-## ✅ Faz 6: Application Deployment
+## ⏳ Faz 6: Application Deployment
 
 ### Deployment YAML'ları Hazır
 
@@ -164,22 +179,16 @@ env:
 
 **Dokümantasyon:** `docs/GCP_MIGRATION_FAZ6_DEPLOYMENT.md`
 
-### Planlanan Deployment'lar
+### Deployment Durumu
 
-1. **Backend API**
-   - Service: `dese-ea-plan-api`
-   - Port: `3000`
-   - Ingress: `api.dese.ai`
+| Bileşen | Kaynaklar | Durum |
+|---------|-----------|-------|
+| **Backend API** | `dese-api-deployment`, `dese-api-service`, `dese-api-ingress` | ✅ Running (2/2 ready) |
+| **FinBot Service** | `dese-finbot-deployment`, `dese-finbot-service`, `dese-finbot-ingress` | ✅ Running (health checks 200 OK) |
+| **MuBot Service** | `dese-mubot-deployment`, `dese-mubot-service`, `dese-mubot-ingress` | ✅ Running (`/health` 200, ingestion trigger ready) |
+| **Frontend App** | `04-dese-frontend-deployment`, `dese-frontend-service`, `dese-frontend-ingress` | ⏳ İnceleme & optimizasyon sürüyor |
 
-2. **FinBot Service**
-   - Service: `finbot-service`
-   - Port: `8000`
-   - Ingress: `finbot.dese.ai`
-
-3. **Frontend App**
-   - Service: `dese-ea-plan-frontend`
-   - Port: `3000`
-   - Ingress: `app.dese.ai`
+> **Not:** NGINX ingress manifestleri halen `kubernetes.io/ingress.class` anotasyonunu kullanıyor. `spec.ingressClassName: nginx` geçişi Faz 6.1 refactor listesine eklendi.
 
 ---
 

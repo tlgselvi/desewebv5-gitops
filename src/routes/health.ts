@@ -56,7 +56,9 @@ router.get('/', async (req, res) => {
 
     res.status(dbStatus ? 200 : 503).json(healthStatus);
   } catch (error) {
-    logger.error('Health check failed', { error });
+    logger.error('Health check failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -86,7 +88,7 @@ router.get('/ready', async (req, res) => {
     try {
       await redis.ping();
       redisStatus = true;
-    } catch (error) {
+    } catch {
       redisStatus = false;
     }
     

@@ -27,7 +27,6 @@ import { setupSwagger } from "@/utils/swagger.js";
 import { gracefulShutdown } from "@/utils/gracefulShutdown.js";
 import {
   initializeWebSocketGateway,
-  getWebSocketGateway,
   close as closeWebSocketGateway,
 } from "@/ws/gateway.js";
 import {
@@ -190,15 +189,15 @@ app.use("*", (req, res, next) => {
 
 // Error handling middleware (must be last)
 // Note: Express error handlers require 4 parameters (err, req, res, next)
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   // Ensure JSON response is sent
   if (!res.headersSent) {
     errorHandler(err, req, res, next);
   } else {
     // Headers already sent, log error but don't send response
     logger.error("Error occurred after response sent", {
-      error: err.message,
-      stack: err.stack,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
       url: req.url,
     });
   }

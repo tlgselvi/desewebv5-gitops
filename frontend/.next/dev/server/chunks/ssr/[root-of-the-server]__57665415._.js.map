@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 10, "column": 0}, "map": {"version":3,"sources":["file:///C:/desesonpro/desewebv5/frontend/src/app/providers.tsx"],"sourcesContent":["\"use client\";\r\nimport { QueryClient, QueryClientProvider } from \"@tanstack/react-query\";\r\nimport { ReactNode, useState } from \"react\";\r\n\r\nexport default function Providers({ children }: { children: ReactNode }) {\r\n  const [queryClient] = useState(() => new QueryClient());\r\n  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;\r\n}\r\n"],"names":[],"mappings":";;;;;AACA;AAAA;AACA;AAFA;;;;AAIe,SAAS,UAAU,EAAE,QAAQ,EAA2B;IACrE,MAAM,CAAC,YAAY,GAAG,IAAA,6NAAQ,EAAC,IAAM,IAAI,wMAAW;IACpD,qBAAO,0PAAC,yNAAmB;QAAC,QAAQ;kBAAc;;;;;;AACpD","debugId":null}},
+    {"offset": {"line": 37, "column": 0}, "map": {"version":3,"sources":["file:///C:/desesonpro/desewebv5/frontend/src/app/client-layout.tsx"],"sourcesContent":["\"use client\";\r\n\r\nimport type { ReactNode } from \"react\";\r\nimport Providers from \"./providers\";\r\n\r\ninterface ClientLayoutProps {\r\n  readonly children: ReactNode;\r\n}\r\n\r\nexport default function ClientLayout({ children }: ClientLayoutProps) {\r\n  return <Providers>{children}</Providers>;\r\n}\r\n\r\n"],"names":[],"mappings":";;;;;AAGA;AAHA;;;AASe,SAAS,aAAa,EAAE,QAAQ,EAAqB;IAClE,qBAAO,0PAAC,+IAAS;kBAAE;;;;;;AACrB","debugId":null}}]
+}

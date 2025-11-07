@@ -1,12 +1,13 @@
 import lighthouse from 'lighthouse';
+import type { Flags } from 'lighthouse';
 import puppeteer from 'puppeteer';
+import type { Browser, Page, Protocol, CDPSession } from 'puppeteer';
 import { URL } from 'url';
 import { z } from 'zod';
 import { db, seoMetrics, seoProjects } from '@/db/index.js';
 import { eq } from 'drizzle-orm';
-import { logger, seoLogger } from '@/utils/logger.js';
+import { seoLogger } from '@/utils/logger.js';
 import { recordSeoAnalysis } from '@/middleware/prometheus.js';
-import { config } from '@/config/index.js';
 
 // Validation schemas
 const SeoAnalysisRequestSchema = z.object({
@@ -19,21 +20,129 @@ const SeoAnalysisRequestSchema = z.object({
   }).optional(),
 });
 
-const CoreWebVitalsSchema = z.object({
-  firstContentfulPaint: z.number().optional(),
-  largestContentfulPaint: z.number().optional(),
-  cumulativeLayoutShift: z.number().optional(),
-  firstInputDelay: z.number().optional(),
-  totalBlockingTime: z.number().optional(),
-  speedIndex: z.number().optional(),
-  timeToInteractive: z.number().optional(),
-});
-
 export type SeoAnalysisRequest = z.infer<typeof SeoAnalysisRequestSchema>;
-export type CoreWebVitals = z.infer<typeof CoreWebVitalsSchema>;
+
+export type CoreWebVitals = {
+  firstContentfulPaint?: number;
+  largestContentfulPaint?: number;
+  cumulativeLayoutShift?: number;
+  firstInputDelay?: number;
+  totalBlockingTime?: number;
+  speedIndex?: number;
+  timeToInteractive?: number;
+};
+
+interface LighthouseScoreSummary {
+  performance: number;
+  accessibility: number;
+  bestPractices: number;
+  seo: number;
+}
+
+interface LighthouseAuditDetails {
+  type?: string;
+  [key: string]: unknown;
+}
+
+interface LighthouseAudit {
+  id: string;
+  title: string;
+  description?: string;
+  score: number | null;
+  numericValue?: number;
+  displayValue?: string;
+  details?: LighthouseAuditDetails;
+}
+
+interface LighthouseCategory {
+  score?: number | null;
+}
+
+interface LighthouseCategories {
+  performance?: LighthouseCategory;
+  accessibility?: LighthouseCategory;
+  ['best-practices']?: LighthouseCategory;
+  seo?: LighthouseCategory;
+  [key: string]: LighthouseCategory | undefined;
+}
+
+interface LighthouseRunResult {
+  lhr: {
+    categories: LighthouseCategories;
+    audits: Record<string, LighthouseAudit>;
+  };
+}
+
+interface LighthouseOpportunity {
+  id: string;
+  title: string;
+  description?: string;
+  score: number | null;
+  numericValue?: number;
+  displayValue?: string;
+}
+
+interface LighthouseDiagnostic {
+  id: string;
+  title: string;
+  description?: string;
+  score: number | null;
+  details?: LighthouseAuditDetails;
+}
+
+interface LighthouseAnalysisResult {
+  url: string;
+  scores: LighthouseScoreSummary;
+  coreWebVitals: CoreWebVitals;
+  opportunities: LighthouseOpportunity[];
+  diagnostics: LighthouseDiagnostic[];
+  rawData: LighthouseRunResult['lhr'];
+  analyzedAt: string;
+}
+
+interface SeoProjectAnalysisSummary {
+  projectId: string;
+  totalUrls: number;
+  successfulAnalyses: number;
+  failedAnalyses: number;
+  results: LighthouseAnalysisResult[];
+  errors: Array<{ url: string; error: string }>;
+  analyzedAt: string;
+}
+
+type AnalyzerOptions = NonNullable<SeoAnalysisRequest['options']>;
+type DevicePreset = AnalyzerOptions['device'];
+type ThrottlingPreset = AnalyzerOptions['throttling'];
+type SeoMetricRow = typeof seoMetrics.$inferSelect;
+
+type MetricTrend = {
+  current: number | null;
+  previous: number | null;
+  change: number | null;
+  changePercent: number | null;
+};
+
+type MetricTrendSummary = {
+  performance: MetricTrend;
+  accessibility: MetricTrend;
+  seo: MetricTrend;
+};
+
+const toNullableDecimal = (value: number | null | undefined, fractionDigits: number = 2): string | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return null;
+  }
+
+  return numeric.toFixed(fractionDigits);
+};
 
 export class SeoAnalyzer {
-  private browser: puppeteer.Browser | null = null;
+  private browser: Browser | null = null;
 
   async initialize(): Promise<void> {
     try {
@@ -51,24 +160,25 @@ export class SeoAnalyzer {
       });
       seoLogger.info('SEO Analyzer initialized successfully');
     } catch (error) {
-      seoLogger.error('Failed to initialize SEO Analyzer', { error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      seoLogger.error('Failed to initialize SEO Analyzer', { error: errorMessage });
+      throw error instanceof Error ? error : new Error(errorMessage);
     }
   }
 
-  async analyzeUrl(url: string, options: SeoAnalysisRequest['options'] = {}): Promise<any> {
+  async analyzeUrl(url: string, options?: SeoAnalysisRequest['options']): Promise<LighthouseAnalysisResult> {
     if (!this.browser) {
       await this.initialize();
     }
 
-    const {
-      device = 'desktop',
-      throttling = '4G',
-      categories = ['performance', 'accessibility', 'best-practices', 'seo'],
-    } = options;
+    const normalizedOptions: Partial<NonNullable<SeoAnalysisRequest['options']>> = options ?? {};
+
+    const device: DevicePreset = normalizedOptions.device ?? 'desktop';
+    const throttling: ThrottlingPreset = normalizedOptions.throttling ?? '4G';
+    const categories: string[] = normalizedOptions.categories ?? ['performance', 'accessibility', 'best-practices', 'seo'];
 
     try {
-      const page = await this.browser!.newPage();
+      const page: Page = await this.browser!.newPage();
       
       // Set viewport based on device
       await page.setViewport({
@@ -78,7 +188,7 @@ export class SeoAnalyzer {
       });
 
       // Configure throttling
-      const client = await page.target().createCDPSession();
+      const client: CDPSession = await page.target().createCDPSession();
       await client.send('Network.enable');
       
       if (throttling !== 'none') {
@@ -87,12 +197,16 @@ export class SeoAnalyzer {
       }
 
       // Run Lighthouse
-      const lighthouseOptions = {
+      const wsEndpoint = await this.browser!.wsEndpoint();
+      const parsedPort = Number(new URL(wsEndpoint).port);
+      const lighthouseOptions: Flags = {
         logLevel: 'error',
         output: 'json',
         onlyCategories: categories,
-        port: new URL(await this.browser!.wsEndpoint()).port,
       };
+      if (!Number.isNaN(parsedPort)) {
+        lighthouseOptions.port = parsedPort;
+      }
 
       const result = await lighthouse(url, lighthouseOptions);
       await page.close();
@@ -103,13 +217,14 @@ export class SeoAnalyzer {
 
       return this.processLighthouseResults(result, url);
     } catch (error) {
-      seoLogger.error('SEO analysis failed', { url, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      seoLogger.error('SEO analysis failed', { url, error: errorMessage });
+      throw error instanceof Error ? error : new Error(errorMessage);
     }
   }
 
-  private getThrottlingConfig(throttling: string) {
-    const configs = {
+  private getThrottlingConfig(throttling: ThrottlingPreset): Protocol.Network.EmulateNetworkConditionsRequest {
+    const configs: Record<string, Protocol.Network.EmulateNetworkConditionsRequest> = {
       slow3G: {
         offline: false,
         downloadThroughput: 500 * 1024 / 8, // 500 Kbps
@@ -136,15 +251,15 @@ export class SeoAnalyzer {
       },
     };
 
-    return configs[throttling as keyof typeof configs] || configs['4G'];
+    const config = configs[throttling] ?? configs['4G'];
+    return config as Protocol.Network.EmulateNetworkConditionsRequest;
   }
 
-  private processLighthouseResults(result: any, url: string) {
-    const lhr = result.lhr;
+  private processLighthouseResults(result: LighthouseRunResult, url: string): LighthouseAnalysisResult {
+    const { lhr } = result;
     const audits = lhr.audits;
 
-    // Extract Core Web Vitals
-    const coreWebVitals = {
+    const coreWebVitals: CoreWebVitals = {
       firstContentfulPaint: audits['first-contentful-paint']?.numericValue,
       largestContentfulPaint: audits['largest-contentful-paint']?.numericValue,
       cumulativeLayoutShift: audits['cumulative-layout-shift']?.numericValue,
@@ -154,18 +269,19 @@ export class SeoAnalyzer {
       timeToInteractive: audits['interactive']?.numericValue,
     };
 
-    // Extract category scores
-    const scores = {
-      performance: Math.round((lhr.categories.performance?.score || 0) * 100),
-      accessibility: Math.round((lhr.categories.accessibility?.score || 0) * 100),
-      bestPractices: Math.round((lhr.categories['best-practices']?.score || 0) * 100),
-      seo: Math.round((lhr.categories.seo?.score || 0) * 100),
+    const categories = lhr.categories;
+    const scores: LighthouseScoreSummary = {
+      performance: Math.round(((categories.performance?.score ?? 0) || 0) * 100),
+      accessibility: Math.round(((categories.accessibility?.score ?? 0) || 0) * 100),
+      bestPractices: Math.round(((categories['best-practices']?.score ?? 0) || 0) * 100),
+      seo: Math.round(((categories.seo?.score ?? 0) || 0) * 100),
     };
 
-    // Extract opportunities and diagnostics
-    const opportunities = Object.values(audits)
-      .filter((audit: any) => audit.details?.type === 'opportunity')
-      .map((audit: any) => ({
+    const auditValues = Object.values(audits) as LighthouseAudit[];
+
+    const opportunities: LighthouseOpportunity[] = auditValues
+      .filter((audit) => audit.details?.type === 'opportunity')
+      .map((audit) => ({
         id: audit.id,
         title: audit.title,
         description: audit.description,
@@ -174,9 +290,9 @@ export class SeoAnalyzer {
         displayValue: audit.displayValue,
       }));
 
-    const diagnostics = Object.values(audits)
-      .filter((audit: any) => audit.details?.type === 'diagnostic')
-      .map((audit: any) => ({
+    const diagnostics: LighthouseDiagnostic[] = auditValues
+      .filter((audit) => audit.details?.type === 'diagnostic')
+      .map((audit) => ({
         id: audit.id,
         title: audit.title,
         description: audit.description,
@@ -195,7 +311,7 @@ export class SeoAnalyzer {
     };
   }
 
-  async analyzeProject(request: SeoAnalysisRequest): Promise<any> {
+  async analyzeProject(request: SeoAnalysisRequest): Promise<SeoProjectAnalysisSummary> {
     // Validate request
     const validatedRequest = SeoAnalysisRequestSchema.parse(request);
 
@@ -210,8 +326,8 @@ export class SeoAnalyzer {
       throw new Error('Project not found');
     }
 
-    const results = [];
-    const errors = [];
+    const results: LighthouseAnalysisResult[] = [];
+    const errors: Array<{ url: string; error: string }> = [];
 
     seoLogger.info('Starting SEO analysis', {
       projectId: validatedRequest.projectId,
@@ -226,29 +342,32 @@ export class SeoAnalyzer {
         const analysis = await this.analyzeUrl(url, validatedRequest.options);
         
         // Save to database
-        await db.insert(seoMetrics).values({
+        const metricRecord = {
           projectId: validatedRequest.projectId,
           url,
-          performance: analysis.scores.performance,
-          accessibility: analysis.scores.accessibility,
-          bestPractices: analysis.scores.bestPractices,
-          seo: analysis.scores.seo,
-          firstContentfulPaint: analysis.coreWebVitals.firstContentfulPaint,
-          largestContentfulPaint: analysis.coreWebVitals.largestContentfulPaint,
-          cumulativeLayoutShift: analysis.coreWebVitals.cumulativeLayoutShift,
-          firstInputDelay: analysis.coreWebVitals.firstInputDelay,
-          totalBlockingTime: analysis.coreWebVitals.totalBlockingTime,
-          speedIndex: analysis.coreWebVitals.speedIndex,
-          timeToInteractive: analysis.coreWebVitals.timeToInteractive,
+          performance: toNullableDecimal(analysis.scores.performance),
+          accessibility: toNullableDecimal(analysis.scores.accessibility),
+          bestPractices: toNullableDecimal(analysis.scores.bestPractices),
+          seo: toNullableDecimal(analysis.scores.seo),
+          firstContentfulPaint: toNullableDecimal(analysis.coreWebVitals.firstContentfulPaint, 2),
+          largestContentfulPaint: toNullableDecimal(analysis.coreWebVitals.largestContentfulPaint, 2),
+          cumulativeLayoutShift: toNullableDecimal(analysis.coreWebVitals.cumulativeLayoutShift, 4),
+          firstInputDelay: toNullableDecimal(analysis.coreWebVitals.firstInputDelay, 2),
+          totalBlockingTime: toNullableDecimal(analysis.coreWebVitals.totalBlockingTime, 2),
+          speedIndex: toNullableDecimal(analysis.coreWebVitals.speedIndex, 2),
+          timeToInteractive: toNullableDecimal(analysis.coreWebVitals.timeToInteractive, 2),
           rawData: analysis.rawData,
-        });
+        } satisfies typeof seoMetrics.$inferInsert;
+
+        await db.insert(seoMetrics).values(metricRecord);
 
         results.push(analysis);
         
         seoLogger.info('URL analysis completed', { url, scores: analysis.scores });
       } catch (error) {
-        seoLogger.error('URL analysis failed', { url, error });
-        errors.push({ url, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        seoLogger.error('URL analysis failed', { url, error: errorMessage });
+        errors.push({ url, error: errorMessage });
       }
     }
 
@@ -298,7 +417,7 @@ export class SeoAnalyzer {
     };
   }
 
-  private calculateTrends(metrics: any[]) {
+  private calculateTrends(metrics: SeoMetricRow[]): MetricTrendSummary | null {
     if (metrics.length < 2) {
       return null;
     }
@@ -306,25 +425,34 @@ export class SeoAnalyzer {
     const latest = metrics[metrics.length - 1];
     const previous = metrics[metrics.length - 2];
 
+    const calculateTrend = (current: number | string | null | undefined, prev: number | string | null | undefined): MetricTrend => {
+      const currentValue = typeof current === 'string' ? Number.parseFloat(current) : current ?? null;
+      const previousValue = typeof prev === 'string' ? Number.parseFloat(prev) : prev ?? null;
+
+      if (currentValue === null || previousValue === null) {
+        return {
+          current: currentValue,
+          previous: previousValue,
+          change: null,
+          changePercent: null,
+        };
+      }
+
+      const change = currentValue - previousValue;
+      const changePercent = previousValue !== 0 ? (change / previousValue) * 100 : null;
+
+      return {
+        current: currentValue,
+        previous: previousValue,
+        change,
+        changePercent,
+      };
+    };
+
     return {
-      performance: {
-        current: latest.performance,
-        previous: previous.performance,
-        change: latest.performance - previous.performance,
-        changePercent: ((latest.performance - previous.performance) / previous.performance) * 100,
-      },
-      accessibility: {
-        current: latest.accessibility,
-        previous: previous.accessibility,
-        change: latest.accessibility - previous.accessibility,
-        changePercent: ((latest.accessibility - previous.accessibility) / previous.accessibility) * 100,
-      },
-      seo: {
-        current: latest.seo,
-        previous: previous.seo,
-        change: latest.seo - previous.seo,
-        changePercent: ((latest.seo - previous.seo) / previous.seo) * 100,
-      },
+      performance: calculateTrend(latest.performance, previous.performance),
+      accessibility: calculateTrend(latest.accessibility, previous.accessibility),
+      seo: calculateTrend(latest.seo, previous.seo),
     };
   }
 

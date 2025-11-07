@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { contentGenerator } from '@/services/contentGenerator.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
-import { logger, contentLogger } from '@/utils/logger.js';
+import { contentLogger } from '@/utils/logger.js';
 
 const router = Router();
 
@@ -23,7 +23,7 @@ const TemplateCreateSchema = z.object({
   name: z.string().min(1).max(255),
   type: z.string().min(1),
   template: z.string().min(1),
-  variables: z.record(z.any()).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
 });
 
 const ContentQuerySchema = z.object({
@@ -117,7 +117,7 @@ const ContentQuerySchema = z.object({
  *       404:
  *         description: Project not found
  */
-router.post('/generate', asyncHandler(async (req, res) => {
+router.post('/generate', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const validatedData = ContentGenerationSchema.parse(req.body);
 
   contentLogger.info('Starting content generation', {
@@ -134,7 +134,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
     qualityScore: result.qualityScore,
   });
 
-  res.json(result);
+  return res.json(result);
 }));
 
 /**
@@ -184,12 +184,12 @@ router.post('/generate', asyncHandler(async (req, res) => {
  *                         type: string
  *                         format: date-time
  */
-router.get('/templates', asyncHandler(async (req, res) => {
-  const { type } = req.query;
+router.get('/templates', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+  const { type } = req.query as { type?: string };
 
-  const templates = await contentGenerator.getTemplates(type as string);
+  const templates = await contentGenerator.getTemplates(type ?? undefined);
 
-  res.json({ templates });
+  return res.json({ templates });
 }));
 
 /**
@@ -250,18 +250,20 @@ router.get('/templates', asyncHandler(async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.post('/templates', asyncHandler(async (req, res) => {
+router.post('/templates', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const validatedData = TemplateCreateSchema.parse(req.body);
 
-  const template = await contentGenerator.createTemplate(validatedData);
-
-  contentLogger.info('Content template created', {
-    templateId: template.id,
-    name: template.name,
-    type: template.type,
+  contentLogger.info('Creating content template', {
+    name: validatedData.name,
+    type: validatedData.type,
   });
 
-  res.status(201).json(template);
+  const { variables, ...templateBase } = validatedData;
+  const templatePayload = variables ? { ...templateBase, variables } : templateBase;
+
+  const template = await contentGenerator.createTemplate(templatePayload);
+
+  return res.status(201).json({ template });
 }));
 
 /**
@@ -334,12 +336,12 @@ router.post('/templates', asyncHandler(async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.get('/generated', asyncHandler(async (req, res) => {
+router.get('/generated', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const { projectId, contentType } = ContentQuerySchema.parse(req.query);
 
   const content = await contentGenerator.getGeneratedContent(projectId, contentType);
 
-  res.json({ content });
+  return res.json({ content });
 }));
 
 export { router as contentRoutes };

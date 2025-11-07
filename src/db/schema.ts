@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Users and Authentication
@@ -66,7 +66,7 @@ export const contentTemplates = pgTable('content_templates', {
   name: varchar('name', { length: 255 }).notNull(),
   type: varchar('type', { length: 50 }).notNull(), // 'landing_page', 'blog_post', 'service_page'
   template: text('template').notNull(),
-  variables: jsonb('variables').$type<Record<string, any>>(),
+  variables: jsonb('variables').$type<Record<string, unknown>>(),
   eEatScore: decimal('e_eat_score', { precision: 3, scale: 2 }),
   qualityThreshold: decimal('quality_threshold', { precision: 3, scale: 2 }).default('0.8'),
   isActive: boolean('is_active').default(true).notNull(),

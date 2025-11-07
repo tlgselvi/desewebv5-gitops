@@ -1,6 +1,5 @@
 import { logger } from "@/utils/logger.js";
 import { redis } from "@/services/storage/redisClient.js";
-import { config } from "@/config/index.js";
 
 /**
  * MCP Context Aggregator
@@ -11,7 +10,7 @@ type MCPModule = "finbot" | "mubot" | "dese" | "observability";
 
 interface MCPContext {
   module: MCPModule;
-  data: any;
+  data: Record<string, unknown>;
   priority: number;
   timestamp: string;
   source: string;
@@ -19,7 +18,7 @@ interface MCPContext {
 
 interface AggregatedContext {
   modules: MCPModule[];
-  merged: Record<string, any>;
+  merged: Record<string, unknown>;
   priorities: Record<MCPModule, number>;
   timestamps: Record<MCPModule, string>;
   metadata: {
@@ -34,7 +33,7 @@ interface QueryRequest {
   modules?: MCPModule[];
   priority?: "finbot" | "mubot" | "dese" | "observability" | "auto";
   mergeStrategy?: "merge" | "priority" | "latest";
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 // Module priorities (higher = more important)
@@ -45,11 +44,20 @@ const MODULE_PRIORITIES: Record<MCPModule, number> = {
   observability: 1,
 };
 
-const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 
 /**
  * Fetch context from a single MCP module
  */
+const normalizeContextData = (input: unknown): Record<string, unknown> => {
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    return input as Record<string, unknown>;
+  }
+
+  return {
+    value: input,
+  };
+};
+
 async function fetchModuleContext(
   module: MCPModule,
   query: string,
@@ -85,9 +93,12 @@ async function fetchModuleContext(
 
     const data = await response.json();
 
+    const rawContext = data?.response?.context ?? data?.response ?? data;
+    const normalizedContext = normalizeContextData(rawContext);
+
     return {
       module,
-      data: data.response?.context || data.response || data,
+      data: normalizedContext,
       priority: MODULE_PRIORITIES[module],
       timestamp: new Date().toISOString(),
       source: `${module}-mcp-server`,
@@ -107,7 +118,7 @@ async function fetchModuleContext(
 function mergeContexts(
   contexts: MCPContext[],
   strategy: "merge" | "priority" | "latest" = "merge"
-): Record<string, any> {
+): Record<string, unknown> {
   if (contexts.length === 0) {
     return {};
   }
@@ -115,7 +126,7 @@ function mergeContexts(
   if (strategy === "priority") {
     // Return context from highest priority module
     const sorted = contexts.sort((a, b) => b.priority - a.priority);
-    return sorted[0].data;
+    return sorted[0]?.data ?? {};
   }
 
   if (strategy === "latest") {
@@ -123,30 +134,47 @@ function mergeContexts(
     const sorted = contexts.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
-    return sorted[0].data;
+    return sorted[0]?.data ?? {};
   }
 
   // Default: merge strategy
-  const merged: Record<string, any> = {};
+  const merged: Record<string, unknown> = {};
 
   contexts.forEach((context) => {
-    Object.keys(context.data).forEach((key) => {
-      if (!merged[key]) {
-        merged[key] = [];
-      }
-      if (Array.isArray(merged[key])) {
-        merged[key].push({
+    const contextData = context.data;
+    if (!contextData || typeof contextData !== "object") {
+      return;
+    }
+
+    Object.entries(contextData).forEach(([key, value]) => {
+      const existing = merged[key];
+
+      if (Array.isArray(existing)) {
+        existing.push({
           module: context.module,
-          data: context.data[key],
+          data: value,
           priority: context.priority,
           timestamp: context.timestamp,
         });
-      } else {
-        merged[key] = {
-          ...merged[key],
-          [context.module]: context.data[key],
-        };
+        return;
       }
+
+      if (existing && typeof existing === "object") {
+        merged[key] = {
+          ...(existing as Record<string, unknown>),
+          [context.module]: value,
+        };
+        return;
+      }
+
+      merged[key] = [
+        {
+          module: context.module,
+          data: value,
+          priority: context.priority,
+          timestamp: context.timestamp,
+        },
+      ];
     });
   });
 
@@ -160,7 +188,7 @@ export async function aggregateContext(
   request: QueryRequest,
   authToken?: string
 ): Promise<AggregatedContext> {
-  const { query, modules, priority, mergeStrategy = "merge", context } = request;
+  const { query, modules, priority, mergeStrategy = "merge" } = request;
 
   // Determine which modules to query
   let modulesToQuery: MCPModule[] = modules || ["finbot", "mubot", "dese", "observability"];
@@ -269,21 +297,31 @@ export async function getAggregatedContext(
 export function selectContextByPriority(
   aggregated: AggregatedContext,
   preferredModule?: MCPModule
-): Record<string, any> {
+): Record<string, unknown> {
   if (preferredModule && aggregated.modules.includes(preferredModule)) {
     // Return context from preferred module if available
-    const moduleContext = aggregated.merged[preferredModule] || aggregated.merged;
-    return moduleContext;
+    const moduleContext = aggregated.merged[preferredModule];
+    if (moduleContext && typeof moduleContext === "object") {
+      return moduleContext as Record<string, unknown>;
+    }
+    return aggregated.merged;
   }
 
   // Select module with highest priority
-  const sortedModules = aggregated.modules.sort(
+  const sortedModules = [...aggregated.modules].sort(
     (a, b) => (aggregated.priorities[b] || 0) - (aggregated.priorities[a] || 0)
   );
 
   if (sortedModules.length > 0) {
-    const topModule = sortedModules[0];
-    return aggregated.merged[topModule] || aggregated.merged;
+    const [topModule] = sortedModules;
+    if (!topModule) {
+      return aggregated.merged;
+    }
+    const moduleContext = aggregated.merged[topModule];
+    if (moduleContext && typeof moduleContext === "object") {
+      return moduleContext as Record<string, unknown>;
+    }
+    return aggregated.merged;
   }
 
   return aggregated.merged;

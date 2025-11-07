@@ -754,6 +754,10 @@ Resume Deployment (After Configuration):
   // Parse options
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
+    if (typeof arg !== "string") {
+      continue;
+    }
+
     if (arg.startsWith("--")) {
       const key = arg.substring(2).replace(/-/g, "_");
       const nextArg = args[i + 1];
@@ -778,7 +782,7 @@ Resume Deployment (After Configuration):
       ];
       if (booleanFlags.includes(key)) {
         (options as any)[key] = true;
-      } else if (nextArg && !nextArg.startsWith("--")) {
+      } else if (typeof nextArg === "string" && !nextArg.startsWith("--")) {
         // Value flags
         if (key === "target") options.target = nextArg;
         else if (key === "targets") options.targets = nextArg;

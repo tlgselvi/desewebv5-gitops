@@ -54,7 +54,7 @@ export const aiopsMetrics = async (_req: Request, res: Response): Promise<void> 
     res.set('Content-Type', client.register.contentType);
     const metrics = await client.register.metrics();
     res.end(metrics);
-  } catch (error) {
+  } catch {
     res.status(500).end('Error generating metrics');
   }
 };

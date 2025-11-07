@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dese-finbot-service
+  namespace: default
+  labels:
+    app: dese-finbot
+    tier: aiops
+    version: v6.8.0
+spec:
+  type: ClusterIP
+  selector:
+    app: dese-finbot
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+

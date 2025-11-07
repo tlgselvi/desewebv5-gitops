@@ -237,25 +237,26 @@ securityContext:
 
 ## 📋 Deployment Checklist
 
-- [ ] Image'lar build edildi ve push edildi
-- [ ] Secrets oluşturuldu (Faz 4)
-- [ ] Deployment YAML'ları hazır
-- [ ] Service YAML'ları hazır
-- [ ] Ingress YAML'ları hazır
-- [ ] DNS kayıtları yapılandırıldı (api.dese.ai → 34.40.41.232)
+- [x] Image'lar build edildi ve push edildi
+- [x] Secrets oluşturuldu (Faz 4)
+- [x] Deployment YAML'ları hazır (API + FinBot, Frontend taslak)
+- [x] Service YAML'ları hazır (API, Frontend, FinBot)
+- [x] Ingress YAML'ları hazır (api.dese.ai, app.dese.ai, finbot.dese.ai)
+- [x] DNS kayıtları yapılandırıldı (34.40.41.232 → api/app/finbot.dese.ai)
 - [ ] TLS sertifikası hazır (cert-manager ile)
 
 ---
 
 ## 🎯 Sonraki Adımlar
 
-1. ✅ Deployment YAML'ları hazır
-2. ⏳ Image'ların build edilmesi bekleniyor (Faz 5)
-3. ⏳ Deployment uygulama
-4. ⏳ Frontend deployment
-5. ⏳ FinBot ve MuBot deployment
+1. ✅ Deployment manifestleri hazır
+2. ✅ Image build & push tamamlandı (Faz 5)
+3. ✅ API ve FinBot deployment'ları uygulandı
+4. ⏳ Frontend deployment stabilizasyonu
+5. ✅ MuBot deployment (manifest + service + ingress)
 6. ⏳ Database migration
-7. ⏳ Connection testleri
+7. ⏳ Son-to-son connection ve load testleri
+8. ⏳ Ingress manifestlerinde `spec.ingressClassName` refactor'u
 
 ---
 

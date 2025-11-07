@@ -3,7 +3,6 @@ import { WebSocketServer, WebSocket, RawData } from "ws";
 import { logger } from "@/utils/logger.js";
 import jwt from "jsonwebtoken";
 import { config } from "@/config/index.js";
-import { redis } from "@/services/storage/redisClient.js";
 
 /**
  * WebSocket Gateway
@@ -18,13 +17,19 @@ interface WebSocketClient extends WebSocket {
   isAuthenticated?: boolean;
 }
 
-interface WebSocketMessage {
+type GatewayInboundMessage =
+  | { type: "auth"; token: string }
+  | { type: "subscribe"; topic: string }
+  | { type: "unsubscribe"; topic: string }
+  | { type: "ping" };
+
+type GatewayOutboundMessage = {
   type: string;
-  topic?: string;
-  payload?: any;
-  token?: string;
-  [key: string]: any;
-}
+} & Record<string, unknown>;
+
+type AuthMessage = Extract<GatewayInboundMessage, { type: "auth" }>;
+type SubscribeMessage = Extract<GatewayInboundMessage, { type: "subscribe" }>;
+type UnsubscribeMessage = Extract<GatewayInboundMessage, { type: "unsubscribe" }>;
 
 let wss: WebSocketServer | null = null;
 const clients = new Map<string, WebSocketClient>();
@@ -73,7 +78,7 @@ function validateJWTToken(token: string): {
 /**
  * Send message to client
  */
-function sendToClient(client: WebSocketClient, message: WebSocketMessage): void {
+function sendToClient(client: WebSocketClient, message: GatewayOutboundMessage): void {
   if (client.readyState === WebSocket.OPEN) {
     try {
       client.send(JSON.stringify(message));
@@ -89,7 +94,7 @@ function sendToClient(client: WebSocketClient, message: WebSocketMessage): void 
 /**
  * Broadcast message to all clients subscribed to a topic
  */
-function broadcastToTopic(topic: string, message: WebSocketMessage): void {
+function broadcastToTopic(topic: string, message: GatewayOutboundMessage): void {
   const subscribers = topicSubscriptions.get(topic);
   if (!subscribers || subscribers.size === 0) {
     return;
@@ -116,7 +121,7 @@ function broadcastToTopic(topic: string, message: WebSocketMessage): void {
  */
 function handleAuthentication(
   client: WebSocketClient,
-  message: WebSocketMessage,
+  message: AuthMessage,
 ): void {
   const { token } = message;
 
@@ -169,7 +174,7 @@ function handleAuthentication(
  */
 function handleTopicSubscription(
   client: WebSocketClient,
-  message: WebSocketMessage,
+  message: SubscribeMessage,
 ): void {
   if (!client.isAuthenticated) {
     sendToClient(client, {
@@ -241,7 +246,7 @@ function handleTopicSubscription(
  */
 function handleTopicUnsubscription(
   client: WebSocketClient,
-  message: WebSocketMessage,
+  message: UnsubscribeMessage,
 ): void {
   if (!client.isAuthenticated) {
     sendToClient(client, {
@@ -301,9 +306,42 @@ function handleTopicUnsubscription(
 /**
  * Handle incoming WebSocket messages
  */
+const isGatewayInboundMessage = (value: unknown): value is GatewayInboundMessage => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const { type } = candidate;
+
+  if (type === "auth") {
+    return typeof candidate.token === "string";
+  }
+
+  if (type === "subscribe" || type === "unsubscribe") {
+    return typeof candidate.topic === "string";
+  }
+
+  if (type === "ping") {
+    return true;
+  }
+
+  return false;
+};
+
 function handleMessage(client: WebSocketClient, data: RawData): void {
   try {
-    const message: WebSocketMessage = JSON.parse(data.toString());
+    const parsed = JSON.parse(data.toString()) as unknown;
+
+    if (!isGatewayInboundMessage(parsed)) {
+      sendToClient(client, {
+        type: "error",
+        error: "Invalid message format",
+      });
+      return;
+    }
+
+    const message = parsed;
 
     logger.debug("WebSocket message received", {
       type: message.type,
@@ -449,7 +487,7 @@ export function getWebSocketGateway(): WebSocketServer | null {
 /**
  * Publish message to a topic
  */
-export function publishToTopic(topic: string, message: any): void {
+export function publishToTopic(topic: string, message: unknown): void {
   broadcastToTopic(topic, {
     type: "topic_message",
     topic,

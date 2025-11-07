@@ -13,12 +13,20 @@ from typing import Dict, List, Any, Optional
 import numpy as np
 import pandas as pd
 from prometheus_client import CollectorRegistry, Gauge, Counter, push_to_gateway
+from fastapi import FastAPI, HTTPException
 
 try:
     from prophet import Prophet
 except ImportError:
     print("⚠️  Prophet not installed, using placeholder")
     Prophet = None
+
+
+app = FastAPI(
+    title="Dese FinBot Service",
+    description="Cost & ROI forecasting endpoints",
+    version="2.0.0",
+)
 
 
 class FinBotForecaster:
@@ -316,3 +324,24 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+@app.get('/health')
+async def health() -> Dict[str, str]:
+    """Simple health endpoint for readiness/liveness probes."""
+    return {
+        'status': 'ok',
+        'timestamp': datetime.utcnow().isoformat(),
+    }
+
+
+@app.post('/forecast')
+async def forecast() -> Dict[str, Any]:
+    """Trigger a forecast run and return the latest metrics."""
+    forecaster = FinBotForecaster()
+    results = forecaster.run_forecast()
+
+    if not results:
+        raise HTTPException(status_code=500, detail='Forecast execution failed')
+
+    return results

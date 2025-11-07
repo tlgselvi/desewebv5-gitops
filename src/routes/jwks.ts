@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();

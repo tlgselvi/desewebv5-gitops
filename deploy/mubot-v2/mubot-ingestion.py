@@ -9,12 +9,24 @@ import os
 import sys
 import json
 import time
-import requests
+import logging
+from threading import Lock
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
+
 import numpy as np
 import pandas as pd
+import requests
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from prometheus_client import CollectorRegistry, Gauge, Counter, push_to_gateway
+
+
+logger = logging.getLogger("mubot")
+if not logger.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
 
 
 class MuBotIngestionEngine:
@@ -447,12 +459,84 @@ def main():
     results = engine.run_ingestion()
     
     if results:
-        print(f"\n✅ MuBot ingestion complete")
+        logger.info("MuBot ingestion complete")
         sys.exit(0)
     else:
-        print("\n❌ MuBot ingestion failed")
+        logger.error("MuBot ingestion failed")
         sys.exit(1)
 
 
 if __name__ == '__main__':
     main()
+
+
+_status_lock = Lock()
+_status: Dict[str, Optional[Any]] = {
+    'running': False,
+    'last_success': None,
+    'last_error': None,
+    'last_result': None,
+}
+
+
+def _run_ingestion_background() -> None:
+    logger.info('MuBot ingestion job started')
+    with _status_lock:
+        _status['running'] = True
+        _status['last_error'] = None
+
+    try:
+        engine = MuBotIngestionEngine()
+        result = engine.run_ingestion()
+        with _status_lock:
+            _status['last_success'] = datetime.utcnow().isoformat()
+            _status['last_result'] = result
+        logger.info('MuBot ingestion job finished successfully')
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error('MuBot ingestion job failed', exc_info=exc)
+        with _status_lock:
+            _status['last_error'] = str(exc)
+    finally:
+        with _status_lock:
+            _status['running'] = False
+
+
+app = FastAPI(
+    title='MuBot Ingestion Service',
+    version='2.0.0',
+    description='MuBot data ingestion pipeline with Prometheus metrics export.',
+)
+
+
+@app.get('/health')
+async def health() -> Dict[str, Any]:
+    with _status_lock:
+        running = _status['running']
+        last_error = _status['last_error']
+        last_success = _status['last_success']
+    status = 'ok' if not last_error else 'degraded'
+    return {
+        'status': status,
+        'running': running,
+        'last_success': last_success,
+        'last_error': last_error,
+    }
+
+
+@app.get('/ingestion/status')
+async def ingestion_status() -> Dict[str, Any]:
+    with _status_lock:
+        snapshot = dict(_status)
+    return snapshot
+
+
+@app.post('/ingest')
+async def trigger_ingestion(background: BackgroundTasks) -> Dict[str, Any]:
+    with _status_lock:
+        if _status['running']:
+            raise HTTPException(status_code=409, detail='Ingestion already running')
+    background.add_task(_run_ingestion_background)
+    return {
+        'status': 'accepted',
+        'message': 'Ingestion scheduled',
+    }
