@@ -1,10 +1,10 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { db, contentTemplates, generatedContent, seoProjects } from '@/db/index.js';
-import { eq } from 'drizzle-orm';
-import { contentLogger } from '@/utils/logger.js';
-import { recordContentGeneration } from '@/middleware/prometheus.js';
-import { config } from '@/config/index.js';
+import { db, contentTemplates, generatedContent, seoProjects } from '../db/index.js';
+import { and, eq } from 'drizzle-orm';
+import { contentLogger } from '../utils/logger.js';
+import { recordContentGeneration } from '../middleware/prometheus.js';
+import { config } from '../config/index.js';
 // Validation schemas
 const ContentGenerationRequestSchema = z.object({
     projectId: z.string().uuid(),
@@ -16,13 +16,6 @@ const ContentGenerationRequestSchema = z.object({
     wordCount: z.number().min(100).max(5000).default(1000),
     includeImages: z.boolean().default(true),
     eEatCompliance: z.boolean().default(true),
-});
-const EEAtscoreSchema = z.object({
-    expertise: z.number().min(0).max(1),
-    experience: z.number().min(0).max(1),
-    authoritativeness: z.number().min(0).max(1),
-    trustworthiness: z.number().min(0).max(1),
-    overall: z.number().min(0).max(1),
 });
 export class ContentGenerator {
     openai = null;
@@ -63,33 +56,51 @@ export class ContentGenerator {
                 content = await this.generateFromScratch(validatedRequest);
             }
             // Calculate E-E-A-T score
-            const eEatScore = await this.calculateEEATScore(content, validatedRequest);
+            const eEatScore = await this.calculateEEATScore(content);
             // Save generated content
-            const savedContent = await db.insert(generatedContent).values({
+            const inserted = await db
+                .insert(generatedContent)
+                .values({
                 projectId: validatedRequest.projectId,
                 templateId: validatedRequest.templateId,
                 title: content.title,
                 content: content.content,
                 contentType: validatedRequest.contentType,
                 keywords: validatedRequest.keywords,
-                eEatScore: eEatScore.overall,
-                qualityScore: content.qualityScore,
+                eEatScore: eEatScore.overall.toFixed(2),
+                qualityScore: content.qualityScore.toFixed(2),
                 status: 'draft',
-            }).returning();
+            })
+                .returning();
+            const [savedContent] = inserted;
+            if (!savedContent) {
+                contentLogger.error('Generated content insert returned no rows', {
+                    projectId: validatedRequest.projectId,
+                    templateId: validatedRequest.templateId,
+                });
+                throw new Error('Generated content could not be saved');
+            }
             contentLogger.info('Content generation completed', {
-                contentId: savedContent[0].id,
+                contentId: savedContent.id,
                 eEatScore: eEatScore.overall,
                 qualityScore: content.qualityScore,
             });
             return {
-                id: savedContent[0].id,
+                id: savedContent.id,
+                projectId: savedContent.projectId,
+                templateId: savedContent.templateId,
+                contentType: savedContent.contentType,
+                keywords: savedContent.keywords ?? [],
+                status: savedContent.status,
                 ...content,
                 eEatScore,
-                generatedAt: new Date().toISOString(),
+                generatedAt: savedContent.createdAt?.toISOString?.() ?? new Date().toISOString(),
             };
         }
         catch (error) {
-            contentLogger.error('Content generation failed', { error });
+            contentLogger.error('Content generation failed', {
+                error: error instanceof Error ? error.message : String(error),
+            });
             throw error;
         }
     }
@@ -225,7 +236,8 @@ export class ContentGenerator {
             score += 0.1;
         }
         // Check readability (simple heuristic)
-        const avgWordsPerSentence = content.split(/[.!?]+/).length / content.split(/\s+/).length;
+        const sentences = content.split(/[.!?]+/).filter(sentence => sentence.trim().length > 0);
+        const avgWordsPerSentence = sentences.length > 0 ? wordCount / sentences.length : wordCount;
         if (avgWordsPerSentence >= 10 && avgWordsPerSentence <= 20) {
             score += 0.1;
         }
@@ -242,18 +254,21 @@ export class ContentGenerator {
         return Math.min(score, 1.0);
     }
     calculateKeywordDensity(content, keywords) {
-        const words = content.toLowerCase().split(/\s+/);
+        const words = content.toLowerCase().split(/\s+/).filter(Boolean);
         const totalWords = words.length;
+        if (totalWords === 0) {
+            return 0;
+        }
         let keywordCount = 0;
-        keywords.forEach(keyword => {
-            const keywordWords = keyword.toLowerCase().split(/\s+/);
-            keywordWords.forEach(keywordWord => {
-                keywordCount += words.filter(word => word === keywordWord).length;
-            });
-        });
+        for (const keyword of keywords) {
+            const tokens = keyword.toLowerCase().split(/\s+/).filter(Boolean);
+            for (const token of tokens) {
+                keywordCount += words.filter(word => word === token).length;
+            }
+        }
         return (keywordCount / totalWords) * 100;
     }
-    async calculateEEATScore(content, request) {
+    async calculateEEATScore(content) {
         if (!config.content.eEatEnabled) {
             return {
                 expertise: 0.5,
@@ -353,32 +368,50 @@ export class ContentGenerator {
         return Math.min(score, 1.0);
     }
     async createTemplate(templateData) {
-        const template = await db.insert(contentTemplates).values({
+        const inserted = await db
+            .insert(contentTemplates)
+            .values({
             name: templateData.name,
             type: templateData.type,
             template: templateData.template,
-            variables: templateData.variables || {},
-            eEatScore: 0.8, // Default E-E-A-T score for templates
-        }).returning();
-        contentLogger.info('Content template created', { templateId: template[0].id });
-        return template[0];
+            variables: templateData.variables ?? {},
+            eEatScore: (0.8).toFixed(2), // Default E-E-A-T score for templates
+        })
+            .returning();
+        const [template] = inserted;
+        if (!template) {
+            contentLogger.error('Template creation returned empty result', {
+                name: templateData.name,
+                type: templateData.type,
+            });
+            throw new Error('Template could not be created');
+        }
+        contentLogger.info('Content template created', { templateId: template.id });
+        return template;
     }
     async getTemplates(type) {
-        let query = db.select().from(contentTemplates).where(eq(contentTemplates.isActive, true));
+        const conditions = [eq(contentTemplates.isActive, true)];
         if (type) {
-            query = query.where(eq(contentTemplates.type, type));
+            conditions.push(eq(contentTemplates.type, type));
         }
-        return await query;
+        const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+        return db
+            .select()
+            .from(contentTemplates)
+            .where(whereClause)
+            .orderBy(contentTemplates.createdAt);
     }
     async getGeneratedContent(projectId, contentType) {
-        let query = db
+        const conditions = [eq(generatedContent.projectId, projectId)];
+        if (contentType) {
+            conditions.push(eq(generatedContent.contentType, contentType));
+        }
+        const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+        return db
             .select()
             .from(generatedContent)
-            .where(eq(generatedContent.projectId, projectId));
-        if (contentType) {
-            query = query.where(eq(generatedContent.contentType, contentType));
-        }
-        return await query.orderBy(generatedContent.createdAt);
+            .where(whereClause)
+            .orderBy(generatedContent.createdAt);
     }
 }
 // Singleton instance

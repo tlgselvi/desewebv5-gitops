@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { AutoRemediator } from '../services/aiops/autoRemediator.js';
 import { logger } from '../utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 const remediator = new AutoRemediator();
 
 /**

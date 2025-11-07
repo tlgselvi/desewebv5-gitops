@@ -5,7 +5,7 @@ import { eq, desc, gte, sql, and } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { analyticsLogger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const AnalyticsQuerySchema = z.object({

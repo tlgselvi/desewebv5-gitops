@@ -1,6 +1,6 @@
 import { ZodError } from 'zod';
-import { logger } from '@/utils/logger.js';
-import { config } from '@/config/index.js';
+import { logger } from '../utils/logger.js';
+import { config } from '../config/index.js';
 export class CustomError extends Error {
     statusCode;
     isOperational;
@@ -15,54 +15,75 @@ export const createError = (message, statusCode = 500) => {
     const error = new CustomError(message, statusCode);
     return error;
 };
-export const errorHandler = (error, req, res, next) => {
-    let statusCode = error.statusCode || 500;
-    let message = error.message || 'Internal Server Error';
+const hasCodeProperty = (value) => {
+    return typeof value === 'object' && value !== null && 'code' in value;
+};
+const toAppError = (error) => {
+    if (error instanceof CustomError) {
+        return error;
+    }
+    if (error instanceof Error) {
+        const candidate = error;
+        if (candidate.statusCode === undefined) {
+            candidate.statusCode = 500;
+        }
+        if (candidate.isOperational === undefined) {
+            candidate.isOperational = false;
+        }
+        return candidate;
+    }
+    return new CustomError('Internal Server Error', 500);
+};
+export const errorHandler = (error, req, res, _next) => {
+    const zodError = error instanceof ZodError ? error : null;
+    const appError = zodError ? new CustomError('Validation Error', 400) : toAppError(error);
+    let statusCode = appError.statusCode || 500;
+    let message = appError.message || 'Internal Server Error';
     let details = undefined;
     // Handle different error types
-    if (error instanceof ZodError) {
+    if (zodError) {
         statusCode = 400;
         message = 'Validation Error';
         details = {
-            issues: error.issues.map(issue => ({
+            issues: zodError.issues.map(issue => ({
                 field: issue.path.join('.'),
                 message: issue.message,
                 code: issue.code,
             })),
         };
     }
-    else if (error.name === 'ValidationError') {
+    else if (appError.name === 'ValidationError') {
         statusCode = 400;
         message = 'Validation Error';
     }
-    else if (error.name === 'CastError') {
+    else if (appError.name === 'CastError') {
         statusCode = 400;
         message = 'Invalid ID format';
     }
-    else if (error.name === 'MongoError' && error.code === 11000) {
+    else if (appError.name === 'MongoError' && hasCodeProperty(appError) && appError.code === 11000) {
         statusCode = 409;
         message = 'Duplicate field value';
     }
-    else if (error.name === 'JsonWebTokenError') {
+    else if (appError.name === 'JsonWebTokenError') {
         statusCode = 401;
         message = 'Invalid token';
     }
-    else if (error.name === 'TokenExpiredError') {
+    else if (appError.name === 'TokenExpiredError') {
         statusCode = 401;
         message = 'Token expired';
     }
-    else if (error.name === 'MulterError') {
+    else if (appError.name === 'MulterError' && hasCodeProperty(appError)) {
         statusCode = 400;
         message = 'File upload error';
-        details = { code: error.code };
+        details = { code: appError.code };
     }
     // Log error
     if (statusCode >= 500) {
         logger.error('Server Error', {
             error: {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
+                name: appError.name,
+                message: appError.message,
+                stack: appError.stack,
             },
             request: {
                 method: req.method,
@@ -78,8 +99,8 @@ export const errorHandler = (error, req, res, next) => {
     else {
         logger.warn('Client Error', {
             error: {
-                name: error.name,
-                message: error.message,
+                name: appError.name,
+                message: appError.message,
             },
             request: {
                 method: req.method,
@@ -92,7 +113,7 @@ export const errorHandler = (error, req, res, next) => {
     }
     // Send error response
     const errorResponse = {
-        error: error.name || 'Error',
+        error: appError.name || 'Error',
         message,
         timestamp: new Date().toISOString(),
         path: req.url,
@@ -103,14 +124,16 @@ export const errorHandler = (error, req, res, next) => {
     }
     // Include stack trace in development
     if (config.nodeEnv === 'development') {
-        errorResponse.stack = error.stack;
+        if (appError.stack) {
+            errorResponse.stack = appError.stack;
+        }
     }
     res.status(statusCode).json(errorResponse);
 };
 // Async error wrapper
 export const asyncHandler = (fn) => {
     return (req, res, next) => {
-        Promise.resolve(fn(req, res, next)).catch(next);
+        void Promise.resolve(fn(req, res, next)).catch(next);
     };
 };
 // 404 handler

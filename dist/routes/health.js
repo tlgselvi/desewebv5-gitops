@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { checkDatabaseConnection } from '@/db/index.js';
-import { logger } from '@/utils/logger.js';
+import { checkDatabaseConnection } from '../db/index.js';
+import { redis } from '../services/storage/redisClient.js';
+import { logger } from '../utils/logger.js';
 const router = Router();
 /**
  * @swagger
@@ -29,7 +30,7 @@ router.get('/', async (req, res) => {
             status: dbStatus ? 'healthy' : 'unhealthy',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
-            version: process.env.npm_package_version || '5.0.0',
+            version: process.env.npm_package_version || '6.8.0',
             environment: process.env.NODE_ENV || 'development',
             database: dbStatus ? 'connected' : 'disconnected',
             memory: {
@@ -38,7 +39,15 @@ router.get('/', async (req, res) => {
             },
             services: {
                 database: dbStatus,
-                redis: true, // TODO: Add Redis health check
+                redis: await (async () => {
+                    try {
+                        await redis.ping();
+                        return true;
+                    }
+                    catch {
+                        return false;
+                    }
+                })(),
                 openai: !!process.env.OPENAI_API_KEY,
                 lighthouse: true,
             },
@@ -46,7 +55,9 @@ router.get('/', async (req, res) => {
         res.status(dbStatus ? 200 : 503).json(healthStatus);
     }
     catch (error) {
-        logger.error('Health check failed', { error });
+        logger.error('Health check failed', {
+            error: error instanceof Error ? error.message : String(error),
+        });
         res.status(503).json({
             status: 'unhealthy',
             timestamp: new Date().toISOString(),
@@ -69,15 +80,36 @@ router.get('/', async (req, res) => {
 router.get('/ready', async (req, res) => {
     try {
         const dbStatus = await checkDatabaseConnection();
-        if (dbStatus) {
-            res.status(200).json({ status: 'ready' });
+        // Check Redis connection
+        let redisStatus = false;
+        try {
+            await redis.ping();
+            redisStatus = true;
+        }
+        catch {
+            redisStatus = false;
+        }
+        // Ready if both database and Redis are connected
+        if (dbStatus && redisStatus) {
+            res.status(200).json({
+                status: 'ready',
+                database: 'connected',
+                redis: 'connected',
+            });
         }
         else {
-            res.status(503).json({ status: 'not ready' });
+            res.status(503).json({
+                status: 'not ready',
+                database: dbStatus ? 'connected' : 'disconnected',
+                redis: redisStatus ? 'connected' : 'disconnected',
+            });
         }
     }
     catch (error) {
-        res.status(503).json({ status: 'not ready', error: error.message });
+        res.status(503).json({
+            status: 'not ready',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
     }
 });
 /**

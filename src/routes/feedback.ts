@@ -4,7 +4,7 @@ import { FeedbackStore } from '@/services/storage/redisClient.js';
 import { recordFeedback } from '@/middleware/aiopsMetrics.js';
 import { FeedbackSchema } from '@/schemas/feedback.js';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * POST /api/v1/aiops/feedback

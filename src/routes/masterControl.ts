@@ -5,7 +5,7 @@ import { asyncHandler } from "@/middleware/errorHandler.js";
 import { authenticate, authorize } from "@/middleware/auth.js";
 import { logger } from "@/utils/logger.js";
 
-const router = Router();
+const router: Router = Router();
 
 // Master Control routes require admin authentication
 router.use(authenticate);

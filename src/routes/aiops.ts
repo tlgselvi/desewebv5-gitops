@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { TelemetryAgent } from '../services/aiops/telemetryAgent.js';
 import { logger } from '../utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 const agent = new TelemetryAgent();
 
 /**

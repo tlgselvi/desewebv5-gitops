@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 export const requestLogger = (req, res, next) => {
     // Generate unique request ID
     req.requestId = Math.random().toString(36).substring(2, 15);
@@ -15,10 +15,8 @@ export const requestLogger = (req, res, next) => {
             'authorization': req.get('Authorization') ? '[REDACTED]' : undefined,
         },
     });
-    // Override res.end to log response
-    const originalEnd = res.end;
-    res.end = function (chunk, encoding) {
-        const duration = Date.now() - (req.startTime || 0);
+    res.once('finish', () => {
+        const duration = Date.now() - (req.startTime || Date.now());
         logger.info('Outgoing Response', {
             requestId: req.requestId,
             method: req.method,
@@ -27,9 +25,7 @@ export const requestLogger = (req, res, next) => {
             duration: `${duration}ms`,
             contentLength: res.get('Content-Length'),
         });
-        // Call original end method
-        originalEnd.call(this, chunk, encoding);
-    };
+    });
     next();
 };
 //# sourceMappingURL=requestLogger.js.map

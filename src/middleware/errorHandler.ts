@@ -46,55 +46,77 @@ const hasCodeProperty = (value: unknown): value is { code?: unknown } => {
   return typeof value === 'object' && value !== null && 'code' in value;
 };
 
+const toAppError = (error: unknown): AppError => {
+  if (error instanceof CustomError) {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    const candidate = error as AppError;
+    if (candidate.statusCode === undefined) {
+      candidate.statusCode = 500;
+    }
+    if (candidate.isOperational === undefined) {
+      candidate.isOperational = false;
+    }
+    return candidate;
+  }
+
+  return new CustomError('Internal Server Error', 500);
+};
+
 export const errorHandler = (
-  error: AppError,
+  error: unknown,
   req: RequestWithUser,
   res: Response,
   _next: NextFunction
 ): void => {
-  let statusCode = error.statusCode || 500;
-  let message = error.message || 'Internal Server Error';
+  const zodError = error instanceof ZodError ? error : null;
+  const appError = zodError ? new CustomError('Validation Error', 400) : toAppError(error);
+
+  let statusCode = appError.statusCode || 500;
+  let message = appError.message || 'Internal Server Error';
   let details: unknown = undefined;
 
   // Handle different error types
-  if (error instanceof ZodError) {
+  if (zodError) {
     statusCode = 400;
     message = 'Validation Error';
     details = {
-      issues: error.issues.map(issue => ({
+      issues: zodError.issues.map(issue => ({
         field: issue.path.join('.'),
         message: issue.message,
         code: issue.code,
       })),
     };
-  } else if (error.name === 'ValidationError') {
+  } else if (appError.name === 'ValidationError') {
     statusCode = 400;
     message = 'Validation Error';
-  } else if (error.name === 'CastError') {
+  } else if (appError.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
-  } else if (error.name === 'MongoError' && hasCodeProperty(error) && error.code === 11000) {
+  } else if (appError.name === 'MongoError' && hasCodeProperty(appError) && appError.code === 11000) {
     statusCode = 409;
     message = 'Duplicate field value';
-  } else if (error.name === 'JsonWebTokenError') {
+  } else if (appError.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
-  } else if (error.name === 'TokenExpiredError') {
+  } else if (appError.name === 'TokenExpiredError') {
     statusCode = 401;
     message = 'Token expired';
-  } else if (error.name === 'MulterError' && hasCodeProperty(error)) {
+  } else if (appError.name === 'MulterError' && hasCodeProperty(appError)) {
     statusCode = 400;
     message = 'File upload error';
-    details = { code: error.code };
+    details = { code: appError.code };
   }
 
   // Log error
   if (statusCode >= 500) {
     logger.error('Server Error', {
       error: {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
+        name: appError.name,
+        message: appError.message,
+        stack: appError.stack,
       },
       request: {
         method: req.method,
@@ -109,8 +131,8 @@ export const errorHandler = (
   } else {
     logger.warn('Client Error', {
       error: {
-        name: error.name,
-        message: error.message,
+        name: appError.name,
+        message: appError.message,
       },
       request: {
         method: req.method,
@@ -124,7 +146,7 @@ export const errorHandler = (
 
   // Send error response
   const errorResponse: ErrorResponse = {
-    error: error.name || 'Error',
+    error: appError.name || 'Error',
     message,
     timestamp: new Date().toISOString(),
     path: req.url,
@@ -137,7 +159,9 @@ export const errorHandler = (
 
   // Include stack trace in development
   if (config.nodeEnv === 'development') {
-    errorResponse.stack = error.stack;
+    if (appError.stack) {
+      errorResponse.stack = appError.stack;
+    }
   }
 
   res.status(statusCode).json(errorResponse);

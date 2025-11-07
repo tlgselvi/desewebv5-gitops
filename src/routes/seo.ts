@@ -4,7 +4,7 @@ import { seoAnalyzer } from '@/services/seoAnalyzer.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { seoLogger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const SeoAnalysisSchema = z.object({

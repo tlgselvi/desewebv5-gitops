@@ -314,6 +314,10 @@ const isGatewayInboundMessage = (value: unknown): value is GatewayInboundMessage
   const candidate = value as Record<string, unknown>;
   const { type } = candidate;
 
+  if (typeof type !== "string") {
+    return false;
+  }
+
   if (type === "auth") {
     return typeof candidate.token === "string";
   }
@@ -332,6 +336,10 @@ const isGatewayInboundMessage = (value: unknown): value is GatewayInboundMessage
 function handleMessage(client: WebSocketClient, data: RawData): void {
   try {
     const parsed = JSON.parse(data.toString()) as unknown;
+    const rawRecord =
+      typeof parsed === "object" && parsed !== null
+        ? (parsed as Record<string, unknown>)
+        : {};
 
     if (!isGatewayInboundMessage(parsed)) {
       sendToClient(client, {
@@ -341,7 +349,7 @@ function handleMessage(client: WebSocketClient, data: RawData): void {
       return;
     }
 
-    const message = parsed;
+    const message: GatewayInboundMessage = parsed;
 
     logger.debug("WebSocket message received", {
       type: message.type,
@@ -351,29 +359,32 @@ function handleMessage(client: WebSocketClient, data: RawData): void {
     switch (message.type) {
       case "auth":
         handleAuthentication(client, message);
-        break;
+        return;
 
       case "subscribe":
         handleTopicSubscription(client, message);
-        break;
+        return;
 
       case "unsubscribe":
         handleTopicUnsubscription(client, message);
-        break;
+        return;
 
       case "ping":
         sendToClient(client, { type: "pong" });
-        break;
+        return;
 
-      default:
+      default: {
+        const unknownType = rawRecord.type;
         logger.warn("Unknown WebSocket message type", {
-          type: message.type,
+          type: typeof unknownType === "string" ? unknownType : "unknown",
           userId: client.userId,
         });
         sendToClient(client, {
           type: "error",
-          error: `Unknown message type: ${message.type}`,
+          error: `Unknown message type: ${String(unknownType ?? "unknown")}`,
         });
+        return;
+      }
     }
   } catch (error) {
     logger.error("Error handling WebSocket message", {

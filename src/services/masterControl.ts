@@ -11,7 +11,7 @@ import { logger } from "@/utils/logger.js";
 const execAsync = promisify(exec);
 
 /**
- * EA Plan Master Control v6.8.0 - Self-Updating Orchestrator
+ * EA Plan Master Control v6.8.1 - Self-Updating Orchestrator
  * Mode: Persistent Orchestrator + Rules-Compliant + Self-Updating
  */
 
@@ -304,6 +304,8 @@ export interface DeploymentStatus {
     name: string;
     status: "running" | "pending" | "failed";
     replicas?: number;
+    desiredReplicas?: number;
+    namespace?: string;
   }[];
   healthScore: number; // 0-100
 }
@@ -332,7 +334,7 @@ export class MasterControlService {
   private readonly namespaceMonitoring = "monitoring";
   private readonly namespaceWeb = "ea-web";
   private readonly version =
-    process.env.APP_VERSION?.replace("v", "") || "6.8.0";
+    process.env.APP_VERSION?.replace("v", "") || "6.8.1";
 
   /**
    * Step 1: Environment Verification
@@ -1228,7 +1230,7 @@ spec:
     };
 
     try {
-      const tagVersion = version || "v6.8.0-rc";
+      const tagVersion = version || "v6.8.1-rc";
       const imageNameFinal =
         imageName || process.env.DOCKER_IMAGE_NAME || "dese-ea-plan-v5";
       const registryFinal =
@@ -1846,16 +1848,18 @@ spec:
         );
         const deployments = JSON.parse(stdout) as KubernetesDeploymentList;
         const deploymentItems = Array.isArray(deployments.items) ? deployments.items : [];
-        status.services = deploymentItems.map((dep) => ({
-          name: dep.metadata?.name ?? "unknown",
-          namespace: dep.metadata?.namespace ?? this.namespaceWeb,
-          replicas: dep.status?.readyReplicas ?? 0,
-          desiredReplicas: dep.spec?.replicas ?? 0,
-          status:
-            (dep.status?.readyReplicas ?? 0) === (dep.spec?.replicas ?? 0)
-              ? "ready"
-              : "pending",
-        }));
+        status.services = deploymentItems.map((dep) => {
+          const readyReplicas = dep.status?.readyReplicas ?? 0;
+          const desiredReplicas = dep.spec?.replicas ?? 0;
+
+          return {
+            name: dep.metadata?.name ?? "unknown",
+            namespace: dep.metadata?.namespace ?? this.namespaceWeb,
+            replicas: readyReplicas,
+            desiredReplicas,
+            status: readyReplicas === desiredReplicas ? "running" : "pending",
+          };
+        });
 
         const runningServices = status.services.filter(
           (s) => s.status === "running",
@@ -2560,7 +2564,7 @@ spec:
             }
 
             case "github-tag-build": {
-              const version = step.version || "v6.8.0-rc";
+              const version = step.version || "v6.8.1-rc";
               const imageName =
                 step.image_name || process.env.DOCKER_IMAGE_NAME;
               const registry = step.registry || process.env.DOCKER_REGISTRY;
@@ -2663,7 +2667,7 @@ spec:
               if (statusOutput.trim()) {
                 await execAsync("git add .");
                 await execAsync(
-                  `git commit -m "EA Plan v6.8.0: Workflow execution auto-commit" || true`,
+                  `git commit -m "EA Plan v6.8.1: Workflow execution auto-commit" || true`,
                 );
 
                 try {
@@ -2691,7 +2695,7 @@ spec:
             await this.performSelfUpdate([
               {
                 type: "pipeline",
-                description: "Workflow execution self-update - v6.8.0-rc",
+                description: "Workflow execution self-update - v6.8.1-rc",
               },
             ]);
             logger.info("Self-update completed");
@@ -2830,7 +2834,7 @@ spec:
       ) {
         summary.tag =
           request.workflow.find((s) => s.step === "github-tag-build")
-            ?.version || "v6.8.0-rc";
+            ?.version || "v6.8.1-rc";
       }
 
       result.summary = summary;
@@ -2960,12 +2964,66 @@ spec:
       case "phase-update":
         await this.updatePhase7();
         break;
-      case "self-update":
-        const updates = params?.updates as
-          | Array<{ type: string; description: string; content?: string }>
-          | undefined;
-        await this.performSelfUpdate(updates);
+      case "self-update": {
+        const rawUpdates = params?.updates;
+        const allowedUpdateTypes: Array<SelfUpdateStatus["updates"][number]["type"]> = [
+          "context",
+          "prompt",
+          "pipeline",
+          "rules",
+          "config",
+          "securityPolicy",
+        ];
+
+        const normalizedUpdates = Array.isArray(rawUpdates)
+          ? rawUpdates.reduce<Array<{
+              type: SelfUpdateStatus["updates"][number]["type"];
+              description: string;
+              content?: string;
+            }>>((acc, update) => {
+              if (
+                update &&
+                typeof update === "object" &&
+                "type" in update &&
+                typeof (update as { type: unknown }).type === "string" &&
+                allowedUpdateTypes.includes(
+                  (update as { type: string }).type as SelfUpdateStatus["updates"][number]["type"],
+                ) &&
+                "description" in update &&
+                typeof (update as { description: unknown }).description === "string"
+              ) {
+                const typedUpdate = update as {
+                  type: string;
+                  description: string;
+                  content?: string;
+                };
+
+                const normalizedUpdate: {
+                  type: SelfUpdateStatus["updates"][number]["type"];
+                  description: string;
+                  content?: string;
+                } = {
+                  type: typedUpdate.type as SelfUpdateStatus["updates"][number]["type"],
+                  description: typedUpdate.description,
+                };
+
+                if (typeof typedUpdate.content === "string") {
+                  normalizedUpdate.content = typedUpdate.content;
+                }
+
+                acc.push(normalizedUpdate);
+              }
+              return acc;
+            }, [])
+          : undefined;
+
+        await this.performSelfUpdate(
+          normalizedUpdates && normalizedUpdates.length > 0
+            ? normalizedUpdates
+            : undefined,
+        );
         break;
+      }
       default:
         logger.warn("Unknown command", { command });
     }

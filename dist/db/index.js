@@ -1,7 +1,8 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema.js';
-import { config } from '@/config/index.js';
+import { config } from '../config/index.js';
+import { logger } from '../utils/logger.js';
 // Create the connection
 const connectionString = config.database.url;
 const client = postgres(connectionString);
@@ -16,7 +17,9 @@ export async function checkDatabaseConnection() {
         return true;
     }
     catch (error) {
-        console.error('Database connection failed:', error);
+        logger.error('Database connection failed', {
+            error: error instanceof Error ? error.message : String(error),
+        });
         return false;
     }
 }

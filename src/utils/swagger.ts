@@ -1,6 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import { Express } from "express";
+import type { Application } from "express";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 
@@ -8,8 +8,8 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Dese EA Plan v6.8.0 API",
-      version: "6.8.0",
+      title: "Dese EA Plan v6.8.1 API",
+      version: "6.8.1",
       description:
         "CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API",
       contact: {
@@ -257,7 +257,7 @@ const options = {
 
 const specs = swaggerJsdoc(options);
 
-export function setupSwagger(app: Express) {
+export function setupSwagger(app: Application) {
   // Swagger UI
   app.use(
     "/api-docs",
@@ -265,7 +265,7 @@ export function setupSwagger(app: Express) {
     swaggerUi.setup(specs, {
       explorer: true,
       customCss: ".swagger-ui .topbar { display: none }",
-      customSiteTitle: "Dese EA Plan v6.8.0 API Documentation",
+      customSiteTitle: "Dese EA Plan v6.8.1 API Documentation",
     }),
   );
 

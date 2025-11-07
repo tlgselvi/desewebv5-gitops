@@ -6,7 +6,7 @@ import type { SQL } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { logger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const ProjectsListQuerySchema = z.object({

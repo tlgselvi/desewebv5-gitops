@@ -5,7 +5,7 @@ metadata:
   labels:
     app: dese-finbot
     tier: aiops
-    version: v6.8.0
+    version: v6.8.1
 spec:
   replicas: 1
   selector:
@@ -16,10 +16,11 @@ spec:
       labels:
         app: dese-finbot
         tier: aiops
+        version: v6.8.1
     spec:
       containers:
         - name: dese-finbot
-          image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-finbot:v6.8.0
+          image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-finbot:v6.8.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

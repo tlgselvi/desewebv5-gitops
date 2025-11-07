@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import type { Application } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -15,7 +16,7 @@ import { initializeMCPWebSocket, pushContextUpdate } from "./websocket-server.js
  * Purpose: Model Context Protocol server for Dese AIOps module
  */
 
-const app = express();
+const app: Application = express();
 const PORT = Number(process.env.DESE_MCP_PORT ?? 5557);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 
@@ -120,7 +121,7 @@ app.post(
         query,
         response: {
           module: "dese",
-          version: "v6.8.0",
+          version: "v6.8.1",
           context: {
             aiops: aiopsData || context?.aiops || {},
             anomalies: context?.anomalies || [],
@@ -172,7 +173,7 @@ app.get(
 
     const context = {
       module: "dese",
-      version: "v6.8.0",
+      version: "v6.8.1",
       endpoints: [
         "/api/v1/aiops/collect",
         "/api/v1/aiops/health",

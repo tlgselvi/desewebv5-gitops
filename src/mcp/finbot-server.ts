@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import type { Application } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -15,7 +16,7 @@ import { initializeMCPWebSocket, pushContextUpdate } from "./websocket-server.js
  * Purpose: Model Context Protocol server for FinBot module
  */
 
-const app = express();
+const app: Application = express();
 const PORT = Number(process.env.FINBOT_MCP_PORT ?? 5555);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 
@@ -172,7 +173,8 @@ app.get(
 
     const context = {
       module: "finbot",
-      version: "v6.8.0",
+        version: "v6.8.1",
+      version: "v6.8.1",
       endpoints: [
         "/api/v1/analytics/dashboard",
         "/api/v1/analytics/projects",

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: dese-finbot
     tier: aiops
-    version: v6.8.0
+    version: v6.8.1
 spec:
   type: ClusterIP
   selector:

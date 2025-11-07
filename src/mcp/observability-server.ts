@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import type { Application } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -16,7 +17,7 @@ import { getAggregatedContext, selectContextByPriority } from "./context-aggrega
  * Purpose: Model Context Protocol server for Observability module
  */
 
-const app = express();
+const app: Application = express();
 const PORT = Number(process.env.OBSERVABILITY_MCP_PORT ?? 5558);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 const PROMETHEUS_BASE = process.env.PROMETHEUS_URL || "http://localhost:9090";
@@ -170,7 +171,7 @@ app.get(
 
     const context = {
       module: "observability",
-      version: "v6.8.0",
+      version: "v6.8.1",
       endpoints: {
         metrics: "/metrics",
         prometheus: "/api/v1/metrics",

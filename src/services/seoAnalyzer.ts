@@ -259,15 +259,23 @@ export class SeoAnalyzer {
     const { lhr } = result;
     const audits = lhr.audits;
 
-    const coreWebVitals: CoreWebVitals = {
-      firstContentfulPaint: audits['first-contentful-paint']?.numericValue,
-      largestContentfulPaint: audits['largest-contentful-paint']?.numericValue,
-      cumulativeLayoutShift: audits['cumulative-layout-shift']?.numericValue,
-      firstInputDelay: audits['max-potential-fid']?.numericValue,
-      totalBlockingTime: audits['total-blocking-time']?.numericValue,
-      speedIndex: audits['speed-index']?.numericValue,
-      timeToInteractive: audits['interactive']?.numericValue,
+    const coreWebVitals: CoreWebVitals = {};
+    const assignCoreVital = (
+      key: keyof CoreWebVitals,
+      value: number | null | undefined,
+    ) => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        coreWebVitals[key] = value;
+      }
     };
+
+    assignCoreVital('firstContentfulPaint', audits['first-contentful-paint']?.numericValue);
+    assignCoreVital('largestContentfulPaint', audits['largest-contentful-paint']?.numericValue);
+    assignCoreVital('cumulativeLayoutShift', audits['cumulative-layout-shift']?.numericValue);
+    assignCoreVital('firstInputDelay', audits['max-potential-fid']?.numericValue);
+    assignCoreVital('totalBlockingTime', audits['total-blocking-time']?.numericValue);
+    assignCoreVital('speedIndex', audits['speed-index']?.numericValue);
+    assignCoreVital('timeToInteractive', audits['interactive']?.numericValue);
 
     const categories = lhr.categories;
     const scores: LighthouseScoreSummary = {
@@ -281,24 +289,44 @@ export class SeoAnalyzer {
 
     const opportunities: LighthouseOpportunity[] = auditValues
       .filter((audit) => audit.details?.type === 'opportunity')
-      .map((audit) => ({
-        id: audit.id,
-        title: audit.title,
-        description: audit.description,
-        score: audit.score,
-        numericValue: audit.numericValue,
-        displayValue: audit.displayValue,
-      }));
+      .map((audit) => {
+        const opportunity: LighthouseOpportunity = {
+          id: audit.id,
+          title: audit.title,
+          score: audit.score,
+        };
+
+        if (typeof audit.description === 'string') {
+          opportunity.description = audit.description;
+        }
+        if (typeof audit.numericValue === 'number') {
+          opportunity.numericValue = audit.numericValue;
+        }
+        if (typeof audit.displayValue === 'string') {
+          opportunity.displayValue = audit.displayValue;
+        }
+
+        return opportunity;
+      });
 
     const diagnostics: LighthouseDiagnostic[] = auditValues
       .filter((audit) => audit.details?.type === 'diagnostic')
-      .map((audit) => ({
-        id: audit.id,
-        title: audit.title,
-        description: audit.description,
-        score: audit.score,
-        details: audit.details,
-      }));
+      .map((audit) => {
+        const diagnostic: LighthouseDiagnostic = {
+          id: audit.id,
+          title: audit.title,
+          score: audit.score,
+        };
+
+        if (typeof audit.description === 'string') {
+          diagnostic.description = audit.description;
+        }
+        if (audit.details) {
+          diagnostic.details = audit.details;
+        }
+
+        return diagnostic;
+      });
 
     return {
       url,
@@ -422,8 +450,8 @@ export class SeoAnalyzer {
       return null;
     }
 
-    const latest = metrics[metrics.length - 1];
-    const previous = metrics[metrics.length - 2];
+    const latest = metrics[metrics.length - 1]!;
+    const previous = metrics[metrics.length - 2]!;
 
     const calculateTrend = (current: number | string | null | undefined, prev: number | string | null | undefined): MetricTrend => {
       const currentValue = typeof current === 'string' ? Number.parseFloat(current) : current ?? null;

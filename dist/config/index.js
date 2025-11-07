@@ -1,34 +1,38 @@
-import { config as dotenvConfig } from 'dotenv';
-import { z } from 'zod';
+import { config as dotenvConfig } from "dotenv";
+import { z } from "zod";
 // Load environment variables
 dotenvConfig();
 // Configuration schema validation
 const configSchema = z.object({
     // Server Configuration
-    port: z.coerce.number().default(3000),
-    nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
-    apiVersion: z.string().default('v1'),
-    corsOrigin: z.string().default('http://localhost:3000'),
+    port: z.coerce.number().default(3001),
+    nodeEnv: z.enum(["development", "production", "test"]).default("development"),
+    apiVersion: z.string().default("v1"),
+    corsOrigin: z.string().default("http://localhost:3000"),
     // Database Configuration
     database: z.object({
-        url: z.string().min(1, 'DATABASE_URL is required'),
-        host: z.string().default('localhost'),
+        url: z
+            .string()
+            .default("postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5"),
+        host: z.string().default("localhost"),
         port: z.coerce.number().default(5432),
-        name: z.string().default('dese_ea_plan_v5'),
-        user: z.string().default('username'),
-        password: z.string().default('password'),
+        name: z.string().default("dese_ea_plan_v5"),
+        user: z.string().default("dese"),
+        password: z.string().default("dese123"),
     }),
     // Redis Configuration
     redis: z.object({
-        url: z.string().default('redis://localhost:6379'),
-        host: z.string().default('localhost'),
+        url: z.string().default("redis://localhost:6379"),
+        host: z.string().default("localhost"),
         port: z.coerce.number().default(6379),
         password: z.string().optional(),
     }),
     // Security Configuration
     security: z.object({
-        jwtSecret: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-        jwtExpiresIn: z.string().default('24h'),
+        jwtSecret: z
+            .string()
+            .default("ea-plan-master-control-v6.8.0-super-secret-jwt-key-min-32-chars"),
+        jwtExpiresIn: z.string().default("24h"),
         bcryptRounds: z.coerce.number().default(12),
         rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes
         rateLimitMaxRequests: z.coerce.number().default(100),
@@ -60,7 +64,7 @@ const configSchema = z.object({
     }),
     // Kubernetes & GitOps
     kubernetes: z.object({
-        kubeconfigPath: z.string().default('~/.kube/config'),
+        kubeconfigPath: z.string().default("~/.kube/config"),
         argocdServer: z.string().optional(),
         argocdToken: z.string().optional(),
         helmRepoUrl: z.string().optional(),
@@ -77,8 +81,10 @@ const configSchema = z.object({
     }),
     // SEO Configuration
     seo: z.object({
-        primaryKeywords: z.array(z.string()).default(['en iyi havuz firması', 'havuz kime yaptırılır']),
-        targetRegion: z.string().default('Türkiye'),
+        primaryKeywords: z
+            .array(z.string())
+            .default(["en iyi havuz firması", "havuz kime yaptırılır"]),
+        targetRegion: z.string().default("Türkiye"),
         targetDomainAuthority: z.coerce.number().default(50),
         targetCtrIncrease: z.coerce.number().default(25),
     }),
@@ -104,26 +110,28 @@ const configSchema = z.object({
     }),
     // Logging
     logging: z.object({
-        level: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
-        format: z.enum(['json', 'simple']).default('json'),
-        filePath: z.string().default('./logs/app.log'),
-        maxSize: z.string().default('10m'),
+        level: z.enum(["error", "warn", "info", "debug"]).default("info"),
+        format: z.enum(["json", "simple"]).default("json"),
+        filePath: z.string().default("./logs/app.log"),
+        maxSize: z.string().default("10m"),
         maxFiles: z.coerce.number().default(5),
     }),
     // File Upload
     upload: z.object({
         maxFileSize: z.coerce.number().default(10485760), // 10MB
-        allowedFileTypes: z.array(z.string()).default(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']),
-        uploadPath: z.string().default('./uploads'),
+        allowedFileTypes: z
+            .array(z.string())
+            .default(["image/jpeg", "image/png", "image/webp", "application/pdf"]),
+        uploadPath: z.string().default("./uploads"),
     }),
     // Email Configuration
     email: z.object({
-        smtpHost: z.string().default('smtp.gmail.com'),
+        smtpHost: z.string().default("smtp.gmail.com"),
         smtpPort: z.coerce.number().default(587),
         smtpUser: z.string().optional(),
         smtpPass: z.string().optional(),
-        fromEmail: z.string().default('noreply@dese.ai'),
-        fromName: z.string().default('Dese EA Plan v5'),
+        fromEmail: z.string().default("noreply@dese.ai"),
+        fromName: z.string().default("Dese EA Plan v5"),
     }),
     // SMS Configuration (Twilio)
     sms: z.object({
@@ -182,11 +190,11 @@ const rawConfig = {
         },
     },
     monitoring: {
-        prometheus: process.env.PROMETHEUS_ENABLED === 'true',
-        grafana: process.env.GRAFANA_ENABLED === 'true',
-        loki: process.env.LOKI_ENABLED === 'true',
-        tempo: process.env.TEMPO_ENABLED === 'true',
-        openTelemetry: process.env.OPENTELEMETRY_ENABLED === 'true',
+        prometheus: process.env.PROMETHEUS_ENABLED === "true",
+        grafana: process.env.GRAFANA_ENABLED === "true",
+        loki: process.env.LOKI_ENABLED === "true",
+        tempo: process.env.TEMPO_ENABLED === "true",
+        openTelemetry: process.env.OPENTELEMETRY_ENABLED === "true",
     },
     kubernetes: {
         kubeconfigPath: process.env.KUBECONFIG_PATH,
@@ -195,22 +203,25 @@ const rawConfig = {
         helmRepoUrl: process.env.HELM_REPO_URL,
     },
     compliance: {
-        opa: process.env.OPA_ENABLED === 'true',
-        kyverno: process.env.KYVERNO_ENABLED === 'true',
-        networkPolicy: process.env.NETWORK_POLICY_ENABLED === 'true',
-        externalSecrets: process.env.EXTERNAL_SECRETS_ENABLED === 'true',
-        cosign: process.env.COSIGN_ENABLED === 'true',
-        trivy: process.env.TRIVY_ENABLED === 'true',
-        syft: process.env.SYFT_ENABLED === 'true',
+        opa: process.env.OPA_ENABLED === "true",
+        kyverno: process.env.KYVERNO_ENABLED === "true",
+        networkPolicy: process.env.NETWORK_POLICY_ENABLED === "true",
+        externalSecrets: process.env.EXTERNAL_SECRETS_ENABLED === "true",
+        cosign: process.env.COSIGN_ENABLED === "true",
+        trivy: process.env.TRIVY_ENABLED === "true",
+        syft: process.env.SYFT_ENABLED === "true",
     },
     seo: {
-        primaryKeywords: process.env.PRIMARY_KEYWORDS?.split(',') || ['en iyi havuz firması', 'havuz kime yaptırılır'],
-        targetRegion: process.env.TARGET_REGION || 'Türkiye',
+        primaryKeywords: process.env.PRIMARY_KEYWORDS?.split(",") || [
+            "en iyi havuz firması",
+            "havuz kime yaptırılır",
+        ],
+        targetRegion: process.env.TARGET_REGION || "Türkiye",
         targetDomainAuthority: process.env.TARGET_DOMAIN_AUTHORITY,
         targetCtrIncrease: process.env.TARGET_CTR_INCREASE,
     },
     content: {
-        eEatEnabled: process.env.E_E_A_T_ENABLED === 'true',
+        eEatEnabled: process.env.E_E_A_T_ENABLED === "true",
         qualityThreshold: process.env.CONTENT_QUALITY_THRESHOLD,
         landingPageTemplates: process.env.LANDING_PAGE_TEMPLATES,
     },
@@ -235,7 +246,12 @@ const rawConfig = {
     },
     upload: {
         maxFileSize: process.env.MAX_FILE_SIZE,
-        allowedFileTypes: process.env.ALLOWED_FILE_TYPES?.split(',') || ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+        allowedFileTypes: process.env.ALLOWED_FILE_TYPES?.split(",") || [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "application/pdf",
+        ],
         uploadPath: process.env.UPLOAD_PATH,
     },
     email: {

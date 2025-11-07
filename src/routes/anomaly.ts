@@ -10,7 +10,7 @@ import {
 } from "@/services/aiops/anomalyDetector.js";
 import { anomalyAlertService } from "@/services/aiops/anomalyAlertService.js";
 
-const router = Router();
+const router: Router = Router();
 
 const severityEnum = z.enum(["low", "medium", "high", "critical"]);
 

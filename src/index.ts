@@ -3,6 +3,7 @@ import express, {
   type Response,
   type NextFunction,
 } from "express";
+import type { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
@@ -36,7 +37,7 @@ import {
 import { auditMiddleware } from "@/middleware/audit.js";
 
 // Create Express app
-const app = express();
+const app: Application = express();
 
 app.use(
   helmet({
@@ -153,7 +154,7 @@ app.get("/health", async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
+      process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
     environment: config.nodeEnv,
     database: dbStatus ? "connected" : "disconnected",
     memory: {
@@ -219,11 +220,11 @@ setImmediate(() => {
 
 // Start server with database connection test
 const server = httpServer.listen(config.port, async () => {
-  logger.info(`🚀 Dese EA Plan v6.8.0 server started`, {
+  logger.info(`🚀 Dese EA Plan v6.8.1 server started`, {
     port: config.port,
     environment: config.nodeEnv,
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
+      process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
     domain: "cpt-optimization",
   });
 

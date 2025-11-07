@@ -4,7 +4,7 @@ import { contentGenerator } from '@/services/contentGenerator.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { contentLogger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const ContentGenerationSchema = z.object({
