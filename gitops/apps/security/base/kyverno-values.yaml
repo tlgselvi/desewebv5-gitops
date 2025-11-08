@@ -21,6 +21,7 @@ backgroundController:
 
 cleanupController:
   replicas: 1
+  createSelfSignedCert: true
   resources:
     requests:
       cpu: "20m"
