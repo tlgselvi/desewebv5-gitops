@@ -2,8 +2,28 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- security-base.yaml
-- kyverno-install.yaml
-- kyverno-policies.yaml
+  - crds/kyverno/kyverno.io_cleanuppolicies.yaml
+  - crds/kyverno/kyverno.io_clustercleanuppolicies.yaml
+  - crds/kyverno/kyverno.io_clusterpolicies.yaml
+  - crds/kyverno/kyverno.io_globalcontextentries.yaml
+  - crds/kyverno/kyverno.io_policies.yaml
+  - crds/kyverno/kyverno.io_policyexceptions.yaml
+  - crds/kyverno/kyverno.io_updaterequests.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_deletingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_generatingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_imagevalidatingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_mutatingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_namespaceddeletingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_namespacedimagevalidatingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_namespacedvalidatingpolicies.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_policyexceptions.yaml
+  - crds/policies.kyverno.io/policies.kyverno.io_validatingpolicies.yaml
+  - crds/policyreport/wgpolicyk8s.io_clusterpolicyreports.yaml
+  - crds/policyreport/wgpolicyk8s.io_policyreports.yaml
+  - crds/reports/reports.kyverno.io_clusterephemeralreports.yaml
+  - crds/reports/reports.kyverno.io_ephemeralreports.yaml
+  - security-base.yaml
+  - kyverno-install.yaml
+  - kyverno-policies.yaml
 
 namespace: kyverno
