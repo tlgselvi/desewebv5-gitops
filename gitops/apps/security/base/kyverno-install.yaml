@@ -54,7 +54,7 @@ spec:
         - name: kyverno
           image: ghcr.io/kyverno/kyverno:v1.11.5
           args:
-            - --webhooktimeout=15
+            - --webhookTimeout=15
           resources:
             requests:
               cpu: 50m
