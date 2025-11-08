@@ -32,12 +32,38 @@ spec:
             - /bin/sh
             - -c
             - |
-              npm install -g lighthouse
-              echo "SEO Observer started - Lighthouse available"
-              while true; do
-                echo "SEO Observer running - $(date)"
-                sleep 30
-              done
+              set -euo pipefail
+              mkdir -p /app
+              npm install -g lighthouse >/tmp/npm-install.log 2>&1
+              cat <<'EOF' >/app/server.mjs
+              import http from 'node:http';
+
+              const startedAt = Date.now();
+
+              const server = http.createServer((req, res) => {
+                if (req.url === '/health') {
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({
+                    status: 'ok',
+                    timestamp: new Date().toISOString(),
+                    uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000)
+                  }));
+                  return;
+                }
+
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                res.end(`SEO Observer running - ${new Date().toISOString()}`);
+              });
+
+              server.listen(8080, () => {
+                console.log('SEO Observer started - HTTP endpoint listening on port 8080');
+              });
+
+              setInterval(() => {
+                console.log(`SEO Observer heartbeat - ${new Date().toISOString()}`);
+              }, 30000);
+              EOF
+              node /app/server.mjs
           envFrom:
             - configMapRef:
                 name: seo-observer-config

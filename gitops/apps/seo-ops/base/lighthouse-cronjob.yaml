@@ -17,7 +17,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: lighthouse
-              image: ghcr.io/treosh/lighthouse-ci:0.11.1
+              image: docker.io/treosh/lighthouse-ci:0.11.1
               envFrom:
                 - configMapRef:
                     name: seo-observer-config
