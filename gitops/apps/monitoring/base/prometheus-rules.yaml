@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dese-self-healing-rules
+  namespace: monitoring
+spec:
+  groups:
+    - name: self-healing-monitoring
+      rules:
+        - alert: SelfHealingDeploymentUnhealthy
+          expr: kube_deployment_status_replica_unavailable{deployment="self-healing"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Self-healing deployment has unavailable replicas"
+            description: "Self-healing deployment has unavailable replicas for more than 5 minutes."
+

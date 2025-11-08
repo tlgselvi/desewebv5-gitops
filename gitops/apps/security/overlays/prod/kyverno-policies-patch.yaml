@@ -1,0 +1,18 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-safe-images
+spec:
+  validationFailureAction: enforce
+  rules:
+    - name: require-signed-images
+      match:
+        resources:
+          kinds:
+            - Pod
+      validate:
+        message: Container images must originate from approved registries.
+        pattern:
+          spec:
+            containers:
+              - image: "registry.gitlab.com/deseteam/*"

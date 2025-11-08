@@ -6,13 +6,3 @@ metadata:
     environment: production
     team: security
     cost-center: security
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: security-config
-  namespace: kyverno
-data:
-  environment: production
-  cluster: desewebv5
-  policy-mode: enforce

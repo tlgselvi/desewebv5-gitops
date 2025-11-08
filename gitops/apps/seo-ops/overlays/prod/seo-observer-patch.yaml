@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seo-observer
+  namespace: monitoring
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: seo-observer
+          envFrom:
+            - configMapRef:
+                name: seo-config

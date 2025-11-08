@@ -6,8 +6,8 @@ metadata:
 spec:
   description: Platform applications (monitoring, security, seo-ops)
   sourceRepos:
-    - 'https://github.com/desesonpro/gitops.git'
-    - 'https://github.com/desesonpro/*'
+    - 'https://github.com/tlgselvi/desewebv5-gitops.git'
+    - 'https://github.com/tlgselvi/*'
   destinations:
     - namespace: '*'
       server: '*'

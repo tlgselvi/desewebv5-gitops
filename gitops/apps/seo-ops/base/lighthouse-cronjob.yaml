@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: lighthouse-audit
+  namespace: monitoring
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: lighthouse-audit
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: lighthouse
+              image: ghcr.io/treosh/lighthouse-ci:0.11.1
+              envFrom:
+                - configMapRef:
+                    name: seo-observer-config
+              args:
+                - "lighthouse"
+                - "https://www.dese.com.tr"
+                - "--quiet"
+                - "--chrome-flags=--headless --no-sandbox"
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi

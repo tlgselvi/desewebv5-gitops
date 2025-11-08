@@ -95,3 +95,33 @@ spec:
             environment: "?*"
             team: "?*"
             cost-center: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-safe-images
+  annotations:
+    policies.kyverno.io/title: Require Safe Images
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Ensures workloads only pull container images from approved registries.
+spec:
+  validationFailureAction: audit
+  background: true
+  rules:
+    - name: require-approved-registries
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+      validate:
+        message: Container images must originate from approved registries.
+        pattern:
+          spec:
+            containers:
+              - image: "registry.gitlab.com/deseteam/*"
