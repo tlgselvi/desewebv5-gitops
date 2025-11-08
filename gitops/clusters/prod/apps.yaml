@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/desesonpro/gitops.git
+    repoURL: https://github.com/tlgselvi/desewebv5-gitops.git
     targetRevision: main
-    path: clusters/prod
+    path: gitops/clusters/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -39,9 +39,9 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/desesonpro/gitops.git
+    repoURL: https://github.com/tlgselvi/desewebv5-gitops.git
     targetRevision: main
-    path: apps/monitoring/overlays/prod
+    path: gitops/apps/monitoring/overlays/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -70,9 +70,9 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/desesonpro/gitops.git
+    repoURL: https://github.com/tlgselvi/desewebv5-gitops.git
     targetRevision: main
-    path: apps/security/overlays/prod
+    path: gitops/apps/security/overlays/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: kyverno
@@ -101,9 +101,9 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/desesonpro/gitops.git
+    repoURL: https://github.com/tlgselvi/desewebv5-gitops.git
     targetRevision: main
-    path: apps/seo-ops/overlays/prod
+    path: gitops/apps/seo-ops/overlays/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
