@@ -60,6 +60,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: KYVERNO_SERVICEACCOUNT_NAME
+              value: kyverno
+            - name: KYVERNO_DEPLOYMENT_NAME
+              value: kyverno
           resources:
             requests:
               cpu: 50m
