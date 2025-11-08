@@ -27,3 +27,6 @@ resources:
   - kyverno-policies.yaml
 
 namespace: kyverno
+
+commonAnnotations:
+  argocd.argoproj.io/sync-options: ServerSideApply=true
