@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: grafana
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: grafana-config
+                  key: GF_SECURITY_ADMIN_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi

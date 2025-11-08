@@ -6,12 +6,3 @@ metadata:
     environment: production
     team: platform
     cost-center: infrastructure
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: monitoring-config
-  namespace: monitoring
-data:
-  environment: production
-  cluster: desewebv5
