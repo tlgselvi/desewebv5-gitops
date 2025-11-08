@@ -55,6 +55,11 @@ spec:
           image: ghcr.io/kyverno/kyverno:v1.11.5
           args:
             - --webhookTimeout=15
+          env:
+            - name: KYVERNO_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           resources:
             requests:
               cpu: 50m
