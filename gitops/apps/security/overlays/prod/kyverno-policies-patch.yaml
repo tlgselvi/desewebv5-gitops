@@ -3,11 +3,11 @@ kind: ClusterPolicy
 metadata:
   name: require-safe-images
 spec:
-  validationFailureAction: audit
+  validationFailureAction: enforce
 ---
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: only-signed-images
 spec:
-  validationFailureAction: audit
+  validationFailureAction: enforce
