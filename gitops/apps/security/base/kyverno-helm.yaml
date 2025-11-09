@@ -74,8 +74,8 @@ metadata:
     helm.sh/chart: kyverno-3.5.2
 type: kubernetes.io/tls
 data:
-  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBeFg2QkwvdElzYlBZSzRxTityNElZaHhNeGYzS1I5czV0YWtraUgyQnFRclFZZnl1CklTRUhMYXZ2cExDd0FGNWN0TjlrSEVaVGNRWWJQSVR2MUdEVlRnMTRHSk9Ganhubi83YXZGbG43akN4SG8wbnAKRTVHcnJPNVhnR2ZUL1NNYU5Qa0hvaXl5QXNNbit6cEx1dWhPUUxhNlNhdTlndU5uRy95alkyNXQ5clF1VFpHUworaUZkcUdIaHZ3bWJITTQ4M0xMd3lkV0laVDBnNkp5L1pORWE5RzBwM0pNNnlBYTB1cnp1NGJJNWREUC81UE1CCjkvTWV6cFJHbE5UMFA2OTk4amVDTnZGUDNhdThyYUE0MmVOcFV2WkF6TDdVOElycUtHYWNZSThQOFJiMS9kUngKNzlvdXNyWjQyMVR0c2pxY3RXaTlIemJzeE9xRmg0UWZQTU5aQndJREFRQUJBb0lCQUJUaHd1UWhaRGJSNXNYMwowUHBWdElvM0p0RDZmRFJyMUNiR215UEpiWGZEdW5QWjVVbUFkZ05Zdmk2Q05pSGIyRjZSamtMRkZ0YUpDRUUyClp5dGtEN25BaDlYRloyWlJuV3UyMDcxL3h5NnprZUdNazVYcm5hVGIwS20xa0w4Zndvb2VXTFhIbHd6ZXVMQUMKSW5iQlVHRGNVVWN2M3dwalpBZ2NCdVNoRFFSOEtpcHF0WTBRa29vcUd5dWxWNUtBdzZzZ09hSnRHdEI4akJndQpEVmJGK1lyaGJPZDlmdGJ5ZW9JU2ZUVU1LOFNYbi90Z0tYcU1YZWJrSnJuWk8rc2djNEFQdU56RDJsVklxZjdGCmhaV2lId0tUdi81L1EyLzVzd3JHN0NJSW9pTWlKQkU1VUl4bWVSang5cmtwdFAvbHV6a0hNdzk0MVIwZmhlNnIKQ3NMOGFwa0NnWUVBNFJBSUJmczBQSWRDN0liZTYwSDRDUnJMUWVvbnEzeU5wcmx0dE05cDFIcFBYa3lDajNsNApUL2pnYWVmVGN1dDZab0xvZC9XRTdVdWlvVkp6b2ZMZ3o1SWVPZVMrcVVJVTlsWjFIdTNxWDl0MlNWK293OUljClYvYVRIQ0p1UTk5SkNYOHQ1UVRJZEZjRVpSVW1jZkZxT2lwOWd2aXdidTFXb2FRZkZDR0E2bjhDZ1lFQTRLUlcKVkd6WTNLN0xPMFlBYWw2czk0WnVEak5yMWdQOTU4VFJhRWRkL2FYemQwTER1TjREdWxFSk9xNXE2TGN2ZHZPYwptY0lVb0M5SWpRR0NRK1d2TTFwaC9YbFptcWJJYjF3QjRLd05qY1hLd1lqdW5SYkhrVHduTjk4Nm1JcS9SSzhSCnhOZS9PN05PQythSE56Z1lsaWxmVmxtN3BtMForWDQralFSci9Ya0NnWUFlbllLcDVhRVdkc1BvenZQMkJyUkoKOE1ZamdrbkJMeUZKdzhHanJlOVVnd3JXNWd1QW51SjU1bjRJaWd1ZWYxL1lJQWlsZ05XRFBoMnlXamYybU1aeQpGZ3RjanJ4TTQvdGNBeWpOZTBtOW5tbjUwelJ1NXQ4S0xEV1l4eW8rdTFvQkc3YlBoNVlKRldrNG91Ym02eE1yCk5HcDhiWDM2cVBoMjVvOS91b3NCMndLQmdRQ29TSlBmaFBia1F4RStJdytXbjd3RlpiQTJkVEQ0VDE4NjY4ZFAKemY3TVVEQldEQzdnNDNoNWI5RnhJMDQxYlYxaVI5YnRuR1dsSmlhOGN2L3A2enRYUmdNWVJucm9qcjZpSlpQRwpnajFaRW0zMGs2YmxDVGFSUnpXOTlqMUlIdEJ3SEpJOEdyOUljdWNwcFJWd09WYTV6dDU3cXBjWGNxMjlxR1FsCmNjV1FTUUtCZ1FESzc0TGg4cm5GNTNLS1F1YkVWNnFlR1l1cnc0MVRubEpJRHJvb1NlSkRZcTF6TmwvL3Y0ZksKbFI3Zm03bG5xTEFiMlpERXFzYndQYzhVeFZPQzR6Zmd3WkhkdVJ6bFlxblBXZUdsTXU4cGxuOUt4MWo0YThOeApiMnUzTGhuekRLenllWjhwb0Z4WEpnTDh6eVpub0ZMeHYwbnluZmJadklGTjZNd3ZsamlvYXc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIRENDQWdTZ0F3SUJBZ0lSQUlBVlZYc04rT3lBY1JjVHRiTEwrdUl3RFFZSktvWklodmNOQVFFTEJRQXcKR0RFV01CUUdBMVVFQXd3TktpNXJlWFpsY201dkxuTjJZekFlRncweU5URXhNRGd5TXpNNE1qaGFGdzB5T0RBNApNamd5TXpNNE1qaGFNQmd4RmpBVUJnTlZCQU1NRFNvdWEzbDJaWEp1Ynk1emRtTXdnZ0VpTUEwR0NTcUdTSWIzCkRRRUJBUVVBQTRJQkR3QXdnZ0VLQW9JQkFRREZmb0V2KzBpeHM5Z3JpbzM2dmdoaUhFekYvY3BIMnptMXFTU0kKZllHcEN0QmgvSzRoSVFjdHErK2tzTEFBWGx5MDMyUWNSbE54QmhzOGhPL1VZTlZPRFhnWWs0V1BHZWYvdHE4VwpXZnVNTEVlalNla1RrYXVzN2xlQVo5UDlJeG8wK1FlaUxMSUN3eWY3T2t1NjZFNUF0cnBKcTcyQzQyY2IvS05qCmJtMzJ0QzVOa1pMNklWMm9ZZUcvQ1pzY3pqemNzdkRKMVlobFBTRG9uTDlrMFJyMGJTbmNrenJJQnJTNnZPN2gKc2psME0vL2s4d0gzOHg3T2xFYVUxUFEvcjMzeU40STI4VS9kcTd5dG9Ealo0MmxTOWtETXZ0VHdpdW9vWnB4Zwpqdy94RnZYOTFISHYyaTZ5dG5qYlZPMnlPcHkxYUwwZk51ekU2b1dIaEI4OHcxa0hBZ01CQUFHallUQmZNQTRHCkExVWREd0VCL3dRRUF3SUNwREFkQmdOVkhTVUVGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WUQKVlIwVEFRSC9CQVV3QXdFQi96QWRCZ05WSFE0RUZnUVVnZ1NQTXcxdVFLUWUwKzJhSjZRaHlhTWE0bGt3RFFZSgpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFCWnJTNVNRUVR0ZWZnSUFEZFVwR2Q0SmF6MlRwQnIxOFZBcEtlR1IvWXhjCmc1d0YxeGNaN2VwV1RoTHhoaVA3UE10eVRKVnVldWxZd0pwYWd1VGN3ejdFRks5a3g4d3NKZ0ZkaktGdmVoMW0KeDBPYXJ0OWd3TzRzajdkYm45V21Nc2U5aU0xazgwSW5kaUozeEx2Q28zcUtad2FnOW8yclk0NGhITVZtQW95eApPMkZOTWI1ekthM01UTFl1Ri9tMGRST0xtMVFwNlpzTXZac0crZVRtMnQvaGR3YzB4YWdZRk04dzF1bHZpTnNuCkdaTmxwLzRnMmtiQ1dRTTUwMSt3ZjBYUEFkelpGR1ZVbmI4ZEtpQW1HZnRiRnlld2wyMHI5MnBzaGRFZElZelUKbFRwUkdDdTFBbTdJMjlLenludjgzUGtDMmRyUUwza0EzbFNVampjcVU1dz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBeGJWdGpFRHBMWE5nZ2dqc2VvTFhodTJ6NC9tbFhZK1BBZjNrbXVsOTRPZEJnOGtlCmcvaXlxL2NVUkxLcFhVTC9oTGJWWTN0TVpKamwvanVhWWJhWG81emZJY0xONTZYblFqMlRnR25PWnoybGxQaTEKbUFjbjBtTFRvNHpXU2hOQU9GTysrWWxtUmZSREowYUpidXpNMmtYR3dsUEhWQ2dVTzN4OVpVVDFWdVlPNERnOApqUFlGbUpUOEh6YWsxY0RTbWZIZlVHSUVnTHNZQVk1Nit6L0hCMVFodjdWbitYd3JjZDZUNjB2Smt5c1g2Qng0CjVRZC8xS3JmcEpTWVVZYXFxWEp6MmZDZHFSY2ZuNDdaZVdRWVlNSnFHU1pQTEEwUDhsY3ZieEYwaUI2UkprM0QKUU9yckFmWHk5Tmt5T1NtQUlBQ0l1dWdGMnY5TDVlYUd4Yit6VVFJREFRQUJBb0lCQUdGNE85MHc1U1EwcE9nRwpxVHNPeFYydVU0ajVleGFnbjBLK25sVG05dG1KZVFtVS9mZlhCSkwxK1NhVEpCOG4yQnZnSFZ4eG5XeGMyc3BYCkxSbXVNSjBIU2hQMVc1aXYrRTUyV0FFdmFJUUtadGNHTkZTU2RvWG9sZWtrRmtNbnNYbnpnNHUzT3RZVEFZWmIKNW9acXRPV0pEOStlK1A2YTBicXYrWXdURHBiN2Ixb3FvQ09YRTkvMCtRZnpoVFJYMmdiNzVTRXlhTk54cFcwQQplL2RUUW9JcXhsQlpuWURzb3h4UGcrUTB2cEhIWDh5ajdOOEZNZ1V0VUlSc2thNjVvdTBaY3dLMmpuL1ZYVVZBCkxVblZLVGJJSG5lZ2lXNGFXcVV4YzJ3TnpzcjliaXFXMGZvRjlhdzhFVlZaalJOWlRMYURSUFdYMWI0NmpqeWMKN0c1THI1OENnWUVBMXNLS0xOV0wwK2svSkhIcHVDejZsYXFsVFJtbjdrN0ZNaUZBWmh5NTVOWFZrTmVOa2NPRgpYSzQyNlA5aHBjTHJMUlV2dTh5TWR2c2s0bWQ3ZjVxSXBJcFgzdmRNb1didGpEZkxUSFFkbVlYRE5wVTBVTUh4CnFPRGE5Y3NnNnZoYlc2TWxBKzNCZlJMM003TzFreE5MdWdib3orTlhYcm1NbXhMWWxEeXQzck1DZ1lFQTY2eXAKUlBDaHRxQjM1S3dBS21Vd0J5THJvc0xRejR3eEttK1hoUDJHZTZ4cFNyMlJiYnluLzJUME1hTUd4OXJOMWdaawpwcG9ENWdVRUhLQU1YZWM5TlNVU05LbWtyMWJhK0tJaXZ1OEwrU0lkUjhMNXd5QjFCSk9YRXBRQ0FuUTFEd00yCmQxV2FUTmtYeitidnZuaERLeXlHWFRpbTFPZEh2QVhVZ2JGdEorc0NnWUVBdjlaN2MxMDJVSTkwTmV3RHFOK1UKNEFqVkxEQVUwRTFRM1Z6U2wrUmxNY0xKeVY2ak9XZjhRelBrSFBHem1reXBvMVhmazlRK1RUSStXbmV4MitTQQoxdW8xWUJoc1BXa2lIVFRoeDJPWjVUK1ZoN1owU3dkVUJWVUdnclYyckM0NS9YdVlYeEFNM05zS013YisxV2hSCkp0VnhOZktRWXk5QUtHNEhSVE9HNVAwQ2dZQXBLOU95V0h0WHhUYk11d09ZWkc3OGdDdzhGZDZXczM0UFZNbGEKa1ZQQ0hUK1RzQVJNOEcxRTM2VU5XdGFmYVdrV0g2M0xzUkpIUjg4TkZTU3o3dWF4ZHhWMEg4TEdZdDBFSEljSApaZ2xvYjM1QUFCN1Q2TUtvbHdRSVdkVDBDc3NPSVZpTmhtWGJVUDJvODBZa3R5dTh5aDE3QVorYmgvL3ZKL0dVCjZxTVFHd0tCZ1FEVHdOWE44Z1lNSUczQWkvRC9SdHR3cE01bEdIaFNWbEpteGlGMWlOTkwvOUZNWUdsUC9GYU8KZXRVN1A0Z2NpekRJWkltVjh4bGFnUzNsRUZoa0RBc2t5WDA0b2tEL3p6U1lJeGFjaE1aU0tMLzlIcUxDUlg1Lwp1VXVOOWhKcUF5alA5MU4zTWN3bUxBK1VDUzNlMENSR3ZSVkxFa29sb1FmaGpMWm0xRjFsOVE9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIRENDQWdTZ0F3SUJBZ0lSQUpDMUJES0V6RWVtTWV6YzlTbmk2Nzh3RFFZSktvWklodmNOQVFFTEJRQXcKR0RFV01CUUdBMVVFQXd3TktpNXJlWFpsY201dkxuTjJZekFlRncweU5URXhNRGt4TkRNeE16bGFGdzB5T0RBNApNamt4TkRNeE16bGFNQmd4RmpBVUJnTlZCQU1NRFNvdWEzbDJaWEp1Ynk1emRtTXdnZ0VpTUEwR0NTcUdTSWIzCkRRRUJBUVVBQTRJQkR3QXdnZ0VLQW9JQkFRREZ0VzJNUU9rdGMyQ0NDT3g2Z3RlRzdiUGorYVZkajQ4Qi9lU2EKNlgzZzUwR0R5UjZEK0xLcjl4UkVzcWxkUXYrRXR0VmplMHhrbU9YK081cGh0cGVqbk44aHdzM25wZWRDUFpPQQphYzVuUGFXVStMV1lCeWZTWXRPampOWktFMEE0VTc3NWlXWkY5RU1uUm9sdTdNemFSY2JDVThkVUtCUTdmSDFsClJQVlc1ZzdnT0R5TTlnV1lsUHdmTnFUVndOS1o4ZDlRWWdTQXV4Z0JqbnI3UDhjSFZDRy90V2Y1ZkN0eDNwUHIKUzhtVEt4Zm9ISGpsQjMvVXF0K2tsSmhSaHFxcGNuUFo4SjJwRngrZmp0bDVaQmhnd21vWkprOHNEUS95Vnk5dgpFWFNJSHBFbVRjTkE2dXNCOWZMMDJUSTVLWUFnQUlpNjZBWGEvMHZsNW9iRnY3TlJBZ01CQUFHallUQmZNQTRHCkExVWREd0VCL3dRRUF3SUNwREFkQmdOVkhTVUVGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WUQKVlIwVEFRSC9CQVV3QXdFQi96QWRCZ05WSFE0RUZnUVVoZ0NMTCs4QkhYNG00MVAwdmpHa0g5TWNpRmN3RFFZSgpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFIeHJrbk80aUFQaTU2aDAvUC9QbXkxN1R4UkdVSmlHbEpXRnVMaUo0WHFUCkRTZ3dHdGZUdytCNEh3STJ2NUltSUE1WHczRlQzK1NxMXhmT2cvNGxhY2FFNUJjSkJvOEszajB5TmJnMmt0TzcKNzJOM042MXdDaE5TQ2I2blVLZlFmZXFoamhJZU1TZU40MVRqd1BadzI0RkdBVVBhemQ4OTZKcllqUjR2OFF5Mgpnak5kd0s0bmhzcnJGbTYzRCs4OXdLTFZsZEEyODRNRU5XU1dDalUxa3lUN0E2N2xMYUdDUW54cnVGZ3gzM0pTCmExQmkvaXMzZzBWNU5tUHp5cDYzdlhaTzh4OEtQdUpOVmhXc3JjOGUvNTBnK0Fkb3pSc2ZqRkxzcG50YjNBWlgKWDZ6cFJpcVE1SXdhd0IzSldoRGlhY3EydGRwei9LV2tXc2dxcW81aFI2MD0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
 ---
 # Source: kyverno/templates/cleanup-controller/secret.yaml
 apiVersion: v1
@@ -94,8 +94,8 @@ metadata:
     self-signed-cert: "true"
 type: kubernetes.io/tls
 data:
-  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBOFdwaFlSVzBhaFExK2hLajFFNFNmV01NRGNyc0xJc0tQNTkyYVB5bzRJSVA0NVp2CjFDYldZRFBYSlFoYUJMNUpUak1PSldKdmp3bkQwTng2eUxnN29MdEE0RGppby92dkduZmtQRmdyMjlDODJFQ3MKVWVySHV3UnVpZEYxb1c2VXYzU2FBZThqdmF4d01QTkN2TjF6WDNicXdZWGpkQ2Z2cEtSSnV5TkN6em1MQjErMgpqZTVsVkdmQ0V3UUdOU25leVZlb3d5OUQ5WFFrbWo3SDY4d0liVlJwUXZ2V2VFcWdMY2ROY1lodHE0ZW1UZ0ZwCnM4dGlqMU01Nmt1Z3BIME1EZmtVaS9IbU84VjEvZW5MbU1ucTdQUE8zUUE1dmtZcmJpY1VOaEQ1NTkwNFJXVngKRG1BakxwTm5hOExzV3hxbWQxNWhVTTdyc1Nqdlc3YTVaeGJGaFFJREFRQUJBb0lCQUJiMFpnajhydGh0VG9xVwpMaVM0UGJMVmNhWjRGb2ZQdXF3OUJkM0t0R1lRaCtFOGd5cVpmTVhOK0JXSjIwRmJOSTR1ZFpoaGFUa2hGUkR0CmZmRks3MFNEdVpINFpyaHY4cGJDTXAzNFJrZFM3RG5sd0Z6VHBhVW5NVG1DaEp4U2J1dGJjMjllcFRmYVJ4cW8KYnI2VmtleFFXdGNHMjQ5R1l0ZDFWWnRwS1dlWm9sSzBnRVlTRis5cVJwamRDdmdlSVhjcFhXbkJkMElEbk9wbQpRTGdYWkYxQUI3R2dKelgzQ2xDMEtvYW9sKzJPUUF2MEZ1ay8zK3FmTGxpdE1kVzFpdWtrZ3ZNTEpSUFZSVGEvCjlyRTJhbnZBYlQyODZyYkxXWUFiK0pQS2hnLzlvYnVoT3dWN2VPQ3JubVhiZlcwcTdCdExzSFVBbEp1bkloa1QKd2Zhd0h5RUNnWUVBK3hEbFY4dXZCdkhFVTJOclpmdy9qMFNSNzkzZ0VKRVdNWFVEaGlxMUpGT0lHRDlBKzQ5KwpyZHJkSEcyMVAxdlZOUVpzeVQ3TDlyUXJqUGZqTFNrQmFLdVVLOXZQQ1VyWCtsaGlzR3RaWWJVSVBMV0hJZFRJCm5UcCtZUjhFZEdCR0RVYkx0bWRuNXdDZDZZa1N3dll4MU4wYTNleGRjS0xRVEw0WEdQL2ZpUlVDZ1lFQTlpanUKOWVwanhFbXhkaE1zR0Z2ZklnekNhWUFtb2RINlh2RnJyK3ZFeFUzazJDL3JZUk8zZExUMDhnWUVrL1lzUkFwWAp4UnZCdXYvN0NxNHd1VE9vSlN5UFY2cnZmRXd0R0k2VGptZDJnVjF1YjhoYzFNdnQrOVJwbHk5UzhRVGhvOE9CCmtTRnA1S0Qza0VVL1hFbXR0aXZ5alRQM0o5c3drZ0tXWnU2b2hyRUNnWUVBOURKNjMrbzlVNFBVY1VkQ0x2QXEKNGk3UHczOExjUkd0aEcxTUFET0ovTXRDbEZMeDRieXdlbWxtcDBBT0NwSkh6a3R4aEV5UUZtVW45dlVsQWNmZwpsdTVNTUZ5Y0EyM0lwTGRUUmtVanF1VnFIYUp5elhVcHE4UTVLRDRERnk2TTlGem54NExNak9NTXRSbWVKZ05RCmRMcWFaMEIvb2c2NmkrcFlqUGhUZEFFQ2dZRUFxR1lFWTlOL2dPN3hLbGVmV09LdzJUaGxYNHM5NG9JbGlBSWMKcTNMZFlDVVRveG5WS3NvMFBQRDJpUU80NmdnRTdGOHZBRGNtNTJqck1ybEx0OGN4Qm8xZldwZ2owYUxEVHdOcQp5b2JaT1ZMVGxFRTcwSS9hTk9keGZPM3hEZFZMRDU5VjZoVXp2aWFvZGRnSnFuYjFFYVVxLzVKSFNNclloV3FqCnZiTVRNMkVDZ1lCdUtheE0vWTczb3N0eFFrdzBZYXR4QUovRGhpanlaTGhvV3BZWExnRkVXdkVYbkUvNnZNTWQKMSt1d25GZXZJbzlyUEJCTlQvVzkxN3IwMS9SWjlMNWl1OW1sQWE0TXlEVEYwL3N4VzJRTmRUMGFnS3RlMlNGbQpvUC9zd3FmUFZPWjc5ejZ1Q0REVlZJU211QklReDN1NlJObU9CSFVlQy9MRVFBNENCMXFBRHc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURhRENDQWxDZ0F3SUJBZ0lRWEFEZUgvN3N2VTlNTGlJVGQzcDlLekFOQmdrcWhraUc5dzBCQVFzRkFEQVkKTVJZd0ZBWURWUVFEREEwcUxtdDVkbVZ5Ym04dWMzWmpNQjRYRFRJMU1URXdPREl6TXpneU9Gb1hEVEk0TURneQpPREl6TXpneU9Gb3dNVEV2TUMwR0ExVUVBeE1tYTNsMlpYSnVieTFqYkdWaGJuVndMV052Ym5SeWIyeHNaWEl1CmEzbDJaWEp1Ynk1emRtTXdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFEeGFtRmgKRmJScUZEWDZFcVBVVGhKOVl3d055dXdzaXdvL24zWm8vS2pnZ2cvamxtL1VKdFpnTTljbENGb0V2a2xPTXc0bApZbStQQ2NQUTNIckl1RHVndTBEZ09PS2orKzhhZCtROFdDdmIwTHpZUUt4UjZzZTdCRzZKMFhXaGJwUy9kSm9CCjd5TzlySEF3ODBLODNYTmZkdXJCaGVOMEorK2twRW03STBMUE9Zc0hYN2FON21WVVo4SVRCQVkxS2Q3SlY2akQKTDBQMWRDU2FQc2ZyekFodFZHbEMrOVo0U3FBdHgwMXhpRzJyaDZaT0FXbXp5MktQVXpucVM2Q2tmUXdOK1JTTAo4ZVk3eFhYOTZjdVl5ZXJzODg3ZEFEbStSaXR1SnhRMkVQbm4zVGhGWlhFT1lDTXVrMmRyd3V4YkdxWjNYbUZRCnp1dXhLTzlidHJsbkZzV0ZBZ01CQUFHamdaUXdnWkV3RGdZRFZSMFBBUUgvQkFRREFnV2dNQjBHQTFVZEpRUVcKTUJRR0NDc0dBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQU1CZ05WSFJNQkFmOEVBakFBTUI4R0ExVWRJd1FZTUJhQQpGSUlFanpNTmJrQ2tIdFB0bWlla0ljbWpHdUpaTURFR0ExVWRFUVFxTUNpQ0ptdDVkbVZ5Ym04dFkyeGxZVzUxCmNDMWpiMjUwY205c2JHVnlMbXQ1ZG1WeWJtOHVjM1pqTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFCL1U0bWYKekZodk9uSTlwU205R1UrODJYSG5HWlB6WjFwUDg4a1VNTlFnVG5Va2lPYWVWQWhROHBHMXJxSmxJWjZsa2grKwpxRTdITjA4VmdLV0JQaXIwb1Vmc2I3bU9pM2grcFhJSHVSQ2wvdHQ3ZU5paVBsMjhrMEdkZE1ZZ0RuNG5BSER3Cjl5UzNka1UrMmxSdGUyR1Y5dzhNRTZ6ZDlGTDNzM1FYYjBHcWJucTFHWEFoMDhDZFpPTStta0ZYZk12Nzd6UDUKSkhxcWpvdmdhY2lNQk4yWTFtY003QUh1cmlldWJ4WGtEZDJNSHIxOGJaMWxybGQ3Z0pGbVRFTHFna1RHZlRxVQoxZlVBUDJNU2xwTEE3V012cWlITnFNVFZQemp6SUk4U0pEWUpzVmhvQXU3Um42a1ZpMnk4Zk5RdVIyUnd4KzJJCmgwQkJzeVVqZmxtSVQ3RUEKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb0FJQkFBS0NBUUVBcExNTkZtWi8zZE0yWnJXQUdEbzVMS25lUmUrTFpodkRrRU9zdUNIK1Bick5NU1ZMClRQcEJwZmM5WVNHYWh5aDNERWYrNVpSZ0hKU0EyUE80Qkg2K2tkN1RwWExwT05STkxCM2RCTjFKOHFFNnZveWUKQ0l0aHVoODJhWFlpVnN5ajVRR01ZY3U2OGV3RFprc2R0dGt1YnBvMnJyNzdCZTJFcGpBSFdFV21hbnkrUmtoLwphSHlicWhKM0w0U1ZwSWVvWmhCR09vRXNxc3hWa3ZXWFpZeGFlWS84RlJzOXpZTWRVdmtwOXRXd016UldGOWRECmNhTmhxZUQ0ekJWQm5MMjBEck01NWEvc3NWZUYzTFhQamVvSzdnR3kxN0I0QmV2Zk9pNUlKcjB1ZUtzUGY4eVIKVGFRQjc1OXpvL1R6T0hNa0hMaExyM09lTW5saTZXa3N5TW9SQlFJREFRQUJBb0gvYng4aGlVSXNIZkV1bHhUbgpQYVpqTTZUSnpyNE9MQzZ5b0lqVGpUT28ybFdoanJ3Tm4yK0FnMFRSYTRLSFJKZ2pMUlJ2SkRBc3krK0pleDM5CjFWRXk2b2ZmeVBZeHRGSTUwUFFnTkFTditseFNSajR2MU1Ba0w2MWJFYnNEL1drTUVRUU1GR3MwazJaSXIvRFMKUjY5YlEzbG4xWWZaU0tzQlIzZWIxVXNvOUEvOXM0TkxpM2hGN1dxMC8vaHhsSHdmYUtjODlQNzkzZ3JRN1MwRgpSeDdxTEQvR3BVNXQwcDVLOW1oVlRwOURScElDQTB4eGt0d2YyQW04d01MVC9JR2RtOEhkUi9TRHh1MlZ6Q2VPCndvR3p4TzNUdGJRck14TVhGNnN4aGZ4T00rLzJ3LzFOK0N2MDZTYlpmaXJrV2IvQXdBOW9oME5VQmtYQ0N6Q04KcEwyaEFvR0JBTStGV2R3L25qZFAvVVlPNUt3VEdtMk81bE5Ia2lKM2tyelBqb3NYUVRFdjFWZ2R1WUJNUDk2VwozT2xNRE13ZTZTd200SnZkM3J5aTdaTGhmT1lESGRhY3orSTkzTEVFZDNLUm52dWlPN3QzSXNJVGQxTnFCUnkzClR6QWNCRFdoYUlaeTZiV2hzb24wazdZTmhFRVZGbzZ1Y2lkbDJNMExzWHE5aEU5bzljcE5Bb0dCQU1zc3lqUHEKRERMMGVzWTBoZzhJTkpVMEo1dzc3VG1UUWZ6VCtURjBEcXV3ZUFVNk5oWGlQeU56ZUZIYWU4c0kxbEhQVnhWSwpmVWtRSFNrbTdqb1hBZ1VqbVp1NXhxZ1FQTUp3T0wrTnBpbnpkT0JpbGp6RjZNaVozcDU2VlNmOVltSktjQ3VECkhoZmdxcThXc2lneVFVcTh6QjNMRnFqcGlERGp0SE1QdDAyWkFvR0FkNzF6TDBIS0VoSm1pdUVYRXk3bXBlYTUKZ2I0ZlZTSDNtbGlNNERibjEvREl3bEpNY2ZvTk5HdUtSbGNxWHpGS3k3NFhCZmpNaDczZkpVeFVuQWVhVlBZZwpnV08ranFtTUhxQmx3cjVHaHhIa0RXWGNDVlo0WXF4bTFkU2tuU2xvUFlQYTFJSGJtZngwcXF3NzdxMnpXVnJRCjVXaS80dmhuVFBKRGdPcUlRRlVDZ1lBZGxPbmo0U0hoa1dNRzFNTG9FV1BHalk5dTJmTFNQVFNRWVRTWkZMTEcKSUsxNDVWN1dsTmhvaXZscndZbmdwK3E4Z3BuRlNkRXdBQjZlelVKR1J1OU9YRDZUUTlzK3dRNTNxT3M2U0o5Mgo0REdXTWdSNTJMN3A1aTFabWFvb1ptWWF0WWZiYmYzRnNEcHB2NzQweUF4bG0xT0V5dnNEb096cFlWMzJtc1V2CmtRS0JnQ01pVG4yS25CU2ZwdmpPdDBKaEdpd29KREJ2M3hOdW9qT2ZEWFhlZVBOTW1TcmtsOWRWdnpoL0tETnMKMkpzWDN4UjE4Y2RJby9wMlBwamdkNC9JSDJWU29yOE9ZK1BScUFmTG9hMmR6bnNyKzkxZ3E1MHNHM3plZ3FPbQp5UndBYkg5M2Y5MXlsd2MzaEdOTDluTkhndlZLbXJBeEZUdFlqRnZ3VlBkTDJBY0sKLS0tLS1FTkQgUlNBIFBSSVZBVEUgS0VZLS0tLS0K
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURhVENDQWxHZ0F3SUJBZ0lSQUwvWUFuN3BaYlhibVhtb2lmSEF4OVV3RFFZSktvWklodmNOQVFFTEJRQXcKR0RFV01CUUdBMVVFQXd3TktpNXJlWFpsY201dkxuTjJZekFlRncweU5URXhNRGt4TkRNeE16bGFGdzB5T0RBNApNamt4TkRNeE16bGFNREV4THpBdEJnTlZCQU1USm10NWRtVnlibTh0WTJ4bFlXNTFjQzFqYjI1MGNtOXNiR1Z5CkxtdDVkbVZ5Ym04dWMzWmpNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXBMTU4KRm1aLzNkTTJacldBR0RvNUxLbmVSZStMWmh2RGtFT3N1Q0grUGJyTk1TVkxUUHBCcGZjOVlTR2FoeWgzREVmKwo1WlJnSEpTQTJQTzRCSDYra2Q3VHBYTHBPTlJOTEIzZEJOMUo4cUU2dm95ZUNJdGh1aDgyYVhZaVZzeWo1UUdNClljdTY4ZXdEWmtzZHR0a3VicG8ycnI3N0JlMkVwakFIV0VXbWFueStSa2gvYUh5YnFoSjNMNFNWcEllb1poQkcKT29Fc3FzeFZrdldYWll4YWVZLzhGUnM5ellNZFV2a3A5dFd3TXpSV0Y5ZERjYU5ocWVENHpCVkJuTDIwRHJNNQo1YS9zc1ZlRjNMWFBqZW9LN2dHeTE3QjRCZXZmT2k1SUpyMHVlS3NQZjh5UlRhUUI3NTl6by9Uek9ITWtITGhMCnIzT2VNbmxpNldrc3lNb1JCUUlEQVFBQm80R1VNSUdSTUE0R0ExVWREd0VCL3dRRUF3SUZvREFkQmdOVkhTVUUKRmpBVUJnZ3JCZ0VGQlFjREFRWUlLd1lCQlFVSEF3SXdEQVlEVlIwVEFRSC9CQUl3QURBZkJnTlZIU01FR0RBVwpnQlNHQUlzdjd3RWRmaWJqVS9TK01hUWYweHlJVnpBeEJnTlZIUkVFS2pBb2dpWnJlWFpsY201dkxXTnNaV0Z1CmRYQXRZMjl1ZEhKdmJHeGxjaTVyZVhabGNtNXZMbk4yWXpBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQWhCVjYKK0RqeFZSV3pONnBZVy9sOUJPeVovTDNQT1NMSEJqTE9oYUxXc3ZadnA1WVJSaTl0MDE3WlVpMHRkdmlJNiswRQordHFicDluRHJLcXM0SndZM3BnQjk0VWQwczJPTUdiWUloVFFvY2VvOFhWYU5zU0lGVXVtajBKQ1N0MTRRUkpUCnAzWEFNWEpNSEFaTFUvYlRyZU1TWVRiVjJscW4wMzJiVEVCMSsxN1MvWU44SnZVTUtCSFIvRkhkeEYvMTJpdHgKVlBtamZWRVo4V0lBc0llUFRKTENLUzNBeUN2Qm5JbEJCTlNIUXZmYWJSN2I3K2poMDhVU1Z1Q2h1Y09yQWR1dAplbDVQWFhjYnVDVFpxbThVcTZKdC8vd1d4UHIyVk1kOUxEdlphNjVkS0VNOEl5Rm51OXZoWFZkV1pzZmVpTTFaCi9NZ0YzVXArZzh1c2hjd0xzdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
 ---
 # Source: kyverno/templates/config/configmap.yaml
 apiVersion: v1
@@ -58911,11 +58911,11 @@ spec:
             
           resources:
             limits:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 80m
+              memory: 192Mi
             requests:
-              cpu: 30m
-              memory: 128Mi
+              cpu: 20m
+              memory: 96Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -59088,11 +59088,11 @@ spec:
                 fieldPath: metadata.namespace
           resources:
             limits:
-              cpu: 80m
-              memory: 128Mi
+              cpu: 60m
+              memory: 120Mi
             requests:
-              cpu: 20m
-              memory: 64Mi
+              cpu: 15m
+              memory: 60Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -59208,11 +59208,11 @@ spec:
             value: kyverno-cleanup-controller
           resources:
             limits:
-              cpu: 80m
-              memory: 128Mi
+              cpu: 50m
+              memory: 120Mi
             requests:
-              cpu: 20m
-              memory: 64Mi
+              cpu: 10m
+              memory: 60Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -59361,11 +59361,11 @@ spec:
             value: /.sigstore
           resources:
             limits:
-              cpu: 80m
-              memory: 128Mi
+              cpu: 50m
+              memory: 120Mi
             requests:
-              cpu: 20m
-              memory: 64Mi
+              cpu: 10m
+              memory: 60Mi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -59464,6 +59464,236 @@ subjects:
   - kind: ServiceAccount
     name: kyverno-migrate-resources
     namespace: kyverno
+---
+# Source: kyverno/templates/tests/admission-controller-metrics.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-admission-controller-metrics
+  namespace: kyverno
+  labels:
+    app.kubernetes.io/component: test
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.5.2
+    helm.sh/chart: kyverno-3.5.2
+  annotations:
+    helm.sh/hook: test
+spec:
+  automountServiceAccountToken: true
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: busybox:1.35
+      imagePullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      command:
+        - /bin/sh
+        - -c
+        - sleep 20 ; wget -O- -S --no-check-certificate http://kyverno-svc-metrics.kyverno:8000/metrics
+---
+# Source: kyverno/templates/tests/cleanup-controller-liveness.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-cleanup-controller-liveness
+  namespace: kyverno
+  labels:
+    app.kubernetes.io/component: test
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.5.2
+    helm.sh/chart: kyverno-3.5.2
+  annotations:
+    helm.sh/hook: test
+spec:
+  automountServiceAccountToken: true
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: busybox:1.35
+      imagePullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      command:
+        - /bin/sh
+        - -c
+        - sleep 20 ; wget -O- -S --no-check-certificate https://kyverno-cleanup-controller.kyverno:443/health/liveness
+---
+# Source: kyverno/templates/tests/cleanup-controller-metrics.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-cleanup-controller-metrics
+  namespace: kyverno
+  labels:
+    app.kubernetes.io/component: test
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.5.2
+    helm.sh/chart: kyverno-3.5.2
+  annotations:
+    helm.sh/hook: test
+spec:
+  automountServiceAccountToken: true
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: busybox:1.35
+      imagePullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      command:
+        - /bin/sh
+        - -c
+        - sleep 20 ; wget -O- -S --no-check-certificate http://kyverno-cleanup-controller-metrics.kyverno:8000/metrics
+---
+# Source: kyverno/templates/tests/cleanup-controller-readiness.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-cleanup-controller-readiness
+  namespace: kyverno
+  labels:
+    app.kubernetes.io/component: test
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.5.2
+    helm.sh/chart: kyverno-3.5.2
+  annotations:
+    helm.sh/hook: test
+spec:
+  automountServiceAccountToken: true
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: busybox:1.35
+      imagePullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      command:
+        - /bin/sh
+        - -c
+        - sleep 20 ; wget -O- -S --no-check-certificate https://kyverno-cleanup-controller.kyverno:443/health/readiness
+---
+# Source: kyverno/templates/tests/reports-controller-metrics.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kyverno-reports-controller-metrics
+  namespace: kyverno
+  labels:
+    app.kubernetes.io/component: test
+    app.kubernetes.io/instance: kyverno
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kyverno
+    app.kubernetes.io/version: 3.5.2
+    helm.sh/chart: kyverno-3.5.2
+  annotations:
+    helm.sh/hook: test
+spec:
+  automountServiceAccountToken: true
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: busybox:1.35
+      imagePullPolicy: IfNotPresent
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+        requests:
+          cpu: 10m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        privileged: false
+        readOnlyRootFilesystem: true
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      command:
+        - /bin/sh
+        - -c
+        - sleep 20 ; wget -O- -S --no-check-certificate http://kyverno-reports-controller-metrics.kyverno:8000/metrics
 ---
 # Source: kyverno/templates/hooks/post-upgrade-migrate-resources.yaml
 apiVersion: batch/v1
