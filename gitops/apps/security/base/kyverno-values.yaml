@@ -1,5 +1,6 @@
 admissionController:
   replicas: 1
+  createSelfSignedCert: true
   container:
     resources:
       requests:
@@ -22,7 +23,6 @@ backgroundController:
 
 cleanupController:
   replicas: 1
-  createSelfSignedCert: true
   enabled: false
   resources:
     requests:
