@@ -10,6 +10,7 @@ admissionController:
         memory: "192Mi"
 
 backgroundController:
+  enabled: false
   replicas: 1
   resources:
     requests:
@@ -22,6 +23,7 @@ backgroundController:
 cleanupController:
   replicas: 1
   createSelfSignedCert: true
+  enabled: false
   resources:
     requests:
       cpu: "10m"
@@ -31,6 +33,7 @@ cleanupController:
       memory: "120Mi"
 
 reportsController:
+  enabled: false
   replicas: 1
   resources:
     requests:
