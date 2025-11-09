@@ -23,12 +23,11 @@ spec:
           - DaemonSet
           - Job
           - CronJob
-          namespaceSelector:
-            matchExpressions:
-              - key: kubernetes.io/metadata.name
-                operator: NotIn
-                values:
-                  - monitoring
+    exclude:
+      any:
+      - resources:
+          namespaces:
+            - monitoring
     verifyImages:
     - imageReferences:
       - "*"
@@ -125,12 +124,11 @@ spec:
                 - Deployment
                 - StatefulSet
                 - DaemonSet
-              namespaceSelector:
-                matchExpressions:
-                  - key: kubernetes.io/metadata.name
-                    operator: NotIn
-                    values:
-                      - monitoring
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - monitoring
       validate:
         message: Container images must originate from approved registries.
         pattern:
