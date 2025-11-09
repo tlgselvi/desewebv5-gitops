@@ -21,6 +21,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: grafana-config
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "150m"
+              memory: "256Mi"
           ports:
             - containerPort: 3000
               name: http
