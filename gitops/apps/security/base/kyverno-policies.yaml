@@ -28,6 +28,8 @@ spec:
       - resources:
           namespaces:
             - monitoring
+            - argocd
+            - kube-system
     verifyImages:
     - imageReferences:
       - "*"
@@ -129,6 +131,8 @@ spec:
           - resources:
               namespaces:
                 - monitoring
+                - argocd
+                - kube-system
       validate:
         message: Container images must originate from approved registries.
         pattern:
