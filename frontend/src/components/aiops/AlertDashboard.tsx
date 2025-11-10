@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivitySquare, CheckCircle2, RefreshCw, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { getToken } from "@/lib/auth";
 
 interface Alert {
@@ -32,7 +39,7 @@ export default function AlertDashboard() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       setError(null);
       const params = new URLSearchParams();
@@ -44,16 +51,16 @@ export default function AlertDashboard() {
       const res = await fetch(`/api/v1/aiops/anomalies/alerts?${params}`);
       const result = await res.json();
 
-      if (result.success) {
-        let filteredAlerts = result.alerts || [];
-
-        // Filter by status
-        if (filterStatus === "resolved") {
-          filteredAlerts = filteredAlerts.filter((a: Alert) => a.resolvedAt);
-        } else if (filterStatus === "unresolved") {
-          filteredAlerts = filteredAlerts.filter((a: Alert) => !a.resolvedAt);
-        }
-
+      if (result.success && result.alerts) {
+        const filteredAlerts = (result.alerts as Alert[]).filter((alert) => {
+          if (filterStatus === "resolved") {
+            return Boolean(alert.resolvedAt);
+          }
+          if (filterStatus === "unresolved") {
+            return !alert.resolvedAt;
+          }
+          return true;
+        });
         setAlerts(filteredAlerts);
       } else {
         setError(result.error || "Failed to fetch alerts");
@@ -63,9 +70,9 @@ export default function AlertDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterSeverity, filterStatus]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/aiops/anomalies/alerts/stats?timeRange=24h");
       const result = await res.json();
@@ -76,7 +83,7 @@ export default function AlertDashboard() {
     } catch (err) {
       console.error("Error fetching alert stats:", err);
     }
-  };
+  }, []);
 
   const resolveAlert = async (alertId: string) => {
     try {
@@ -104,14 +111,18 @@ export default function AlertDashboard() {
       const result = await res.json();
 
       if (result.success) {
-        // Refresh alerts
         await fetchAlerts();
         await fetchStats();
+        toast.success("Uyarı kapatıldı", {
+          description: alertId,
+        });
       } else {
         setError(result.error || "Failed to resolve alert");
+        toast.error(result.error || "Uyarı kapatılamadı");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resolve alert");
+      toast.error("Uyarı kapatılırken hata oluştu");
     }
   };
 
@@ -119,195 +130,246 @@ export default function AlertDashboard() {
     fetchAlerts();
     fetchStats();
 
-    // Poll every 30 seconds
     const intervalId = setInterval(() => {
       fetchAlerts();
       fetchStats();
     }, 30000);
 
     return () => clearInterval(intervalId);
-  }, [filterSeverity, filterStatus]);
+  }, [fetchAlerts, fetchStats]);
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityBadgeClass = useCallback((severity: string) => {
     switch (severity) {
       case "critical":
-        return "bg-red-100 text-red-800 border-red-300";
+        return "bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-200 dark:border-rose-400/40";
       case "high":
-        return "bg-orange-100 text-orange-800 border-orange-300";
+        return "bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-500/20 dark:text-orange-200 dark:border-orange-400/40";
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        return "bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-200 dark:border-amber-400/40";
       case "low":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-200 dark:border-blue-400/40";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return "bg-gray-100 text-gray-600 border border-gray-200 dark:bg-slate-700/40 dark:text-slate-200 dark:border-slate-600/40";
     }
-  };
+  }, []);
 
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
   };
 
+  const severityOptions = useMemo(
+    () => [
+      { value: "all", label: "Tümü" },
+      { value: "critical", label: "Critical" },
+      { value: "high", label: "High" },
+      { value: "medium", label: "Medium" },
+      { value: "low", label: "Low" },
+    ],
+    [],
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      { value: "all", label: "Tümü" },
+      { value: "unresolved", label: "Açık" },
+      { value: "resolved", label: "Çözüldü" },
+    ],
+    [],
+  );
+
   if (loading && alerts.length === 0) {
     return (
-      <div className="p-6 rounded-lg bg-white border-2 border-gray-200">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
-        </div>
-      </div>
+      <Card className="space-y-4 bg-white dark:bg-slate-900">
+        <Skeleton className="w-1/3" />
+        <Skeleton className="w-1/2" />
+        <Skeleton className="h-32" />
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
+    <div className="space-y-8">
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 rounded-lg bg-white border-2 border-gray-200">
-            <div className="text-sm text-gray-600 mb-1">Total Alerts</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          </div>
-          <div className="p-4 rounded-lg bg-white border-2 border-red-200">
-            <div className="text-sm text-gray-600 mb-1">Critical</div>
-            <div className="text-2xl font-bold text-red-600">{stats.critical}</div>
-          </div>
-          <div className="p-4 rounded-lg bg-white border-2 border-orange-200">
-            <div className="text-sm text-gray-600 mb-1">High</div>
-            <div className="text-2xl font-bold text-orange-600">{stats.high}</div>
-          </div>
-          <div className="p-4 rounded-lg bg-white border-2 border-gray-200">
-            <div className="text-sm text-gray-600 mb-1">Unresolved</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.unresolved}</div>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className="space-y-2 border-blue-100 bg-blue-50/70 dark:border-blue-500/30 dark:bg-blue-500/15">
+            <p className="text-xs uppercase text-blue-600 dark:text-blue-200">Toplam uyarı</p>
+            <p className="text-3xl font-semibold text-blue-900 dark:text-blue-100">{stats.total}</p>
+            <span className="text-xs text-blue-700 dark:text-blue-100/80">Son 24 saat</span>
+          </Card>
+          <Card className="space-y-2 border-rose-100 bg-rose-50/80 dark:border-rose-500/30 dark:bg-rose-500/15">
+            <p className="text-xs uppercase text-rose-600 dark:text-rose-200">Critical</p>
+            <p className="text-3xl font-semibold text-rose-700 dark:text-rose-100">{stats.critical}</p>
+            <span className="text-xs text-rose-500 dark:text-rose-100/80">Kyverno enforcement</span>
+          </Card>
+          <Card className="space-y-2 border-orange-100 bg-orange-50/70 dark:border-orange-500/30 dark:bg-orange-500/15">
+            <p className="text-xs uppercase text-orange-600 dark:text-orange-200">High</p>
+            <p className="text-3xl font-semibold text-orange-700 dark:text-orange-100">{stats.high}</p>
+            <span className="text-xs text-orange-500 dark:text-orange-100/80">Prometheus alarm akışı</span>
+          </Card>
+          <Card className="space-y-2 border-emerald-100 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/15">
+            <p className="text-xs uppercase text-emerald-600 dark:text-emerald-200">Çözülen</p>
+            <p className="text-3xl font-semibold text-emerald-700 dark:text-emerald-100">{stats.resolved}</p>
+            <span className="text-xs text-emerald-500 dark:text-emerald-100/80">Jarvis otomasyon zinciri</span>
+          </Card>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex gap-4 items-center">
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Severity:</label>
-          <select
-            value={filterSeverity}
-            onChange={(e) => setFilterSeverity(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Status:</label>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All</option>
-            <option value="unresolved">Unresolved</option>
-            <option value="resolved">Resolved</option>
-          </select>
-        </div>
-
-        <button
-          onClick={() => {
-            fetchAlerts();
-            fetchStats();
-          }}
-          className="px-4 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
-          {error}
-        </div>
-      )}
-
-      {/* Alerts List */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Active Alerts</h2>
-          <p className="text-sm text-gray-600">
-            {alerts.length} alert{alerts.length !== 1 ? "s" : ""} found
-          </p>
-        </div>
-
-        <div className="divide-y divide-gray-200">
-          {alerts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No alerts found matching your filters.
-            </div>
-          ) : (
-            alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className="p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span
-                        className={`px-2 py-1 rounded-md text-xs font-semibold border ${getSeverityColor(
-                          alert.severity
-                        )}`}
-                      >
-                        {alert.severity.toUpperCase()}
-                      </span>
-                      {alert.resolvedAt && (
-                        <span className="px-2 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-800 border border-green-300">
-                          RESOLVED
-                        </span>
-                      )}
-                      <span className="text-sm font-medium text-gray-900">
-                        {alert.metric}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      Anomaly Score: <span className="font-semibold">{alert.anomalyScore.toFixed(2)}</span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Created: {formatTimestamp(alert.createdAt)}
-                      {alert.resolvedAt && (
-                        <>
-                          {" • "}
-                          Resolved: {formatTimestamp(alert.resolvedAt)}
-                          {alert.resolvedBy && ` by ${alert.resolvedBy}`}
-                        </>
-                      )}
-                    </div>
-                    {alert.context && Object.keys(alert.context).length > 0 && (
-                      <details className="mt-2">
-                        <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                          View Context
-                        </summary>
-                        <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
-                          {JSON.stringify(alert.context, null, 2)}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                  {!alert.resolvedAt && (
-                    <button
-                      onClick={() => resolveAlert(alert.id)}
-                      className="ml-4 px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Resolve
-                    </button>
-                  )}
-                </div>
+      <Card className="bg-white dark:bg-slate-900">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-amber-100 p-2 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">
+                <ShieldAlert className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Uyarı Yönetimi</h2>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  Kyverno, ArgoCD ve Prometheus kaynaklı olayları izleyin.
+                </p>
               </div>
-            ))
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Uyarıları yenile"
+              onClick={() => {
+                fetchAlerts();
+                fetchStats();
+              }}
+            >
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+              <ActivitySquare className="h-4 w-4 text-blue-500" />
+              <span>Severity</span>
+              <select
+                value={filterSeverity}
+                onChange={(event) => setFilterSeverity(event.target.value)}
+                className="rounded-md border border-gray-200 bg-white px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/40"
+              >
+                {severityOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <span>Status</span>
+              <select
+                value={filterStatus}
+                onChange={(event) => setFilterStatus(event.target.value)}
+                className="rounded-md border border-gray-200 bg-white px-3 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/40"
+              >
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/40 dark:bg-rose-500/10 dark:text-rose-200">
+              {error}
+            </div>
           )}
+
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-slate-800">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100">Aktif Uyarılar</h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400">{alerts.length} kayıt listeleniyor</p>
+              </div>
+              <Badge variant="outline" className="text-xs text-gray-500 dark:border-slate-700 dark:text-slate-300">
+                Otomatik yenileme 30s
+              </Badge>
+            </div>
+
+            <div className="divide-y divide-gray-100 dark:divide-slate-800">
+              {alerts.length === 0 ? (
+                <div className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">
+                  Filtre kriterlerine uyan uyarı bulunamadı.
+                </div>
+              ) : (
+                alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="px-6 py-4 transition hover:bg-blue-50/40 dark:hover:bg-slate-800/60"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Badge
+                            variant="outline"
+                            className={cn("text-xs", getSeverityBadgeClass(alert.severity))}
+                          >
+                            {alert.severity.toUpperCase()}
+                          </Badge>
+                          {alert.resolvedAt ? (
+                            <Badge variant="success" className="text-xs">
+                              Çözüldü
+                            </Badge>
+                          ) : (
+                            <Badge variant="warning" className="text-xs">
+                              Açık
+                            </Badge>
+                          )}
+                          <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                            {alert.metric}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-sm text-gray-600 dark:text-slate-300">
+                          Anomali Skoru:{" "}
+                          <span className="font-semibold text-gray-900 dark:text-slate-100">
+                            {alert.anomalyScore.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500 dark:text-slate-400">
+                          Oluşturulma: {formatTimestamp(alert.createdAt)}
+                          {alert.resolvedAt && (
+                            <>
+                              {" · "}
+                              Çözüm: {formatTimestamp(alert.resolvedAt)}
+                              {alert.resolvedBy && ` (${alert.resolvedBy})`}
+                            </>
+                          )}
+                        </div>
+                        {alert.context && Object.keys(alert.context).length > 0 && (
+                          <details className="mt-2">
+                            <summary className="text-xs text-blue-600 underline-offset-2 hover:underline dark:text-blue-300">
+                              Bağlamı görüntüle
+                            </summary>
+                            <pre className="mt-2 max-h-40 overflow-auto rounded bg-gray-50 p-2 text-xs text-gray-700 dark:bg-slate-800 dark:text-slate-300">
+                              {JSON.stringify(alert.context, null, 2)}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                      {!alert.resolvedAt && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => resolveAlert(alert.id)}
+                          className="dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                        >
+                          Uyarıyı kapat
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -12,6 +12,12 @@ EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot 
 - **MuBot**: Accounting Engine (Express.js, TypeScript) - Multi-Source Data Ingestion
 - **DESE**: Analytics Layer (Next.js 16 + React 19) - Realtime Metrics Dashboard
 
+### UI Geliştirmeleri (v6.8.1)
+- **Tema Anahtarı**: Header’daki ışık/koyu tema geçişi `next-themes` + Tailwind dark mode ile yönetilir.
+- **FinBot & Observability Panelleri**: Yenilenmiş kart yapıları, MCP durum rozetleri ve senaryo/incident kuyrukları.
+- **AIOps Panelleri**: Yenilenen kartlar, skeleton yükleme durumları ve `sonner` tabanlı toast bildirimleriyle kullanıcı geri bildirimi.
+- **Navigasyon & Ana Sayfa**: Sticky üst menü, yatay kaydırılabilir meta rozetleri ve degrade hero bölümü ile daha okunabilir bir başlangıç deneyimi.
+
 ### SEO Modülleri (Legacy)
 - **SEO Analyzer**: Core Web Vitals, Lighthouse ve meta denetimi
 - **Content Generator**: E-E-A-T uyumlu içerik ve landing page üretimi

@@ -175,7 +175,7 @@ if (config.nodeEnv !== "production") {
 }
 
 // 404 handler (must be before error handler)
-app.use("*", (req, res, next) => {
+app.use((req, res, next) => {
   // Only handle 404 if no response was sent
   if (!res.headersSent) {
     res.status(404).json({
