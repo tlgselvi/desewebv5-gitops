@@ -1,8 +1,8 @@
-# Dese EA Plan v6.8.0 - Cursor AI Rules
+# Dese EA Plan v6.8.1 - Cursor AI Rules
 
-> **Geçerlilik:** Bu kurallar Dese EA Plan v6.8.0 projesi için geçerlidir  
-> **Versiyon:** 6.8.0  
-> **Son Güncelleme:** 2025-01-27  
+> **Geçerlilik:** Bu kurallar Dese EA Plan v6.8.1 projesi için geçerlidir  
+> **Versiyon:** 6.8.1  
+> **Son Güncelleme:** 2025-11-09  
 > **Uyumluluk:** Cursor AI v2.0+, TypeScript 5.3+, Node.js 20.19+
 
 ---
@@ -19,18 +19,18 @@
 
 ### Şu Anki Aktif Görev
 
-**MCP Server İyileştirmeleri** (Faz 1: Temel İyileştirmeler)
+**Kyverno Stabilizasyonu & MCP Faz 1 Revizyonu**
 - Öncelik: 🔴 Yüksek
-- Süre: 1-2 gün
-- Durum: ⏳ Planlama tamamlandı, implementasyona başlanacak
+- Süre: 1 gün (09-10 Kasım 2025)
+- Durum: 🔄 Kyverno/ArgoCD düzeltmeleri tamamlandı, dokümantasyon & hafıza revizyonu devam ediyor
 
-**Detaylı plan:** `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md` dosyasında
+**Referanslar:** `GUNCELLEME_OZETI_v6.8.1.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`
 
 ---
 
 ## 🎯 Proje Özeti
 
-Dese EA Plan v6.8.0 - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+Dese EA Plan v6.8.1 - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
 
 **Tech Stack:**
 - **Frontend**: Next.js 16 + React 19 + TypeScript + Tailwind CSS

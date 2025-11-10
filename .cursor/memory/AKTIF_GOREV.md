@@ -1,92 +1,71 @@
-# 🎯 Aktif Görev - Kritik Görevler Tamamlandı
+# 🎯 Aktif Görev - Kyverno Stabilizasyonu & Dokümantasyon Revizyonu
 
-**Başlangıç Tarihi:** 2025-01-27  
-**Durum:** ✅ Tamamlandı (poolfab.com & Google entegrasyonları canlıda)  
-**Öncelik:** 🟢 Operasyon Sonrası İzleme  
-**Tamamlanma Oranı:** 100%
+**Başlangıç Tarihi:** 2025-11-09  
+**Durum:** 🔄 Devam ediyor (Kyverno/ArgoCD stabil, dokümantasyon revizyonu sürüyor)  
+**Öncelik:** 🔴 Yüksek (MCP Faz 1 revizyon turu)  
+**Tamamlanma Oranı:** ~75%
 
 ---
 
 ## 📋 Görev Detayları
 
 ### Amaç
-MCP Server'ları production-ready hale getirmek için temel iyileştirmeler yapmak.
+1. Kyverno admission controller düzeltmelerini dokümantasyon ve versiyon notlarına taşımak.  
+2. MCP Faz 1 gerçek durumunu (auth + cache + gerçek API) raporlara ve hafıza kayıtlarına yansıtmak.  
+3. ArgoCD/GitOps senaryoları için yeni sürüm rehberleri hazırlamak.
 
 ### Kapsam
-- 4 MCP Server (FinBot, MuBot, DESE, Observability)
-- Gerçek backend entegrasyonu
-- Authentication & Security
-- Error handling & Logging
-- Caching
+- Üst düzey raporlar (analiz, detay, master doc) ✅  
+- Release/Güncelleme özetleri ✅  
+- Cursor hafıza kayıtları (aktif görev, proje durumu, Jarvis) 🔄  
+- MCP referans dokümanları (`MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`) 🔄  
+- Sürüm kayıtları (`VERSIYON_GUNCELLEME_RAPORU.md`, `GENEL_GUNCELLEME_OZETI.md`, `GUNCELLEME_OZETI_v6.8.1.md`) ✅
 
 ---
 
 ## ✅ Görev Listesi
 
-### Faz 1: Gerçek Backend Entegrasyonu
+### 1. Kyverno Stabilizasyonu (Teknik)
+- ✅ Kyverno CRD’leri ayrı kustomize kaynağına taşındı (`sync-wave -1`, `ServerSideApply=true`)
+- ✅ Admission controller kaynak limitleri düşürüldü; gereksiz controller’lar kapatıldı
+- ✅ Helm test hook’u devre dışı bırakıldı (metrics pod)
+- ✅ ArgoCD `security` uygulaması tekrar `Synced/Healthy`
 
-Tüm MCP modülleri (FinBot, MuBot, DESE, Observability) canlı backend API'lerine bağlandı, cache ve WebSocket yayınları doğrulandı.
-
-### Faz 2: Authentication & Security
-
-JWT doğrulama, RBAC ve rate limiting katmanları üretim ortamında aktif; manuel ve otomatik testlerden geçti.
-
-### Faz 3: Error Handling & Logging
-
-Structured logging, global error handler ve retry mekanizmaları aktif; loglar Prometheus/Grafana ile izleniyor.
+### 2. Dokümantasyon Revizyonu
+- ✅ `RELEASE_NOTES_v6.8.1.md`, `GUNCELLEME_OZETI_v6.8.1.md`, `GENEL_GUNCELLEME_OZETI.md`, `VERSIYON_GUNCELLEME_RAPORU.md`
+- ✅ `PROJE_DURUM_ANALIZ_RAPORU.md`, `PROJE_DURUM_DETAYLI_RAPOR.md`, `PROJECT_MASTER_DOC.md`, `DOKUMENTASYON_GUNCELLEME_RAPORU.md`
+- 🔄 Cursor hafıza dosyaları (`AKTIF_GOREV.md`, `PROJE_DURUMU.md`, `JARVIS_DURUMU.md`) – güncelleniyor
+- 🔄 MCP referans dosyaları – yeni duruma göre revize edilecek
 
 ---
 
 ## 📊 İlerleme Durumu
 
 ### Tamamlanan
-- ✅ MCP analiz ve planlama
-- ✅ Cursor rules güncelleme
-- ✅ Odaklanma rehberi oluşturma
-- ✅ **Faz 1: Gerçek Backend Entegrasyonu** (4/4 MCP Server tamamlandı)
-  - ✅ FinBot MCP Server - Backend Analytics API entegrasyonu
-  - ✅ MuBot MCP Server - Oluşturuldu ve yapılandırıldı
-  - ✅ DESE MCP Server - AIOps API entegrasyonu
-  - ✅ Observability MCP Server - Prometheus + Backend metrics entegrasyonu
-- ✅ **Faz 2: Authentication & Security** (JWT + RBAC + Rate Limiting) ✅
-  - ✅ JWT validation middleware (`src/middleware/auth.ts` oluşturuldu)
-  - ✅ Tüm MCP server'lara authentication eklendi
-  - ✅ Rate limiting eklendi (15 dakika/100 istek)
-  - ✅ RBAC authorize middleware hazır
-- ✅ **Faz 3: Error Handling & Logging** (asyncHandler + structured logging)
-- ✅ **Redis Cache Entegrasyonu** (Tüm MCP server'lara eklendi)
-- ✅ **Test Düzeltmeleri** (aiops.test.ts ve metrics.test.ts route düzeltmeleri)
-- ✅ **FinBot Consumer Business Logic** (`src/bus/streams/finbot-consumer.ts` oluşturuldu)
-- ✅ **WebSocket Gateway JWT Validation** (`src/ws/gateway.ts` oluşturuldu)
-- ✅ **Python Servislerinde Mock Data** (5 Python servisi gerçek API entegrasyonu)
+- ✅ Kyverno manifest refaktörü (CRD ayrıştırma + kustomize güncellemesi)
+- ✅ ArgoCD senkronizasyonu ve manuel `argocd app sync security`
+- ✅ Release/güncelleme dokümantasyonu v6.8.1 statüsüne çekildi
+- ✅ Üst düzey raporlar güncellendi; master doc yeni öncelik tablosunu içeriyor
 
 ### Devam Eden
-- 🔄 Rutin izleme (Jarvis efficiency chain + Prometheus alarmları)
+- 🔄 `MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`, `DESE_JARVIS_CONTEXT.md` (MCP Faz 1 gerçek durum)
+- 🔄 Cursor hafıza dosyaları (bu kayıt dahil) – yeni odak ile hizalanıyor
+- 🔄 `.cursor/memory/PROJE_DURUMU.md`, `.cursor/memory/JARVIS_DURUMU.md` revize edilecek
 
 ---
 
-## 🚀 Sonraki Adım
+## 🚀 Sonraki Adımlar
 
-**Tamamlanan Kritik Görevler (2025-11-07):**
-1. ✅ MCP Server Authentication & Security
-2. ✅ FinBot/MuBot/DESE/Observability entegrasyonları
-3. ✅ Python servislerinde gerçek veri kullanımı
-4. ✅ WebSocket gateway + FinBot consumer
-5. ✅ Test ve güvenlik güncellemeleri
-6. ✅ Jarvis diagnostic & efficiency chain otomasyonu
-7. ✅ GCP migrasyonu (GKE, Cloud SQL, Memorystore, DNS)
-
-**Operasyon Notları:**
-- Jarvis efficiency chain cron (08:00), metrics validation (12:00)
-- Jarvis weekly summary raporu `reports/` altında tutuluyor
-- Poolfab.com.tr DNS & SSL Cloudflare üzerinden yönetiliyor
-- Sprint 2.7 Step 8 kapsamında 2025-11-07 19:50'de Docker temizlik komutları (`docker image prune -f`, `docker container prune -f`) çalıştırıldı
-- Node v25 geliştirici ortamlarında kullanılmaya devam ediyor; LTS geçişi opsiyonel
+1. `MCP_GERCEK_DURUM.md` → Gerçek entegrasyon, auth/cache, Kyverno iyileştirmeleri eklenecek  
+2. `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md` → Faz 2/3 durumları ve yeni backlog notları işlenecek  
+3. `.cursor/memory/PROJE_DURUMU.md`, `.cursor/memory/JARVIS_DURUMU.md` → Yeni özetlerle hizalanacak  
+4. ArgoCD/GitOps rehberlerinde (özellikle `gitops-workflow.md`) Kyverno senaryoları ve manual sync prosedürü dokümante edilecek  
+5. Jarvis rapor planı: günlük efficiency chain & haftalık diagnostic özetleri sürdürülüyor (bilgi amaçlı)
 
 ---
 
-**Son Güncelleme:** 2025-11-07  
+**Son Güncelleme:** 2025-11-09  
 **Versiyon:** 6.8.1  
-**Tamamlanma Oranı:** 100% 🎉
-**Durum:** ✅ Production-ready (GCP migrasyonu + poolfab.com.tr domain geçişi tamamlandı)
+**Tamamlanma Oranı:** ~75%  
+**Durum:** 🔄 Kyverno stabilizasyonu tamam, dokümantasyon/memory revizyonu devam ediyor
 

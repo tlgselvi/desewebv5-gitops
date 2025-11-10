@@ -1,7 +1,7 @@
-# 🎯 Odaklanma Rehberi - Dese EA Plan v6.8.0
+# 🎯 Odaklanma Rehberi - Dese EA Plan v6.8.1
 
-**Son Güncelleme:** 2025-11-07  
-**Durum:** Production sonrası operasyon
+**Son Güncelleme:** 2025-11-09  
+**Durum:** Kyverno stabilizasyonu sonrası dokümantasyon/hafıza revizyonu
 
 ---
 
@@ -32,19 +32,19 @@
 
 ## 📋 ŞU ANKİ DURUM
 
-### ✅ Tüm Kritik Görevler Tamamlandı
+### 🔄 Revizyon Süreci Devam Ediyor
 
-**Durum:** ✅ Production-ready (%100 tamamlanma)
+**Durum:** Kyverno admission controller stabil, dokümantasyon ve hafıza kayıtları güncelleniyor.
 
-**Tamamlanan Kritik Görevler:**
-- ✅ MCP Server Authentication & Security (Faz 2)
-- ✅ Test Düzeltmeleri
-- ✅ FinBot Consumer Business Logic
-- ✅ WebSocket Gateway JWT Validation
-- ✅ Python Servislerinde Mock Data Kaldırıldı
+**Öncelik:** 🔴 Dokümantasyon revizyonu → 🟠 Hafıza kayıtları → 🟢 Opsiyonel iyileştirmeler  
+**Tamamlanma Oranı:** ~75%
 
-**Öncelik:** 🟢 Kritik görevler tamamlandı, opsiyonel iyileştirmeler kaldı  
-**Tamamlanma Oranı:** ~100%
+#### Güncel Odak Başlıkları
+- ✅ Kyverno manifest refaktörü & ArgoCD senkronizasyonu (tamamlandı)
+- ✅ Release/güncelleme dokümanları ve üst düzey raporlar (revize edildi)
+- 🔄 MCP raporları (`MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`)
+- 🔄 Cursor hafıza dosyaları (`AKTIF_GOREV.md`, `PROJE_DURUMU.md`, `JARVIS_DURUMU.md`, bu rehber)
+- 🔄 GitOps rehberleri (Kyverno senaryoları, manuel sync notları)
 
 #### Görev Listesi
 

@@ -1,7 +1,7 @@
 # 📁 Önemli Dosyalar - Dese EA Plan v6.8.1
 
-**Son Güncelleme:** 2025-11-07  
-**Durum:** Güncel (Production state)
+**Son Güncelleme:** 2025-11-09  
+**Durum:** Güncel (Kyverno stabilizasyonu sonrası revizyon turu)
 
 ---
 
@@ -67,10 +67,10 @@
    - Prometheus + Google metrics entegrasyonu
    - Jarvis otomasyon akışına referans
 
-5. **`GUNCELLEME_OZETI_v6.8.0.md`** ⭐ (Güncel)
-   - Versiyon güncelleme özeti
-   - Silinen dosyalar listesi
-   - Güncellenen dosyalar listesi
+5. **`GUNCELLEME_OZETI_v6.8.1.md`** ⭐
+   - Kyverno & ArgoCD stabilizasyon özeti
+   - Devam eden revizyon maddeleri
+   - Güncellenen dokümantasyon listesi
 
 ### Odaklanma ve Görev Yönetimi
 

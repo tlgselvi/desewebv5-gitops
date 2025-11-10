@@ -1,19 +1,31 @@
-# 📚 DESE EA Plan v6.8.0 - Master Documentation
+# 📚 DESE EA Plan v6.8.1 - Master Documentation
 
-**Versiyon:** 6.8.0  
-**Son Güncelleme:** 2025-01-27  
-**Durum:** Production Ready (~80-85% Tamamlanma)
+**Versiyon:** 6.8.1  
+**Son Güncelleme:** 2025-11-09  
+**Durum:** Revizyon Sürecinde (~85% Tamamlanma)
 
 ---
 
 ## 🎯 Proje Özeti
 
-**Dese EA Plan v6.8.0** - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
+**Dese EA Plan v6.8.1** - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
 
 ### Ana Modüller
 - **FinBot**: Finance Engine (FastAPI, Python 3.11) - Cost & ROI Forecasting
 - **MuBot**: Accounting Engine (Express.js, TypeScript) - Multi-Source Data Ingestion
 - **DESE**: Analytics Layer (Next.js 16 + React 19) - Realtime Metrics Dashboard
+
+---
+
+## ⚡ 2025-11-09 Güncel Odak
+
+| Öncelik | Başlık | Açıklama |
+|---------|--------|----------|
+| 🔴 | MCP Dokümantasyonu | `MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`, `DESE_JARVIS_CONTEXT.md` dosyalarına Faz 1 gerçek entegrasyon + Kyverno stabilizasyonu işlensin |
+| 🔴 | Sürüm Notları | `RELEASE_NOTES_v6.8.1.md`, `GUNCELLEME_OZETI_v6.8.1.md` dosyalarına Kyverno/ArgoCD iyileştirmeleri eklenecek |
+| 🟠 | Master & Hafıza Senkronu | `PROJECT_MASTER_DOC.md` (bu belge), `.cursor/memory/AKTIF_GOREV.md`, `.cursor/memory/PROJE_DURUMU.md` aynı odakla yenilenecek |
+| 🟡 | Operasyon Rehberleri | `gitops-workflow.md` ve bağlı ops dökümanlarında Kyverno senaryoları not düşülecek |
+| 🟢 | Arşiv | `tmp-kyverno/**` üçüncü parti referans olarak kalacak; raporlarda “harici” etiketiyle belirtildi |
 
 ---
 
@@ -27,9 +39,9 @@
    - Tech stack
    - Ana modüller
 
-2. **`RELEASE_NOTES_v6.8.0.md`** ⭐
-   - v6.8.0 release notları
-   - Yeni özellikler
+2. **`RELEASE_NOTES_v6.8.1.md`** ⭐
+   - v6.8.1 release notları
+   - Kyverno/ArgoCD iyileştirmeleri (eklenecek)
    - Tamamlanma durumu
    - Eksikler listesi
 
@@ -118,18 +130,24 @@
 
 ### 📊 Güncelleme ve Özetler
 
-22. **`GUNCELLEME_OZETI_v6.8.0.md`**
-    - v6.8.0 güncelleme özeti
+22. **`GUNCELLEME_OZETI_v6.8.1.md`**
+    - v6.8.1 güncelleme özeti (revizyon aşamasında)
     - Versiyon güncellemeleri
 
 ---
 
 ## 🔄 Versiyon Geçmişi
 
-### v6.8.0 (Güncel - 2025-01-27)
+### v6.8.1 (Güncel - 2025-11-09)
+- ✅ Kyverno admission controller ve ArgoCD senkronizasyonu düzeltildi
+- ✅ MCP Server Faz 1 altyapısı stabil
+- 🔄 Dokümantasyon revizyonu (üst düzey raporlar, release notes)
+- **Tamamlanma:** ~85% (revizyon sonrası tekrar %100 olacak)
+
+### v6.8.0 (Arşiv - 2025-01-27)
 - ✅ MCP Server iyileştirmeleri (Faz 1 tamamlandı)
 - ✅ JARVIS bileşenleri tamamlandı
-- ⏳ Authentication & Security (Faz 2 - bekliyor)
+- ✅ Authentication & Security (Faz 2) planlandı
 - **Tamamlanma:** ~80-85%
 
 ### v5.7.1 (Eski - Arşivlendi)
@@ -148,13 +166,13 @@
 ```
 desewebv5/
 ├── README.md                          # Ana README
-├── RELEASE_NOTES_v6.8.0.md           # Release notları
+├── RELEASE_NOTES_v6.8.1.md           # Release notları (revizyon aşamasında)
 ├── PROJECT_MASTER_DOC.md             # Bu dosya (master index)
 ├── DESE_JARVIS_CONTEXT.md            # JARVIS context
 ├── EKSIKLER_VE_TAMAMLAMA_DURUMU.md   # Eksikler listesi
 ├── MCP_KAPSAMLI_ANALIZ_VE_PLAN.md    # MCP analizi
 ├── MCP_GERCEK_DURUM.md               # MCP durum
-├── GUNCELLEME_OZETI_v6.8.0.md        # Güncelleme özeti
+├── GUNCELLEME_OZETI_v6.8.1.md        # Güncelleme özeti
 ├── docs/                              # Dokümantasyon klasörü
 │   ├── SPRINT_2.6_DAY_3_SUMMARY.md
 │   ├── SELF_HEALING_GUIDE.md
@@ -177,7 +195,7 @@ desewebv5/
 
 1. **Yeni başlayanlar için:**
    - `README.md` → Proje genel bakış
-   - `RELEASE_NOTES_v6.8.0.md` → Versiyon bilgileri
+   - `RELEASE_NOTES_v6.8.1.md` → Versiyon bilgileri
 
 2. **Geliştiriciler için:**
    - `DESE_JARVIS_CONTEXT.md` → Proje context
@@ -194,17 +212,17 @@ desewebv5/
 ## ⚠️ Önemli Notlar
 
 1. **Eski Dokümanlar:** Tüm v5.x dokümanları `archive/old-docs/2025-01-27/` klasörüne taşındı
-2. **Güncel Versiyon:** v6.8.0 (2025-01-27)
-3. **Tamamlanma:** ~80-85% (detaylar için `EKSIKLER_VE_TAMAMLAMA_DURUMU.md`)
-4. **MCP Server'lar:** Faz 1 tamamlandı, Faz 2 (Authentication) bekliyor
+2. **Güncel Versiyon:** v6.8.1 (2025-11-09)
+3. **Tamamlanma:** ~85% (revizyon sonrası tekrar %100)
+4. **MCP Server'lar:** Faz 1 tamamlandı, Kyverno stabilizasyonu belgelenecek
 
 ---
 
 ## 📞 İletişim ve Destek
 
-- **Proje:** Dese EA Plan v6.8.0
-- **Versiyon:** 6.8.0
-- **Son Güncelleme:** 2025-01-27
+- **Proje:** Dese EA Plan v6.8.1
+- **Versiyon:** 6.8.1
+- **Son Güncelleme:** 2025-11-09
 
 ---
 

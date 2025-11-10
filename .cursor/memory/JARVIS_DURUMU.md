@@ -1,8 +1,8 @@
 # 🤖 JARVIS Durumu - Dese EA Plan v6.8.1
 
-**Son Güncelleme:** 2025-11-07 (Saat: Şimdi)  
+**Son Güncelleme:** 2025-11-09  
 **Versiyon:** 6.8.1  
-**Durum:** ✅ MCP & Observability zinciri production-ready (poolfab.com & Google entegrasyonları canlıda)
+**Durum:** 🔄 Kyverno stabilizasyonu tamam, dokümantasyon/hafıza revizyonu devam ediyor
 
 ---
 
@@ -118,44 +118,45 @@ curl -X POST http://localhost:5555/finbot/query \
   -d '{"query": "Get financial accounts"}'
 ```
 
-### Son Yapılan İyileştirmeler (2025-11-07)
+### Son Yapılan İyileştirmeler (2025-11-09)
 
-1. **Google Cloud Migrasyonu** ✅
-   - GKE, Cloud SQL, Memorystore, ingress ve DNS (poolfab.com.tr) canlıda
+1. **Kyverno Stabilizasyonu** ✅  
+   - CRD’ler kustomize üzerinden yönetiliyor (`sync-wave -1`, `ServerSideApply=true`)  
+   - Helm test hook kapatıldı, admission controller limiti düşürüldü  
+   - ArgoCD `security` uygulaması manuel sync ile `Synced/Healthy`
 
-2. **MCP Entegrasyonları** ✅
-   - FinBot, MuBot, DESE, Observability gerçek API’lerle canlı trafik besliyor
+2. **Dokümantasyon** ✅  
+   - Release/güncelleme notları ve üst düzey raporlar Kyverno durumunu yansıtıyor  
+   - `GUNCELLEME_OZETI_v6.8.1.md` oluşturuldu (revizyon izleme)
 
-3. **Observability & Metrics** ✅
-   - Prometheus + Google entegrasyonları aktif, metrics push pipeline çalışıyor
+3. **MCP Entegrasyonları** ✅  
+   - FinBot, MuBot, DESE, Observability gerçek API + Redis cache ile çalışıyor  
+   - Jarvis scriptleri (efficiency & diagnostic) günlük cron ile çalışmaya devam ediyor
 
-4. **JARVIS Scriptleri** ✅
-   - Efficiency chain + Phase 1/2/3 scriptleri otomasyonda (günlük cron)
-
-5. **Dokümantasyon** ✅
-   - `EKSIKLER_VE_TAMAMLAMA_DURUMU.md`, `MCP_GERCEK_DURUM.md`, `PROJE_DURUMU.md`, `reports/project_status_20251107.md` senkronize edildi
-6. **Bakım** ✅
-   - Sprint 2.7 Step 8 kapsamında 2025-11-07 19:50'de `docker image prune -f` ve `docker container prune -f` çalıştırıldı (394 MB serbest kaldı)
+4. **Bakım** ✅  
+   - Sprint 2.7 Step 8 docker temizliği (2025-11-07) tamamlandı; rutin plana alındı
 
 ---
 
 ## ✅ Önemli Notlar
 
-1. **JARVIS Scriptleri:** Tümü repo içerisinde mevcut ve günlük olarak çalıştırılıyor.
-2. **Raporlar:** `reports/` altındaki connectivity, context ve summary raporları güncel.
-3. **Prometheus:** Pushgateway entegrasyonu yeşil; metrics push adımı “success”.
-4. **Fallback:** `advanced-health-check.ps1` ve `automated-health-monitor.ps1` alternatif olarak kullanılabilir.
+1. **JARVIS Scriptleri:** Günlük efficiency chain (08:00) ve metrics validation (12:00) cron’ları çalışıyor.  
+2. **Raporlar:** `reports/` altındaki connectivity, context ve summary raporları yeşil; 09.11.2025 revizyonu sırada.  
+3. **Prometheus:** Pushgateway entegrasyonu yeşil; metrics push adımı “success”.  
+4. **Dokümantasyon:** `DESE_JARVIS_CONTEXT.md`, `GUNCELLEME_OZETI_v6.8.1.md`, `GENEL_GUNCELLEME_OZETI.md` güncellendi.  
+5. **Gündem:** MCP raporları ve hafıza kayıtlarının (bu dosya dahil) nihai revizyonu tamamlanacak.
 
 ---
 
 ## 🎯 Sonraki Adımlar
 
-### JARVIS Operasyon Planı (Günlük)
+### JARVIS Operasyon Planı
 
-1. **Günlük Efficiency Chain** – Jarvis cron job (08:00) → raporlar `reports/` altında
-2. **Prometheus Sağlık Kontrolü** – `pnpm metrics:validate` (her öğlen)
-3. **Haftalık Özet** – `reports/jarvis_diagnostic_summary.md` güncelleniyor
-4. **Opsiyonel** – LLM benchmark placeholder ilerleyen sürümlerde aktifleştirilecek
+1. **Günlük Efficiency Chain** – cron job (08:00) çalışıyor, raporlar `reports/` altında tutuluyor.  
+2. **Prometheus Sağlık Kontrolü** – `pnpm metrics:validate` komutu öğlen çalıştırılıyor.  
+3. **Haftalık Özet** – `reports/jarvis_diagnostic_summary.md` güncellenecek (Kyverno notları eklenecek).  
+4. **Dokümantasyon** – MCP raporları ve hafıza kayıtları tamamlandıktan sonra bu dosya final statüye çekilecek.  
+5. **Opsiyonel** – LLM benchmark modu ilerleyen sürümlerde aktifleştirilecek.
 
 ---
 
@@ -184,13 +185,8 @@ curl -X POST http://localhost:5555/finbot/query \
 
 ---
 
-**Son Güncelleme:** 2025-11-07 (Saat: Şimdi)  
-**Durum:** ✅ JARVIS otomasyon zinciri canlı (poolfab.com & Google entegrasyonları)  
-**Tamamlanma Oranı:** 100% (Health, connectivity, metrics ve raporlar yeşil)  
-**Son Yapılan:**
-- Google Cloud migrasyonu (GKE + Cloud SQL + Memorystore) tamamlandı
-- Prometheus & metrics push pipeline aktifleştirildi
-- Jarvis rapor dokümantasyonu güncellendi
-- Günlük Cron → Efficiency chain + metrics validation üretimde
-- Yerel Docker temizliği (`docker image prune -f`, `docker container prune -f`) tamamlandı
+**Son Güncelleme:** 2025-11-09  
+**Durum:** 🔄 Jarvis otomasyon zinciri canlı; Kyverno sonrası revizyon süreci devam ediyor  
+**Tamamlanma Oranı:** ~85% (Health, connectivity, metrics yeşil – rapor/hafıza revizyonu sürüyor)  
+**Son Yapılanlar:** Kyverno stabilizasyonu, release/güncelleme doküman revizyonu, ArgoCD sync kontrolü, günlük cron’ların doğrulanması.
 

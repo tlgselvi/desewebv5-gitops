@@ -1,6 +1,6 @@
 # Dese EA Plan v6.8.1 Release Notes
 
-**Yayın Tarihi:** 2025-11-07  
+**Yayın Tarihi:** 2025-11-09  
 **Sprint:** 2.7 – Teknik Borç Temizleme
 
 ## 🎯 Öne Çıkanlar
@@ -14,18 +14,29 @@
 - Kubernetes ingress manifestleri `spec.ingressClassName` kullanacak şekilde refaktör edildi.
 - `docs/Sprint_2.7_Tech_Debt_Plan.md` güncellenerek uygulama notları ve öncelik sıraları eklendi; kullanılmayan `bcryptjs` ve `twilio` bağımlılıkları temizlendi.
 - Sprint 2.7 Step 8 kapsamında yerel Docker imajı/containers temizliği (`docker image prune -f`, `docker container prune -f`) tamamlandı.
+- Kyverno admission controller manifestleri yeniden üretildi; CRD’ler ayrı kustomize kaynağına taşındı, kaynak limitleri düşürüldü ve helm test hook’u devre dışı bırakıldı. ArgoCD `security` uygulaması yeniden senkronize edilerek stabil hâle getirildi.
 
 ## 🔄 CI/CD & Deploy
 
 - GitHub Actions → Artifact Registry → ArgoCD pipeline’ı ile `v6.8.1` etiketi production’a alındı.
 - Rolling update prosedürü README’de dokümante edildi.
 - Jarvis automation chain ile post-deploy sağlık taraması zorunlu hale getirildi.
+- ArgoCD `security` uygulamasında yaşanan CRD annotation limit sorunu çözülerek senkronizasyon normalleşti; Kyverno webhooks yeniden kayıt edildi.
 
 ## ✅ Test & Doğrulama
 
 - `pnpm test` Vitest suite’i ve Prometheus/Redis sağlık kontrolleri temiz geçti.
 - ESLint v9 flat konfigürasyonu (`eslint.config.js`) devrede; `pnpm lint` mevcut uyarılar dışında hatasız çalışıyor.
 - Jarvis zinciri raporları (`reports/jarvis_efficiency_summary_*.json`) prod sonrası çalıştırıldı.
+- Kyverno admission controller podları için canlı sağlık kontrolleri, TLS secret yenilemesi ve webhook validasyon testleri başarıyla tamamlandı.
+
+## 🛡️ Politika & Governance
+
+- Kyverno CRD’leri ayrı `kyverno-crds.yaml` dosyasında kustomize sync-wave `-1` ile yönetiliyor; `ServerSideApply=true` anotasyonu ile ArgoCD apply başarısı garanti altına alındı.
+- `kyverno-helm.yaml` içerisindeki admission controller kaynak istekleri `20m CPU / 96Mi RAM` seviyesine çekildi, gereksiz background/cleanup/reports controller’lar devre dışı bırakıldı.
+- Helm’in `kyverno-admission-controller-metrics` test pod’u kapatıldı; release pipeline’ı prod ortamda hatalı hook çalıştırmayacak şekilde düzenlendi.
+- `gitops/apps/security/base/kustomization.yaml` yeniden düzenlenerek Kyverno manifestleri ve CRD’leri temiz şekilde ayrıldı.
+- Dokümantasyon tarafında `PROJE_DURUM_ANALIZ_RAPORU.md`, `PROJE_DURUM_DETAYLI_RAPOR.md`, `PROJECT_MASTER_DOC.md` ve `DOKUMENTASYON_GUNCELLEME_RAPORU.md` Kyverno/ArgoCD iyileştirmelerini yansıtacak şekilde revize edildi.
 
 ## ⚠️ Bilinen Hususlar
 

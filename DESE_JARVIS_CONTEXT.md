@@ -1,14 +1,21 @@
 # DESE JARVIS Context
 
 > **Proje:** Dese EA Plan v6.8.1  
-> **Context Version:** 1.1  
-> **Last Updated:** 2025-11-07  
+> **Context Version:** 1.2  
+> **Last Updated:** 2025-11-09  
 > **Protocol:** upgrade-protocol-v1.2  
-> **Tamamlanma:** 100% (GCP migrasyonu tamamlandı, canlı durum için `EKSIKLER_VE_TAMAMLAMA_DURUMU.md`)
+> **Tamamlanma:** ~85% (Kyverno stabilizasyonu tamamlandı, dokümantasyon/hafıza revizyonu sürüyor)  
+> **Referans:** `GUNCELLEME_OZETI_v6.8.1.md`
 
 ---
 
 ## 🎯 Proje Özeti
+
+### Güncel Odak (09.11.2025)
+- ✅ Kyverno & ArgoCD stabilizasyonu (CRD ayrıştırması, helm test hook kapatma, manuel sync)
+- ✅ MCP Faz 1 teknik çıktıları doğrulandı (auth, cache, gerçek API)
+- 🔄 Dokümantasyon ve hafıza kayıtlarının revizyonu (`MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`, `.cursor/memory/*`)
+- 🟠 GitOps rehberlerine Kyverno/ArgoCD prosedürleri eklenecek
 
 **Dese EA Plan v6.8.1** - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
 
@@ -378,7 +385,7 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 - `CONTRIBUTING.md` - Contribution guide
 - `EKSIKLER_VE_TAMAMLAMA_DURUMU.md` - Tüm eksikler listesi ⭐⭐
 - `MCP_GERCEK_DURUM.md` - MCP gerçek durum
-- `GUNCELLEME_OZETI_v6.8.0.md` - Versiyon güncelleme özeti
+- `GUNCELLEME_OZETI_v6.8.1.md` - Versiyon güncelleme özeti (Kyverno & ArgoCD revizyonu)
 - `RELEASE_NOTES_v6.8.1.md` - Sprint 2.7 teknik borç güncellemesi
 - `.cursor/memory/JARVIS_DURUMU.md` - JARVIS durumu ⭐
 - `.cursor/chains/JARVIS_CHAIN.md` - JARVIS chain bilgileri ⭐
@@ -424,13 +431,16 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 - ✅ PostgreSQL & Redis
 
 ### Recent Optimizations
-- ✅ WSL2 memory optimized (15.5GB → 6GB)
-- ✅ WSL2 processors optimized (12 → 4)
+- ✅ Kyverno CRD ayrıştırması + helm test hook kapatılması (2025-11-09)
+- ✅ ArgoCD `security` uygulaması manuel `argocd app sync security` ile doğrulandı
+- ✅ MCP release notları ve hafıza kayıtları revizyon turuna alındı
 - ✅ 2025-11-07 19:50: `docker image prune -f` + `docker container prune -f` çalıştırıldı (394 MB serbest bırakıldı)
-- ✅ Build cache cleaned
+- ✅ WSL2 memory/CPU optimizasyonları ve build cache temizliği
 
 ### Known Issues
-- Bilinen aktif sorun yok; rutin izleme Jarvis raporlarıyla sürüyor.
+- 🔄 MCP dokümantasyon revizyonu (gerçek durum & plan) devam ediyor.
+- 🔄 GitOps rehberlerinde Kyverno/ArgoCD prosedürleri belgelenecek.
+- Rutin izleme (Jarvis raporları, Prometheus kontrolleri) yeşil durumda.
 
 ---
 
@@ -449,8 +459,8 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 
 ---
 
-**Context Version:** 1.1  
-**Last Updated:** 2025-11-07  
+**Context Version:** 1.2  
+**Last Updated:** 2025-11-09  
 **Maintained by:** DESE JARVIS System  
 **Protocol:** upgrade-protocol-v1.2
 

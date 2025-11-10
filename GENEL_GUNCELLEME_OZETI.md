@@ -1,8 +1,8 @@
 # 📋 Genel Güncelleme Özeti - v6.8.1
 
-**Tarih:** 2025-11-07  
+**Tarih:** 2025-11-09  
 **Versiyon:** 6.8.1  
-**Durum:** ✅ Üretim ortamında v6.8.1 yükseltmesi tamamlandı
+**Durum:** 🔄 Revizyon sürecinde – Kyverno/ArgoCD stabilizasyonu tamam, dokümantasyon güncellemesi devam ediyor
 
 ---
 
@@ -25,33 +25,36 @@
 - ✅ Docker temizliği (`docker image prune -f`, `docker container prune -f`) tamamlandı; 394MB alan geri kazanıldı.
 
 ### 4. CI/CD ve Dokümantasyon
-- ✅ `README.md`, `RELEASE_NOTES_v6.8.1.md`, `DESE_JARVIS_CONTEXT.md`, `EKSIKLER_VE_TAMAMLAMA_DURUMU.md`, `PROJE_DURUM_ANALIZ_RAPORU.md`, `docs/Sprint_2.7_Tech_Debt_Plan.md` v6.8.1 bilgileriyle senkronize edildi.
+- ✅ `README.md`, `RELEASE_NOTES_v6.8.1.md`, `PROJE_DURUM_ANALIZ_RAPORU.md`, `PROJE_DURUM_DETAYLI_RAPOR.md`, `PROJECT_MASTER_DOC.md`, `DOKUMENTASYON_GUNCELLEME_RAPORU.md` Kyverno/ArgoCD stabilizasyonunu yansıtacak şekilde güncellendi.
+- ✅ `GUNCELLEME_OZETI_v6.8.1.md` oluşturuldu; devam eden revizyon maddeleri tek kaynakta izleniyor.
 - ✅ `GENEL_GUNCELLEME_OZETI.md` ve `VERSIYON_GUNCELLEME_RAPORU.md` yeni sürüm akışı ve Docker/Kubernetes değişiklikleriyle güncellendi.
-- ✅ Jarvis hafıza kayıtları ve raporları (context, durum, görev) 2025-11-07 tarihli canlı migrate durumunu yansıtıyor.
+- 🔄 `.cursor/memory/AKTIF_GOREV.md` ve `.cursor/memory/PROJE_DURUMU.md` yeni odak listesine göre güncellenecek (planlandı).
 
 ### 5. Gözlemlenebilirlik & MCP
 - ✅ FinBot, MuBot, DESE ve Observability MCP sunucuları canlı backend entegrasyonları, Redis cache ve WebSocket yayınlarıyla çalışıyor.
 - ✅ Observability MCP, Prometheus ve Google metrics kaynaklarını aynı yanıt içinde servis ediyor.
 - ✅ `reports/jarvis_efficiency_summary_20251107.json` (Jarvis automation zinciri) yeşil.
+- 🔄 MCP dokümanları (gerçek durum & plan) Kyverno Faz 1 çıktılarıyla güncellenecek.
 
 ---
 
 ## 🔄 Sıradaki Adımlar
-- ⏳ ArgoCD senkronizasyonu: `argocd login` + `argocd app sync dese-api dese-frontend dese-finbot dese-mubot`.
-- ⏳ GKE rolling update çıktılarını `kubectl rollout status` ile doğrulama.
+- ⏳ MCP dokümantasyon revizyonu (`MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`, `DESE_JARVIS_CONTEXT.md`) – Faz 1 gerçek entegrasyon, Kyverno stabilizasyonu ve redis/cache durumları işlenecek.
+- ⏳ Cursor hafıza kayıtlarının (`.cursor/memory/AKTIF_GOREV.md`, `.cursor/memory/PROJE_DURUMU.md`) yeni odak listesiyle hizalanması.
+- ⏳ `VERSIYON_GUNCELLEME_RAPORU.md` güncellemesi – Kyverno/ArgoCD maddeleri sürüm özetine eklenecek.
 - ⏳ `pnpm lint` komutunun Node 20.19+ ve `corepack enable pnpm` ile CI ortamında raporlanması.
 
 ---
 
 ## 🎯 Sonuç
 - ✅ Kod, bağımlılık, Docker ve Kubernetes katmanları v6.8.1’e yükseltildi.
+- ✅ Kyverno admission controller ve ArgoCD senkronizasyonu stabil hale getirildi.
 - ✅ Canlı ortamda (poolfab.com.tr) çalışır durum doğrulandı.
-- ✅ Dokümantasyon ve Jarvis hafızası yeni sürümle tutarlı.
-- ⚠️ ArgoCD senkronizasyonu için erişim bilgisi bekleniyor.
+- 🔄 Dokümantasyon ve hafıza revizyonları tamamlandığında proje yeniden %100 “Production Ready” statüsüne alınacak.
 
 ---
 
-**Son Güncelleme:** 2025-11-07  
+**Son Güncelleme:** 2025-11-09  
 **Versiyon:** 6.8.1  
 **Hazırlayan:** Cursor AI Assistant
 
