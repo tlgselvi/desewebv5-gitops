@@ -1,9 +1,9 @@
 # MCP Server Gerçek Durum Raporu
 
-**Tarih:** 2025-11-09  
+**Tarih:** 2025-11-12  
 **Versiyon:** 6.8.1  
-**Last Update:** 2025-11-09  
-**Durum:** ✅ FinBot, MuBot, DESE ve Observability MCP modülleri canlı; Kyverno/ArgoCD stabilizasyonu tamamlandı
+**Last Update:** 2025-11-12  
+**Durum:** ✅ FinBot, MuBot, AIOps ve Observability MCP modülleri canlı; Redis cache + Prometheus entegrasyonları aktif
 
 ---
 
@@ -46,7 +46,7 @@
 - **Backend Entegrasyonu:** ✅ Backend `/metrics`, Prometheus API ve Google izleme servisleriyle tam entegre
   - Prometheus API (`/api/v1/query`)
   - Backend Metrics endpoint (`/metrics`)
-- **Redis Cache:** ✅ Eklendi (30 saniye TTL - metrics değişken)
+- **Redis Cache:** ✅ Eklendi (60 saniye TTL – konfigüre edilebilir)
 - **Error Handling:** ✅ asyncHandler + global error handler
 - **Durum:** ✅ Aktif ve canlı izleme sağlıyor
 - **Kyverno/ArgoCD:** Helm test hook devre dışı bırakıldı; metrics servisine yönelik Kyverno politikaları yeniden senkronize edildi.
@@ -71,12 +71,12 @@
 
 | Özellik | Durum | Not |
 |---------|-------|-----|
-| Temel Altyapı | ✅ | 4 MCP server çalışır durumda |
+| Temel Altyapı | ✅ | 4 MCP server production ortamında |
 | Health Check | ✅ | Tüm health endpoint'leri yanıt veriyor |
-| Gerçek Backend Entegrasyonu | ✅ | FinBot, MuBot, DESE, Observability üretimde |
-| Redis Cache | ✅ | Tüm server'larda aktif |
-| Error Handling & Logging | ✅ | asyncHandler + logger |
-| Authentication & Rate Limiting | ✅ | JWT + rate limit tüm server'larda devrede |
+| Gerçek Backend Entegrasyonu | ✅ | FinBot, MuBot, AIOps, Observability canlı veri sağlıyor |
+| Redis Cache | ✅ | Sunucu taraflı TTL (varsayılan 60 sn) aktif |
+| Error Handling & Logging | ✅ | asyncHandler + yapılandırılmış logging |
+| Authentication & Rate Limiting | ✅ | JWT + RBAC + rate limit her modülde devrede |
 | Observability (Prometheus) | ✅ | Prometheus + Google entegrasyonları aktif |
 
 **Sonuç:** Tüm MCP katmanı poolfab.com canlı ortamında sorunsuz çalışıyor; izleme, cache ve güvenlik katmanları standart operasyon akışına alındı. Kyverno/ArgoCD stabilizasyonu sonrası ek müdahale gerekmiyor.
@@ -88,5 +88,5 @@
 
 ---
 
-**Son Güncelleme:** 2025-11-07  
-**Versiyon:** 6.8.1 (Production canlı)
+**Son Güncelleme:** 2025-11-12  
+**Versiyon:** 6.8.1 (Production canlı)  

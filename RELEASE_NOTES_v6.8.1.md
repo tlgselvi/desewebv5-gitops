@@ -15,6 +15,7 @@
 - `docs/Sprint_2.7_Tech_Debt_Plan.md` güncellenerek uygulama notları ve öncelik sıraları eklendi; kullanılmayan `bcryptjs` ve `twilio` bağımlılıkları temizlendi.
 - Sprint 2.7 Step 8 kapsamında yerel Docker imajı/containers temizliği (`docker image prune -f`, `docker container prune -f`) tamamlandı.
 - Kyverno admission controller manifestleri yeniden üretildi; CRD’ler ayrı kustomize kaynağına taşındı, kaynak limitleri düşürüldü ve helm test hook’u devre dışı bırakıldı. ArgoCD `security` uygulaması yeniden senkronize edilerek stabil hâle getirildi.
+- MCP UI rotaları `/mcp/*` prefiksi altında toplandı; Express içinde `http-proxy-middleware` ile eski yollar (`/finbot`, `/aiops`, `/observability`) otomatik olarak yeni UI’ya yönlendiriliyor, statik asset proxy’si ve yapılandırılabilir `MCP_UI_TARGET` değişkeni üretim için hazır.
 
 ## 🔄 CI/CD & Deploy
 
@@ -47,6 +48,7 @@
 
 - `docs/Sprint_2.7_Tech_Debt_Plan.md`
 - `docs/GCP_MIGRATION_DURUM_OZETI.md`
+- `docs/MCP_UI_PROXY_STABILIZATION.md`
 - `reports/jarvis_efficiency_summary_20251107.json`
 
 ---

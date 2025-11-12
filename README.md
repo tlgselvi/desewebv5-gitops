@@ -1,7 +1,10 @@
 # Dese EA Plan v6.8.1
 
-**Version:** v6.8.1 (Sprint 2.7)
-**Last Update:** 2025-11-07
+> **Durum:** 🚀 v6.8.1 sürümü canlıda ve stabil çalışıyor. Operasyonel işlemler için `docs/OPERATIONS_GUIDE.md` dosyasını takip edin; MCP panelleri canlı veri + Redis cache + Playwright E2E testleri ile doğrulandı.
+
+
+**Version:** v6.8.1 (Sprint 2.7 – Finalized)
+**Last Update:** 2025-11-12
 
 EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot + DESE)
 
@@ -11,6 +14,12 @@ EA Plan Master Control System - Enterprise-level modular system (FinBot + MuBot 
 - **FinBot**: Finance Engine (FastAPI, Python 3.11) - Cost & ROI Forecasting
 - **MuBot**: Accounting Engine (Express.js, TypeScript) - Multi-Source Data Ingestion
 - **DESE**: Analytics Layer (Next.js 16 + React 19) - Realtime Metrics Dashboard
+
+### MCP Dashboard (v6.8.1 Final)
+- **Tamamen Dinamik Modüller:** FinBot, MuBot, AIOps ve Observability panelleri artık Prometheus, servis health endpoint'leri ve gerçek backend API'lerinden canlı veri çekiyor.
+- **Sunucu Tarafı Önbellek:** MCP dashboard API'si Redis üzerinden modül bazlı TTL (varsayılan 60 sn) ile önbellekleme yaparak performansı artırır.
+- **Dayanıklı Veri Toplama:** Tüm servisler `Promise.allSettled` kullanarak kısmi başarısızlıklarda dahi sağlıklı veriyi sunmaya devam eder.
+- **Standardize DTO Katmanı:** Health ve metric kaynaklarından gelen ham veriler ortak formatter'larla frontend bileşenlerine uygun DTO formatına dönüştürülür.
 
 ### UI Geliştirmeleri (v6.8.1)
 - **Tema Anahtarı**: Header’daki ışık/koyu tema geçişi `next-themes` + Tailwind dark mode ile yönetilir.
@@ -135,9 +144,15 @@ gcloud container clusters get-credentials dese-ea-plan-cluster --region=europe-w
 pnpm db:migrate
 ```
 
-5. **Uygulamayı başlatın**
+5. **Uygulamayı başlatın**  
+_(Windows + Tailwind 4 ortamında Turbopack ile yaşanan `lightningcss` hatalarını önlemek için webpack modunda çalıştırıyoruz.)_
 ```bash
 pnpm dev
+```
+
+6. **Production build alın**
+```bash
+pnpm build
 ```
 
 ### Docker ile Çalıştırma
@@ -228,6 +243,9 @@ pnpm test:smart
 ```bash
 # Browser testlerini çalıştırın
 pnpm test:auto
+
+# MCP panelleri için Playwright E2E testleri (Chromium ile tek proje)
+pnpm test:auto -- --project=chromium tests/e2e/mcp-*.spec.ts
 
 # UI ile çalıştırın
 pnpm test:auto:ui
@@ -326,8 +344,8 @@ src/
 - Code splitting
 
 ### Monitoring
-- Prometheus metrics
-- Health checks
+- Prometheus metrics (aktif modül sorguları – MCP dashboard redis cache ile yönetilir)
+- Health checks (tüm servisler `/health` endpoint'leri ile doğrulanır)
 - Resource limits
 - Auto-scaling
 

@@ -1,0 +1,11 @@
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\desesonpro\desewebv5\pnpm-lock.yaml as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * C:\desesonpro\desewebv5\frontend\pnpm-lock.yaml
+
+ ⚠ Found a change in next.config.mjs. Restarting the server to apply the changes...
+ ⨯ Failed to load next.config.mjs, see more info here https://nextjs.org/docs/messages/next-config-error
+ReferenceError: require is not defined in ES module scope, you can use import instead
+    at <unknown> (next.config.mjs:1:14)

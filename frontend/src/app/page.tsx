@@ -48,7 +48,7 @@ const MODULES = [
     title: "FinBot MCP",
     excerpt:
       "Gelir/gider projeksiyonları, senaryo bazlı planlama ve Jarvis destekli finansal otomasyon.",
-    link: "/aiops",
+    link: "/mcp/finbot",
     tag: "Finansal Planlama",
   },
   {
@@ -67,7 +67,7 @@ const MODULES = [
     title: "Observability MCP",
     excerpt:
       "Prometheus, Grafana, Loki ve Kyverno etkinliklerinden gelen metrik ve alarm orkestrasyonu.",
-    link: "/aiops",
+    link: "/mcp/observability",
     tag: "SRE & AIOps",
   },
 ];
@@ -100,7 +100,7 @@ export default function Home() {
                 </Link>
               </Button>
               <Button variant="secondary" size="lg" className="border-white/40 bg-white/10 text-white hover:bg-white/20" asChild>
-                <Link href="/aiops">AIOps modülüne git</Link>
+                <Link href="/mcp/aiops">AIOps modülüne git</Link>
               </Button>
               <Button variant="ghost" size="lg" className="text-white hover:bg-white/10" asChild>
                 <Link href="/login">Rol bazlı oturum aç</Link>

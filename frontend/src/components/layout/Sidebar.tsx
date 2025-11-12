@@ -12,7 +12,7 @@ export default function Sidebar() {
         <Link href="/optimization" className="hover:font-semibold">
           Optimization
         </Link>
-        <Link href="/aiops" className="hover:font-semibold">
+        <Link href="/mcp/aiops" className="hover:font-semibold">
           AIOps
         </Link>
       </nav>

@@ -22,18 +22,18 @@ const NAV_ITEMS: NavItem[] = [
     description: "MCP sağlık, Kyverno ve ArgoCD özetleri",
   },
   {
-    href: "/aiops",
+    href: "/mcp/aiops",
     label: "AIOps",
     description: "Drift analizi, alarm akışı ve otomasyon",
   },
   {
-    href: "/finbot",
+    href: "/mcp/finbot",
     label: "FinBot",
     description: "Gelir projeksiyonu, bütçe ve senaryo simülasyonları",
     badge: "priority",
   },
   {
-    href: "/observability",
+    href: "/mcp/observability",
     label: "Observability",
     description: "Grafana, Loki ve Tempo metrikleri",
   },

@@ -8,7 +8,8 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import { createServer } from "http";
+import { createServer, type IncomingMessage, type ServerResponse } from "http";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 import {
@@ -168,6 +169,62 @@ app.get("/health", async (req, res) => {
 
 // API routes
 setupRoutes(app);
+
+const MCP_UI_TARGET = process.env.MCP_UI_TARGET ?? "http://127.0.0.1:3100";
+const MCP_PROXY_LOG_LEVEL = config.nodeEnv === "development" ? "debug" : "warn";
+
+const handleProxyError = (
+  error: Error,
+  req: IncomingMessage,
+  res: ServerResponse,
+) => {
+  const originalUrl =
+    (req as Request).originalUrl ?? req.url ?? "unknown";
+
+  logger.error("MCP UI proxy error", {
+    error: error.message,
+    stack: error.stack,
+    route: originalUrl,
+    target: MCP_UI_TARGET,
+  });
+
+  if (!res.headersSent) {
+    res.writeHead(502, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+      error: "proxy_error",
+      message: "Failed to load MCP UI content",
+        route: originalUrl,
+      timestamp: new Date().toISOString(),
+      }),
+    );
+  }
+};
+
+app.use(
+  ["/mcp", "/_next", "/favicon.ico", "/icon"],
+  createProxyMiddleware({
+    target: MCP_UI_TARGET,
+    changeOrigin: true,
+    xfwd: true,
+    autoRewrite: true,
+    logLevel: MCP_PROXY_LOG_LEVEL,
+    onError: (err, req, res) => handleProxyError(err as Error, req, res),
+  }),
+);
+
+app.use(
+  ["/finbot", "/aiops", "/observability"],
+  createProxyMiddleware({
+    target: MCP_UI_TARGET,
+    changeOrigin: true,
+    xfwd: true,
+    autoRewrite: true,
+    logLevel: MCP_PROXY_LOG_LEVEL,
+    pathRewrite: (path) => `/mcp${path}`,
+    onError: (err, req, res) => handleProxyError(err as Error, req, res),
+  }),
+);
 
 // Swagger documentation
 if (config.nodeEnv !== "production") {
