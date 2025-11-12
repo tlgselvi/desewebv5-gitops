@@ -1,236 +1,69 @@
-# 📚 DESE EA Plan v6.8.1 - Master Documentation
+# 📚 Dese EA Plan – Master Document
 
-**Versiyon:** 6.8.1  
-**Son Güncelleme:** 2025-11-12  
-**Durum:** Revizyon Sürecinde (~90% Tamamlanma)
-
----
-
-## 🎯 Proje Özeti
-
-**Dese EA Plan v6.8.1** - CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama sistemi.
-
-### Ana Modüller
-- **FinBot**: Finance Engine (FastAPI, Python 3.11) - Cost & ROI Forecasting
-- **MuBot**: Accounting Engine (Express.js, TypeScript) - Multi-Source Data Ingestion
-- **DESE**: Analytics Layer (Next.js 16 + React 19) - Realtime Metrics Dashboard
+**Version:** 6.8.1  
+**Last Updated:** 2025-11-12  
+**Delivery Mode:** Maintenance (production live, no active sprint)
 
 ---
 
-## ⚡ 2025-11-09 Güncel Odak
+## 🎯 Executive Summary
 
-| Öncelik | Başlık | Açıklama |
-|---------|--------|----------|
-| 🔴 | MCP Dokümantasyonu | `MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`, `DESE_JARVIS_CONTEXT.md` dosyalarına Faz 1 gerçek entegrasyon + Kyverno stabilizasyonu işlensin |
-| 🔴 | Sürüm Notları | `RELEASE_NOTES_v6.8.1.md`, `GUNCELLEME_OZETI_v6.8.1.md` dosyalarına Kyverno/ArgoCD iyileştirmeleri eklenecek |
-| 🟠 | Master & Hafıza Senkronu | `PROJECT_MASTER_DOC.md` (bu belge), `.cursor/memory/AKTIF_GOREV.md`, `.cursor/memory/PROJE_DURUMU.md` aynı odakla yenilenecek |
-| 🟡 | Operasyon Rehberleri | `gitops-workflow.md` ve bağlı ops dökümanlarında Kyverno senaryoları not düşülecek |
-| 🟢 | Arşiv | `tmp-kyverno/**` üçüncü parti referans olarak kalacak; raporlarda “harici” etiketiyle belirtildi |
+- Platform production traffic is served by the four MCP modules (FinBot, MuBot, AIOps, Observability) with Redis caching and Prometheus-backed telemetry.  
+- Latest release (v6.8.1) closed all open items; focus is operational reliability, alert hygiene and light hotfixes when required.  
+- Historical reports and detailed sprint notes were archived under `archive/v6.8.1-sprint-end/` to keep the working tree lean.
 
 ---
 
-## 📖 Dokümantasyon İndeksi
+## ✅ System Status Snapshot
 
-### 🔴 Temel Dokümanlar (Mutlaka Okunmalı)
+| Module | Highlights | Status |
+|--------|------------|--------|
+| **FinBot MCP** (`src/mcp/finbot-server.ts`) | Live analytics API + Prometheus, Redis TTL 60s, full auth stack | ✅ Healthy |
+| **MuBot MCP** (`src/mcp/mubot-server.ts`) | Ingestion + accounting pipelines, Redis cache, Kyverno policies synced | ✅ Healthy |
+| **AIOps MCP** (`src/mcp/dese-server.ts`) | Anomaly & correlation services, structured logging, timeout-aware Prometheus queries | ✅ Healthy |
+| **Observability MCP** (`src/mcp/observability-server.ts`) | Aggregated metrics from Prometheus, backend `/metrics`, Google telemetry | ✅ Healthy |
 
-1. **`README.md`** ⭐
-   - Proje genel bakış
-   - Kurulum ve kullanım
-   - Tech stack
-   - Ana modüller
-
-2. **`RELEASE_NOTES_v6.8.1.md`** ⭐
-   - v6.8.1 release notları
-   - Kyverno/ArgoCD iyileştirmeleri (eklenecek)
-   - Tamamlanma durumu
-   - Eksikler listesi
-
-3. **`DESE_JARVIS_CONTEXT.md`** ⭐
-   - Proje context bilgileri
-   - MCP server detayları
-   - Sistem konfigürasyonları
-   - Protocol: upgrade-protocol-v1.2
-
-4. **`EKSIKLER_VE_TAMAMLAMA_DURUMU.md`** ⭐
-   - Kapsamlı eksikler listesi
-   - Tamamlanma durumu
-   - Öncelik sıralaması
-
-### 🟡 MCP Server Dokümantasyonu
-
-5. **`MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`**
-   - MCP server analizi
-   - İyileştirme planları
-   - Mevcut durum tablosu
-
-6. **`MCP_GERCEK_DURUM.md`**
-   - Gerçek durum analizi
-   - Eksikler detayı
-
-### 🟢 Geliştirme Rehberleri
-
-7. **`CICD_GUIDE.md`**
-   - CI/CD kurulum rehberi
-   - Deployment stratejileri
-
-8. **`GITHUB_SETUP.md`**
-   - GitHub yapılandırması
-   - Repository setup
-
-9. **`gitops-workflow.md`**
-   - GitOps workflow
-   - ArgoCD konfigürasyonu
-
-### 📚 Dokümantasyon Klasörü (`docs/`)
-
-10. **`docs/SPRINT_2.6_DAY_3_SUMMARY.md`**
-    - Sprint 2.6 Gün 3 özeti
-    - Tamamlanan işler
-
-11. **`docs/SELF_HEALING_GUIDE.md`**
-    - Self-healing rehberi
-    - Otomatik düzeltme mekanizmaları
-
-12. **`docs/PREDICTIVE_ROLLBACK_GUIDE.md`**
-    - Predictive rollback rehberi
-    - Otomatik geri alma
-
-13. **`docs/MCP_UI_PROXY_STABILIZATION.md`**
-    - MCP UI & backend entegrasyon özeti
-    - Route prefiksleme ve proxy yapılandırması
-    - UI/UX refactor planı
-
-14. **`docs/CONTINUOUS_COMPLIANCE_GUIDE.md`**
-    - Sürekli uyumluluk rehberi
-    - Compliance otomasyonu
-
-### 🔧 Operasyon Dokümanları (`ops/`)
-
-15. **`ops/DEPLOY_MANUAL.md`**
-    - Manuel deployment rehberi
-
-16. **`ops/DEPLOYMENT_CHECKLIST.md`**
-    - Deployment checklist
-
-17. **`ops/DEPLOYMENT_NOTES.md`**
-    - Deployment notları
-
-18. **`ops/README_VALIDATION.md`**
-    - Validation rehberi
-
-### 🤖 JARVIS Sistem Dokümantasyonu
-
-19. **`JARVIS_DENETIM_RAPORU.md`**
-    - JARVIS sistem denetim raporu
-    - Eksik bileşenler
-
-20. **`JARVIS_BILESENLER_TAMAMLANDI.md`**
-    - Tamamlanan JARVIS bileşenleri
-
-21. **`.cursor/memory/JARVIS_DURUMU.md`**
-    - JARVIS durum raporu
-
-22. **`.cursor/chains/JARVIS_CHAIN.md`**
-    - JARVIS chain dokümantasyonu
-
-### 📊 Güncelleme ve Özetler
-
-23. **`GUNCELLEME_OZETI_v6.8.1.md`**
-    - v6.8.1 güncelleme özeti (revizyon aşamasında)
-    - Versiyon güncellemeleri
+**Shared guarantees**  
+- JWT + RBAC + rate limiting on every MCP surface  
+- `Promise.allSettled` fallbacks keep dashboards responsive; Redis cache shields upstreams  
+- Prometheus alerting + Grafana dashboards monitored through `docs/OPERATIONS_GUIDE.md`
 
 ---
 
-## 🔄 Versiyon Geçmişi
+## 🏁 Completed Outcomes (v6.8.1)
 
-### v6.8.1 (Güncel - 2025-11-12)
-- ✅ Kyverno admission controller ve ArgoCD senkronizasyonu düzeltildi
-- ✅ MCP Server Faz 1 altyapısı stabil
-- 🔄 Dokümantasyon revizyonu (üst düzey raporlar, release notes)
-- **Tamamlanma:** ~90% (UI/UX refactor tamamlandığında %100 olacak)
-
-### v6.8.0 (Arşiv - 2025-01-27)
-- ✅ MCP Server iyileştirmeleri (Faz 1 tamamlandı)
-- ✅ JARVIS bileşenleri tamamlandı
-- ✅ Authentication & Security (Faz 2) planlandı
-- **Tamamlanma:** ~80-85%
-
-### v5.7.1 (Eski - Arşivlendi)
-- Stable release
-- Security audit tamamlandı
-- **Durum:** Arşive taşındı (`archive/old-docs/2025-01-27/`)
-
-### v5.6 ve Öncesi (Eski - Arşivlendi)
-- Tüm v5.x dokümanları arşive taşındı
-- **Konum:** `archive/old-docs/2025-01-27/`
+- 100 % completion across backlog: MCP real integrations, WebSocket gateway, context aggregation, FinBot stream consumers, Python workers, security upgrades.
+- End-to-end testing (Vitest + Playwright) and automated health scripts stabilised post-release operations.
+- Kyverno/ArgoCD reconciliation issues resolved; deployment runbooks updated to reflect the stable pipeline.
 
 ---
 
-## 📁 Dosya Yapısı
+## 🔗 Authoritative References
 
-```
-desewebv5/
-├── README.md                          # Ana README
-├── RELEASE_NOTES_v6.8.1.md           # Release notları (revizyon aşamasında)
-├── PROJECT_MASTER_DOC.md             # Bu dosya (master index)
-├── DESE_JARVIS_CONTEXT.md            # JARVIS context
-├── EKSIKLER_VE_TAMAMLAMA_DURUMU.md   # Eksikler listesi
-├── MCP_KAPSAMLI_ANALIZ_VE_PLAN.md    # MCP analizi
-├── MCP_GERCEK_DURUM.md               # MCP durum
-├── GUNCELLEME_OZETI_v6.8.1.md        # Güncelleme özeti
-├── docs/                              # Dokümantasyon klasörü
-│   ├── SPRINT_2.6_DAY_3_SUMMARY.md
-│   ├── SELF_HEALING_GUIDE.md
-│   ├── PREDICTIVE_ROLLBACK_GUIDE.md
-│   ├── MCP_UI_PROXY_STABILIZATION.md
-│   └── CONTINUOUS_COMPLIANCE_GUIDE.md
-├── ops/                               # Operasyon dokümanları
-│   ├── DEPLOY_MANUAL.md
-│   ├── DEPLOYMENT_CHECKLIST.md
-│   ├── DEPLOYMENT_NOTES.md
-│   └── README_VALIDATION.md
-├── .cursor/                           # Cursor AI memory
-│   ├── memory/
-│   └── chains/
-└── archive/old-docs/2025-01-27/      # Eski dokümanlar (v5.x)
-```
+- `README.md` – quick start, installation, core stack  
+- `docs/OPERATIONS_GUIDE.md` – on-call playbooks, troubleshooting, alert response  
+- `docs/SPRINT_PLAN_v6.9.0.md` – next cycle planning reference (draft)  
+- `RELEASE_NOTES_v6.8.1.md` – release narrative and change log  
+- `archive/v6.8.1-sprint-end/` – archived reports, status summaries, historical context
 
 ---
 
-## 🎯 Hızlı Başlangıç
+## 🔄 Operational Notes
 
-1. **Yeni başlayanlar için:**
-   - `README.md` → Proje genel bakış
-   - `RELEASE_NOTES_v6.8.1.md` → Versiyon bilgileri
-
-2. **Geliştiriciler için:**
-   - `DESE_JARVIS_CONTEXT.md` → Proje context
-   - `EKSIKLER_VE_TAMAMLAMA_DURUMU.md` → Eksikler
-   - `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md` → MCP server'lar
-
-3. **Operasyon için:**
-   - `ops/DEPLOYMENT_CHECKLIST.md` → Deployment
-   - `docs/SELF_HEALING_GUIDE.md` → Self-healing
-   - `CICD_GUIDE.md` → CI/CD
+- Stay in maintenance cadence: apply hotfixes only, record changes in release notes, keep `PROJECT_MASTER_DOC.md` as the single source for live status.
+- Monitor Redis hit rate, MCP dashboard latency, and alert noise; the Prometheus ruleset is the authoritative checklist for incident readiness.
+- For deployment actions use `ops/DEPLOYMENT_CHECKLIST.md` and `gitops-workflow.md`; align with the Kubernetes manifests already promoted via ArgoCD.
 
 ---
 
-## ⚠️ Önemli Notlar
+## 📞 Contact & Ownership
 
-1. **Eski Dokümanlar:** Tüm v5.x dokümanları `archive/old-docs/2025-01-27/` klasörüne taşındı
-2. **Güncel Versiyon:** v6.8.1 (2025-11-09)
-3. **Tamamlanma:** ~85% (revizyon sonrası tekrar %100)
-4. **MCP Server'lar:** Faz 1 tamamlandı, Kyverno stabilizasyonu belgelenecek
-
----
-
-## 📞 İletişim ve Destek
-
-- **Proje:** Dese EA Plan v6.8.1
-- **Versiyon:** 6.8.1
-- **Son Güncelleme:** 2025-11-09
+- Product: Dese EA Plan v6.8.1  
+- Maintainers: Ops & MCP Platform Team  
+- Communication: `docs/OPERATIONS_GUIDE.md` (support channels)  
+- Incident tracking: OBS-series tickets (see operations guide)
 
 ---
 
-**Not:** Bu dosya tüm dokümantasyonun master index'i olarak hizmet eder. Güncel ve doğru bilgi kaynağıdır.
+This document is the authoritative snapshot of the project. All other summaries are archived; keep this file up to date when production state changes.
 
