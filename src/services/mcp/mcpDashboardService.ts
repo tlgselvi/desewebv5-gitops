@@ -4,7 +4,7 @@ import { queryInstant } from "@/services/monitoring/prometheusClient.js";
 import { redis } from "@/services/storage/redisClient.js";
 import { logger } from "@/utils/logger.js";
 
-type ModuleName = "mubot" | "finbot" | "aiops" | "observability";
+export type ModuleName = "mubot" | "finbot" | "aiops" | "observability";
 
 export type MetricChangeType = "increase" | "decrease" | "neutral";
 
@@ -78,6 +78,32 @@ const FALLBACK_VALUE = "N/A";
 const numberFormatter = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 1 });
 const integerFormatter = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 
+const isNonEmptyString = (value?: string | null): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+
+const createHealthDescriptor = (
+  serviceName: string,
+  url?: string | null,
+): HealthEndpointDescriptor =>
+  isNonEmptyString(url) ? { serviceName, url: url.trim() } : { serviceName };
+
+const createMetricDescriptor = (
+  descriptor: Omit<MetricDescriptor, "query" | "secondaryQuery"> & {
+    query?: string | null | undefined;
+    secondaryQuery?: string | null | undefined;
+  },
+): MetricDescriptor => {
+  const { query, secondaryQuery, ...rest } = descriptor;
+
+  return {
+    ...rest,
+    ...(isNonEmptyString(query) ? { query: query.trim() } : {}),
+    ...(isNonEmptyString(secondaryQuery)
+      ? { secondaryQuery: secondaryQuery.trim() }
+      : {}),
+  };
+};
+
 const normalizeStatus = (rawStatus?: string): string => {
   if (!rawStatus) {
     return FALLBACK_STATUS;
@@ -135,13 +161,19 @@ const fetchJsonWithTimeout = async <T>(url: string): Promise<T | null> => {
   }
 };
 
-const fetchHealthCheck = async (descriptor: HealthEndpointDescriptor): Promise<DashboardHealthCheck> => {
-  if (!descriptor.url) {
+const fetchHealthCheck = async (
+  descriptor: HealthEndpointDescriptor,
+): Promise<DashboardHealthCheck> => {
+  const endpointUrl = descriptor.url;
+
+  if (!isNonEmptyString(endpointUrl)) {
     throw new Error("Health endpoint URL is not configured");
   }
 
   try {
-    const payload = await fetchJsonWithTimeout<GenericHealthPayload>(descriptor.url);
+    const payload = await fetchJsonWithTimeout<GenericHealthPayload>(
+      endpointUrl.trim(),
+    );
     const status = normalizeStatus(payload?.status ?? payload?.state ?? "Stabil");
     return createHealthCheck(descriptor.serviceName, status);
   } catch (error) {
@@ -154,11 +186,20 @@ const fetchHealthCheck = async (descriptor: HealthEndpointDescriptor): Promise<D
   }
 };
 
-const buildHealthChecks = async (descriptors: HealthEndpointDescriptor[]): Promise<DashboardHealthCheck[]> => {
-  const results = await Promise.allSettled(descriptors.map((descriptor) => fetchHealthCheck(descriptor)));
+const buildHealthChecks = async (
+  descriptors: HealthEndpointDescriptor[],
+): Promise<DashboardHealthCheck[]> => {
+  const results = await Promise.allSettled(
+    descriptors.map((descriptor) => fetchHealthCheck(descriptor)),
+  );
 
   return results.map((result, index) => {
     const descriptor = descriptors[index];
+
+    if (!descriptor) {
+      logger.error("Missing health descriptor for MCP dashboard", { index });
+      return createHealthCheck("Bilinmeyen Servis", FALLBACK_STATUS);
+    }
 
     if (result.status === "fulfilled") {
       return result.value;
@@ -208,13 +249,19 @@ const formatLatency = (value: number | null): string => {
 };
 
 const fetchMetric = async (descriptor: MetricDescriptor): Promise<DashboardMetric> => {
-  if (!descriptor.query) {
+  const primaryQuery = descriptor.query;
+
+  if (!isNonEmptyString(primaryQuery)) {
     throw new Error("Prometheus query is not configured");
   }
 
+  const secondaryQuery = descriptor.secondaryQuery;
+
   const [primaryResult, secondaryResult] = await Promise.all([
-    queryInstant(descriptor.query),
-    descriptor.secondaryQuery ? queryInstant(descriptor.secondaryQuery) : Promise.resolve(null),
+    queryInstant(primaryQuery.trim()),
+    isNonEmptyString(secondaryQuery)
+      ? queryInstant(secondaryQuery.trim())
+      : Promise.resolve(null),
   ]);
 
   const value = descriptor.formatValue(primaryResult, secondaryResult);
@@ -241,11 +288,25 @@ const createMetricFallback = (descriptor: MetricDescriptor): DashboardMetric => 
   footerText: descriptor.footerText,
 });
 
-const buildMetrics = async (descriptors: MetricDescriptor[]): Promise<DashboardMetric[]> => {
-  const results = await Promise.allSettled(descriptors.map((descriptor) => fetchMetric(descriptor)));
+const buildMetrics = async (
+  descriptors: MetricDescriptor[],
+): Promise<DashboardMetric[]> => {
+  const results = await Promise.allSettled(
+    descriptors.map((descriptor) => fetchMetric(descriptor)),
+  );
 
   return results.map((result, index) => {
     const descriptor = descriptors[index];
+
+    if (!descriptor) {
+      logger.error("Missing metric descriptor for MCP dashboard", { index });
+      return {
+        icon: "AlertTriangle",
+        title: "Bilinmeyen Metri̇k",
+        value: FALLBACK_VALUE,
+        footerText: "Veri bulunamadı",
+      };
+    }
 
     if (result.status === "fulfilled") {
       return result.value;
@@ -289,25 +350,25 @@ const buildMuBotDashboard = async (): Promise<McpDashboardData> => {
   const queries = config.mcpDashboard.mubot.metricsQueries;
 
   const healthDescriptors: HealthEndpointDescriptor[] = [
-    { serviceName: "MuBot API", url: endpoints.api },
-    { serviceName: "PostgreSQL DB", url: endpoints.postgres },
-    { serviceName: "Data Ingestion Worker", url: endpoints.ingestion },
-    { serviceName: "Reconciliation Job", url: endpoints.reconciliation },
+    createHealthDescriptor("MuBot API", endpoints.api),
+    createHealthDescriptor("PostgreSQL DB", endpoints.postgres),
+    createHealthDescriptor("Data Ingestion Worker", endpoints.ingestion),
+    createHealthDescriptor("Reconciliation Job", endpoints.reconciliation),
   ];
 
   const metricDescriptors: MetricDescriptor[] = [
-    {
+    createMetricDescriptor({
       title: "İşlenen Kayıt",
       icon: "FileInput",
-      query: queries.recordsProcessed,
+      query: queries.recordsProcessed ?? null,
       footerText: "Son 1 saat",
       fallbackValue: "N/A",
       formatValue: (value) => formatCount(value, "kayıt"),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "DB Yazma Gecikmesi",
       icon: "Database",
-      query: queries.dbWriteLatency,
+      query: queries.dbWriteLatency ?? null,
       footerText: "p95",
       fallbackValue: "N/A",
       formatValue: (value) => formatLatency(value),
@@ -318,23 +379,24 @@ const buildMuBotDashboard = async (): Promise<McpDashboardData> => {
               change: `${integerFormatter.format(value)} ms`,
               changeType: value > 0 ? "increase" : "neutral",
             },
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Reconciliation Oranı",
       icon: "Repeat",
-      query: queries.reconciliationRate,
+      query: queries.reconciliationRate ?? null,
       footerText: "Son 24 saat",
       fallbackValue: "N/A",
       formatValue: (value) => formatPercentage(value),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Veri Kalite Skoru",
       icon: "Scale",
-      query: queries.dataQualityScore,
+      query: queries.dataQualityScore ?? null,
       footerText: "Ortalama",
       fallbackValue: "N/A",
-      formatValue: (value) => (value === null ? FALLBACK_VALUE : `${value.toFixed(0)}/100`),
-    },
+      formatValue: (value) =>
+        value === null ? FALLBACK_VALUE : `${value.toFixed(0)}/100`,
+    }),
   ];
 
   return buildModuleDashboard("mubot", healthDescriptors, metricDescriptors);
@@ -345,18 +407,18 @@ const buildObservabilityDashboard = async (): Promise<McpDashboardData> => {
   const queries = config.mcpDashboard.observability.metricsQueries;
 
   const healthDescriptors: HealthEndpointDescriptor[] = [
-    { serviceName: "Prometheus", url: endpoints.prometheus },
-    { serviceName: "Grafana", url: endpoints.grafana },
-    { serviceName: "Loki Ingester", url: endpoints.loki },
-    { serviceName: "Tempo Distributor", url: endpoints.tempo },
+    createHealthDescriptor("Prometheus", endpoints.prometheus),
+    createHealthDescriptor("Grafana", endpoints.grafana),
+    createHealthDescriptor("Loki Ingester", endpoints.loki),
+    createHealthDescriptor("Tempo Distributor", endpoints.tempo),
   ];
 
   const metricDescriptors: MetricDescriptor[] = [
-    {
+    createMetricDescriptor({
       title: "Aktif Hedefler",
       icon: "Server",
-      query: queries.activeTargets,
-      secondaryQuery: queries.totalTargets,
+      query: queries.activeTargets ?? null,
+      secondaryQuery: queries.totalTargets ?? null,
       footerText: "Prometheus scrape pool",
       fallbackValue: "N/A",
       formatValue: (active, total) => {
@@ -374,31 +436,31 @@ const buildObservabilityDashboard = async (): Promise<McpDashboardData> => {
 
         return `${formatCount(active)}/${formatCount(total)}`;
       },
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Log Ingestion Oranı",
       icon: "LogIn",
-      query: queries.logIngestion,
+      query: queries.logIngestion ?? null,
       footerText: "Son 15 dakika",
       fallbackValue: "N/A",
       formatValue: (value) => formatBytesPerMinute(value),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Aktif Alarmlar",
       icon: "AlertCircle",
-      query: queries.activeAlerts,
+      query: queries.activeAlerts ?? null,
       footerText: "Alertmanager",
       fallbackValue: "N/A",
       formatValue: (value) => formatCount(value, "alarm"),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Query Gecikmesi (p99)",
       icon: "Timer",
-      query: queries.queryLatency,
+      query: queries.queryLatency ?? null,
       footerText: "Grafana sorguları",
       fallbackValue: "N/A",
       formatValue: (value) => formatLatency(value),
-    },
+    }),
   ];
 
   return buildModuleDashboard("observability", healthDescriptors, metricDescriptors);
@@ -409,46 +471,46 @@ const buildFinBotDashboard = async (): Promise<McpDashboardData> => {
   const queries = config.mcpDashboard.finbot.metricsQueries;
 
   const healthDescriptors: HealthEndpointDescriptor[] = [
-    { serviceName: "FinBot API", url: endpoints.api },
-    { serviceName: "Redis Cache", url: endpoints.redis },
-    { serviceName: "Forecast Engine", url: endpoints.forecast },
-    { serviceName: "Kyverno Sync", url: endpoints.kyverno },
+    createHealthDescriptor("FinBot API", endpoints.api),
+    createHealthDescriptor("Redis Cache", endpoints.redis),
+    createHealthDescriptor("Forecast Engine", endpoints.forecast),
+    createHealthDescriptor("Kyverno Sync", endpoints.kyverno),
   ];
 
   const metricDescriptors: MetricDescriptor[] = [
-    {
+    createMetricDescriptor({
       title: "Forecast CPU Kullanımı",
       icon: "Cpu",
-      query: queries.cpuUsage,
+      query: queries.cpuUsage ?? null,
       footerText: "Son 1 saat",
       fallbackValue: "N/A",
       formatValue: (value) => formatPercentage(value),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Forecast Bellek",
       icon: "MemoryStick",
-      query: queries.memoryUsage,
+      query: queries.memoryUsage ?? null,
       footerText: "Düne göre",
       fallbackValue: "N/A",
       formatValue: (value) =>
         value === null ? FALLBACK_VALUE : `${numberFormatter.format(value)} GB`,
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Aktif Senaryo Oturumları",
       icon: "Users",
-      query: queries.activeSessions,
+      query: queries.activeSessions ?? null,
       footerText: "Bugün",
       fallbackValue: "N/A",
       formatValue: (value) => formatCount(value, "oturum"),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "API Gecikmesi (p95)",
       icon: "Clock",
-      query: queries.apiLatency,
+      query: queries.apiLatency ?? null,
       footerText: "Son 15 dakika",
       fallbackValue: "N/A",
       formatValue: (value) => formatLatency(value),
-    },
+    }),
   ];
 
   return buildModuleDashboard("finbot", healthDescriptors, metricDescriptors);
@@ -459,46 +521,46 @@ const buildAiOpsDashboard = async (): Promise<McpDashboardData> => {
   const queries = config.mcpDashboard.aiops.metricsQueries;
 
   const healthDescriptors: HealthEndpointDescriptor[] = [
-    { serviceName: "AIOps API", url: endpoints.api },
-    { serviceName: "Correlation Engine", url: endpoints.correlation },
-    { serviceName: "Anomaly Detector", url: endpoints.anomaly },
-    { serviceName: "Telemetry Ingestion", url: endpoints.ingestion },
+    createHealthDescriptor("AIOps API", endpoints.api),
+    createHealthDescriptor("Correlation Engine", endpoints.correlation),
+    createHealthDescriptor("Anomaly Detector", endpoints.anomaly),
+    createHealthDescriptor("Telemetry Ingestion", endpoints.ingestion),
   ];
 
   const metricDescriptors: MetricDescriptor[] = [
-    {
+    createMetricDescriptor({
       title: "ML Model CPU",
       icon: "Cpu",
-      query: queries.modelCpu,
+      query: queries.modelCpu ?? null,
       footerText: "Son 1 saat",
       fallbackValue: "N/A",
       formatValue: (value) => formatPercentage(value),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "ML Model Bellek",
       icon: "MemoryStick",
-      query: queries.modelMemory,
+      query: queries.modelMemory ?? null,
       footerText: "Düne göre",
       fallbackValue: "N/A",
       formatValue: (value) =>
         value === null ? FALLBACK_VALUE : `${numberFormatter.format(value)} GB`,
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Tespit Edilen Anomali",
       icon: "AlertTriangle",
-      query: queries.anomaliesDetected,
+      query: queries.anomaliesDetected ?? null,
       footerText: "Bugün",
       fallbackValue: "N/A",
       formatValue: (value) => formatCount(value, "anomali"),
-    },
-    {
+    }),
+    createMetricDescriptor({
       title: "Ingestion Gecikmesi",
       icon: "Network",
-      query: queries.ingestionDelay,
+      query: queries.ingestionDelay ?? null,
       footerText: "Son 15 dakika",
       fallbackValue: "N/A",
       formatValue: (value) => formatLatency(value),
-    },
+    }),
   ];
 
   return buildModuleDashboard("aiops", healthDescriptors, metricDescriptors);

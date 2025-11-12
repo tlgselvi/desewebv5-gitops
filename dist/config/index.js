@@ -31,7 +31,7 @@ const configSchema = z.object({
     security: z.object({
         jwtSecret: z
             .string()
-            .default("ea-plan-master-control-v6.8.0-super-secret-jwt-key-min-32-chars"),
+            .default("ea-plan-master-control-v6.8.1-super-secret-jwt-key-min-32-chars"),
         jwtExpiresIn: z.string().default("24h"),
         bcryptRounds: z.coerce.number().default(12),
         rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes
@@ -61,6 +61,110 @@ const configSchema = z.object({
         loki: z.boolean().default(true),
         tempo: z.boolean().default(true),
         openTelemetry: z.boolean().default(true),
+    }),
+    mcpDashboard: z
+        .object({
+        prometheus: z
+            .object({
+            baseUrl: z.string().url().optional(),
+            authToken: z.string().optional(),
+            timeoutMs: z.coerce.number().optional(),
+        })
+            .default({}),
+        cache: z
+            .object({
+            ttlSeconds: z.coerce.number().min(1).default(60),
+        })
+            .default({ ttlSeconds: 60 }),
+        finbot: z
+            .object({
+            healthEndpoints: z
+                .object({
+                api: z.string().url().optional(),
+                redis: z.string().url().optional(),
+                forecast: z.string().url().optional(),
+                kyverno: z.string().url().optional(),
+            })
+                .default({}),
+            metricsQueries: z
+                .object({
+                cpuUsage: z.string().optional(),
+                memoryUsage: z.string().optional(),
+                activeSessions: z.string().optional(),
+                apiLatency: z.string().optional(),
+            })
+                .default({}),
+        })
+            .default({ healthEndpoints: {}, metricsQueries: {} }),
+        aiops: z
+            .object({
+            healthEndpoints: z
+                .object({
+                api: z.string().url().optional(),
+                correlation: z.string().url().optional(),
+                anomaly: z.string().url().optional(),
+                ingestion: z.string().url().optional(),
+            })
+                .default({}),
+            metricsQueries: z
+                .object({
+                modelCpu: z.string().optional(),
+                modelMemory: z.string().optional(),
+                anomaliesDetected: z.string().optional(),
+                ingestionDelay: z.string().optional(),
+            })
+                .default({}),
+        })
+            .default({ healthEndpoints: {}, metricsQueries: {} }),
+        mubot: z
+            .object({
+            healthEndpoints: z
+                .object({
+                api: z.string().url().optional(),
+                postgres: z.string().url().optional(),
+                ingestion: z.string().url().optional(),
+                reconciliation: z.string().url().optional(),
+            })
+                .default({}),
+            metricsQueries: z
+                .object({
+                recordsProcessed: z.string().optional(),
+                dbWriteLatency: z.string().optional(),
+                reconciliationRate: z.string().optional(),
+                dataQualityScore: z.string().optional(),
+            })
+                .default({}),
+        })
+            .default({ healthEndpoints: {}, metricsQueries: {} }),
+        observability: z
+            .object({
+            healthEndpoints: z
+                .object({
+                prometheus: z.string().url().optional(),
+                grafana: z.string().url().optional(),
+                loki: z.string().url().optional(),
+                tempo: z.string().url().optional(),
+            })
+                .default({}),
+            metricsQueries: z
+                .object({
+                activeTargets: z.string().optional(),
+                totalTargets: z.string().optional(),
+                logIngestion: z.string().optional(),
+                activeAlerts: z.string().optional(),
+                queryLatency: z.string().optional(),
+            })
+                .default({}),
+        })
+            .default({ healthEndpoints: {}, metricsQueries: {} }),
+    })
+        .default({
+        prometheus: {},
+        cache: { ttlSeconds: 60 },
+        finbot: { healthEndpoints: {}, metricsQueries: {} },
+        aiops: { healthEndpoints: {}, metricsQueries: {} },
+        mubot: { healthEndpoints: {}, metricsQueries: {} },
+        observability: { healthEndpoints: {}, metricsQueries: {} },
     }),
     // Kubernetes & GitOps
     kubernetes: z.object({
@@ -195,6 +299,73 @@ const rawConfig = {
         loki: process.env.LOKI_ENABLED === "true",
         tempo: process.env.TEMPO_ENABLED === "true",
         openTelemetry: process.env.OPENTELEMETRY_ENABLED === "true",
+    },
+    mcpDashboard: {
+        prometheus: {
+            baseUrl: process.env.MCP_PROMETHEUS_BASE_URL,
+            authToken: process.env.MCP_PROMETHEUS_AUTH_TOKEN,
+            timeoutMs: process.env.MCP_PROMETHEUS_TIMEOUT_MS,
+        },
+        cache: {
+            ttlSeconds: process.env.MCP_CACHE_TTL_SECONDS,
+        },
+        finbot: {
+            healthEndpoints: {
+                api: process.env.MCP_FINBOT_API_HEALTH_URL,
+                redis: process.env.MCP_FINBOT_REDIS_HEALTH_URL,
+                forecast: process.env.MCP_FINBOT_FORECAST_HEALTH_URL,
+                kyverno: process.env.MCP_FINBOT_KYVERNO_HEALTH_URL,
+            },
+            metricsQueries: {
+                cpuUsage: process.env.MCP_FINBOT_PROM_QUERY_CPU_USAGE,
+                memoryUsage: process.env.MCP_FINBOT_PROM_QUERY_MEMORY_USAGE,
+                activeSessions: process.env.MCP_FINBOT_PROM_QUERY_ACTIVE_SESSIONS,
+                apiLatency: process.env.MCP_FINBOT_PROM_QUERY_API_LATENCY,
+            },
+        },
+        aiops: {
+            healthEndpoints: {
+                api: process.env.MCP_AIOPS_API_HEALTH_URL,
+                correlation: process.env.MCP_AIOPS_CORRELATION_HEALTH_URL,
+                anomaly: process.env.MCP_AIOPS_ANOMALY_HEALTH_URL,
+                ingestion: process.env.MCP_AIOPS_INGESTION_HEALTH_URL,
+            },
+            metricsQueries: {
+                modelCpu: process.env.MCP_AIOPS_PROM_QUERY_MODEL_CPU,
+                modelMemory: process.env.MCP_AIOPS_PROM_QUERY_MODEL_MEMORY,
+                anomaliesDetected: process.env.MCP_AIOPS_PROM_QUERY_ANOMALIES,
+                ingestionDelay: process.env.MCP_AIOPS_PROM_QUERY_INGESTION_DELAY,
+            },
+        },
+        mubot: {
+            healthEndpoints: {
+                api: process.env.MCP_MUBOT_API_HEALTH_URL,
+                postgres: process.env.MCP_MUBOT_POSTGRES_HEALTH_URL,
+                ingestion: process.env.MCP_MUBOT_INGESTION_HEALTH_URL,
+                reconciliation: process.env.MCP_MUBOT_RECONCILIATION_HEALTH_URL,
+            },
+            metricsQueries: {
+                recordsProcessed: process.env.MCP_MUBOT_PROM_QUERY_RECORDS_PROCESSED,
+                dbWriteLatency: process.env.MCP_MUBOT_PROM_QUERY_DB_LATENCY,
+                reconciliationRate: process.env.MCP_MUBOT_PROM_QUERY_RECON_RATE,
+                dataQualityScore: process.env.MCP_MUBOT_PROM_QUERY_DATA_QUALITY,
+            },
+        },
+        observability: {
+            healthEndpoints: {
+                prometheus: process.env.MCP_OBSERVABILITY_PROMETHEUS_HEALTH_URL,
+                grafana: process.env.MCP_OBSERVABILITY_GRAFANA_HEALTH_URL,
+                loki: process.env.MCP_OBSERVABILITY_LOKI_HEALTH_URL,
+                tempo: process.env.MCP_OBSERVABILITY_TEMPO_HEALTH_URL,
+            },
+            metricsQueries: {
+                activeTargets: process.env.MCP_OBSERVABILITY_PROM_QUERY_ACTIVE_TARGETS,
+                totalTargets: process.env.MCP_OBSERVABILITY_PROM_QUERY_TOTAL_TARGETS,
+                logIngestion: process.env.MCP_OBSERVABILITY_PROM_QUERY_LOG_INGESTION,
+                activeAlerts: process.env.MCP_OBSERVABILITY_PROM_QUERY_ACTIVE_ALERTS,
+                queryLatency: process.env.MCP_OBSERVABILITY_PROM_QUERY_QUERY_LATENCY,
+            },
+        },
     },
     kubernetes: {
         kubeconfigPath: process.env.KUBECONFIG_PATH,

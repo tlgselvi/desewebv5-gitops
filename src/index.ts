@@ -10,6 +10,7 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import type { Options as ProxyOptions } from "http-proxy-middleware";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 import {
@@ -171,13 +172,16 @@ app.get("/health", async (req, res) => {
 setupRoutes(app);
 
 const MCP_UI_TARGET = process.env.MCP_UI_TARGET ?? "http://127.0.0.1:3100";
-const MCP_PROXY_LOG_LEVEL = config.nodeEnv === "development" ? "debug" : "warn";
 
-const handleProxyError = (
+type HttpProxyOptions = ProxyOptions<IncomingMessage, ServerResponse>;
+type ProxyErrorHandler = (
   error: Error,
   req: IncomingMessage,
   res: ServerResponse,
-) => {
+  target?: string,
+) => void;
+
+const proxyErrorHandler: ProxyErrorHandler = (error, req, res, target) => {
   const originalUrl =
     (req as Request).originalUrl ?? req.url ?? "unknown";
 
@@ -185,7 +189,7 @@ const handleProxyError = (
     error: error.message,
     stack: error.stack,
     route: originalUrl,
-    target: MCP_UI_TARGET,
+    target: target ?? MCP_UI_TARGET,
   });
 
   if (!res.headersSent) {
@@ -201,28 +205,25 @@ const handleProxyError = (
   }
 };
 
-app.use(
-  ["/mcp", "/_next", "/favicon.ico", "/icon"],
-  createProxyMiddleware({
+const createProxy = (overrides: Partial<HttpProxyOptions> = {}) =>
+  createProxyMiddleware<IncomingMessage, ServerResponse>({
     target: MCP_UI_TARGET,
     changeOrigin: true,
     xfwd: true,
     autoRewrite: true,
-    logLevel: MCP_PROXY_LOG_LEVEL,
-    onError: (err, req, res) => handleProxyError(err as Error, req, res),
-  }),
+    ...overrides,
+    onError: proxyErrorHandler,
+  } as unknown as HttpProxyOptions & { onError: ProxyErrorHandler });
+
+app.use(
+  ["/mcp", "/_next", "/favicon.ico", "/icon"],
+  createProxy(),
 );
 
 app.use(
   ["/finbot", "/aiops", "/observability"],
-  createProxyMiddleware({
-    target: MCP_UI_TARGET,
-    changeOrigin: true,
-    xfwd: true,
-    autoRewrite: true,
-    logLevel: MCP_PROXY_LOG_LEVEL,
+  createProxy({
     pathRewrite: (path) => `/mcp${path}`,
-    onError: (err, req, res) => handleProxyError(err as Error, req, res),
   }),
 );
 

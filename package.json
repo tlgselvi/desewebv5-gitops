@@ -62,7 +62,8 @@
     "deploy:production": "kubectl set image deployment/dese-ea-plan-v5 dese-ea-plan-v5=ghcr.io/$REPO/dese-ea-plan-v5:$COMMIT_SHA -n dese-ea-plan-v5",
     "watchdog": "bash ops/watchdog.sh",
     "watchdog:win": "powershell -ExecutionPolicy Bypass -File ops/watchdog.ps1",
-    "watchdog:cron": "bash ops/watchdog-cron.sh"
+    "watchdog:cron": "bash ops/watchdog-cron.sh",
+    "clean": "rimraf .next node_modules dist coverage"
   },
   "keywords": [
     "seo",
@@ -86,9 +87,9 @@
     "drizzle-orm": "^0.44.7",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
-    "http-proxy-middleware": "^3.0.0",
     "express-validator": "^7.3.0",
     "helmet": "^8.1.0",
+    "http-proxy-middleware": "^3.0.0",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "lighthouse": "^13.0.1",
@@ -131,6 +132,7 @@
     "k6": "^0.0.0",
     "playwright": "^1.56.1",
     "prettier": "^3.6.2",
+    "rimraf": "^6.1.0",
     "supertest": "^7.1.4",
     "testcontainers": "^11.8.0",
     "ts-node": "^10.9.2",

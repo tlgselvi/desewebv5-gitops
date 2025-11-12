@@ -8,6 +8,7 @@ import { aiopsRoutes } from './aiops.js';
 import { feedbackRoutes } from './feedback.js';
 import { autoRemediationRoutes } from './autoRemediation.js';
 import { jwksRoutes } from './jwks.js';
+import { mcpDashboardRoutes } from './mcpDashboard.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '../config/index.js';
 export function setupRoutes(app) {
@@ -31,6 +32,7 @@ export function setupRoutes(app) {
     app.use(`${apiPrefix}/seo`, seoRoutes);
     app.use(`${apiPrefix}/content`, contentRoutes);
     app.use(`${apiPrefix}/analytics`, analyticsRoutes);
+    app.use(`${apiPrefix}/mcp/dashboard`, mcpDashboardRoutes);
     // Root API endpoint
     app.get(apiPrefix, (req, res) => {
         res.json({

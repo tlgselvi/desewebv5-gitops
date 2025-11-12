@@ -52,6 +52,73 @@ declare const configSchema: z.ZodObject<{
         tempo: z.ZodDefault<z.ZodBoolean>;
         openTelemetry: z.ZodDefault<z.ZodBoolean>;
     }, z.core.$strip>;
+    mcpDashboard: z.ZodDefault<z.ZodObject<{
+        prometheus: z.ZodDefault<z.ZodObject<{
+            baseUrl: z.ZodOptional<z.ZodString>;
+            authToken: z.ZodOptional<z.ZodString>;
+            timeoutMs: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+        }, z.core.$strip>>;
+        cache: z.ZodDefault<z.ZodObject<{
+            ttlSeconds: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+        }, z.core.$strip>>;
+        finbot: z.ZodDefault<z.ZodObject<{
+            healthEndpoints: z.ZodDefault<z.ZodObject<{
+                api: z.ZodOptional<z.ZodString>;
+                redis: z.ZodOptional<z.ZodString>;
+                forecast: z.ZodOptional<z.ZodString>;
+                kyverno: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+            metricsQueries: z.ZodDefault<z.ZodObject<{
+                cpuUsage: z.ZodOptional<z.ZodString>;
+                memoryUsage: z.ZodOptional<z.ZodString>;
+                activeSessions: z.ZodOptional<z.ZodString>;
+                apiLatency: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+        }, z.core.$strip>>;
+        aiops: z.ZodDefault<z.ZodObject<{
+            healthEndpoints: z.ZodDefault<z.ZodObject<{
+                api: z.ZodOptional<z.ZodString>;
+                correlation: z.ZodOptional<z.ZodString>;
+                anomaly: z.ZodOptional<z.ZodString>;
+                ingestion: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+            metricsQueries: z.ZodDefault<z.ZodObject<{
+                modelCpu: z.ZodOptional<z.ZodString>;
+                modelMemory: z.ZodOptional<z.ZodString>;
+                anomaliesDetected: z.ZodOptional<z.ZodString>;
+                ingestionDelay: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+        }, z.core.$strip>>;
+        mubot: z.ZodDefault<z.ZodObject<{
+            healthEndpoints: z.ZodDefault<z.ZodObject<{
+                api: z.ZodOptional<z.ZodString>;
+                postgres: z.ZodOptional<z.ZodString>;
+                ingestion: z.ZodOptional<z.ZodString>;
+                reconciliation: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+            metricsQueries: z.ZodDefault<z.ZodObject<{
+                recordsProcessed: z.ZodOptional<z.ZodString>;
+                dbWriteLatency: z.ZodOptional<z.ZodString>;
+                reconciliationRate: z.ZodOptional<z.ZodString>;
+                dataQualityScore: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+        }, z.core.$strip>>;
+        observability: z.ZodDefault<z.ZodObject<{
+            healthEndpoints: z.ZodDefault<z.ZodObject<{
+                prometheus: z.ZodOptional<z.ZodString>;
+                grafana: z.ZodOptional<z.ZodString>;
+                loki: z.ZodOptional<z.ZodString>;
+                tempo: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+            metricsQueries: z.ZodDefault<z.ZodObject<{
+                activeTargets: z.ZodOptional<z.ZodString>;
+                totalTargets: z.ZodOptional<z.ZodString>;
+                logIngestion: z.ZodOptional<z.ZodString>;
+                activeAlerts: z.ZodOptional<z.ZodString>;
+                queryLatency: z.ZodOptional<z.ZodString>;
+            }, z.core.$strip>>;
+        }, z.core.$strip>>;
+    }, z.core.$strip>>;
     kubernetes: z.ZodObject<{
         kubeconfigPath: z.ZodDefault<z.ZodString>;
         argocdServer: z.ZodOptional<z.ZodString>;
@@ -177,6 +244,73 @@ declare const config: {
         loki: boolean;
         tempo: boolean;
         openTelemetry: boolean;
+    };
+    mcpDashboard: {
+        prometheus: {
+            baseUrl?: string | undefined;
+            authToken?: string | undefined;
+            timeoutMs?: number | undefined;
+        };
+        cache: {
+            ttlSeconds: number;
+        };
+        finbot: {
+            healthEndpoints: {
+                api?: string | undefined;
+                redis?: string | undefined;
+                forecast?: string | undefined;
+                kyverno?: string | undefined;
+            };
+            metricsQueries: {
+                cpuUsage?: string | undefined;
+                memoryUsage?: string | undefined;
+                activeSessions?: string | undefined;
+                apiLatency?: string | undefined;
+            };
+        };
+        aiops: {
+            healthEndpoints: {
+                api?: string | undefined;
+                correlation?: string | undefined;
+                anomaly?: string | undefined;
+                ingestion?: string | undefined;
+            };
+            metricsQueries: {
+                modelCpu?: string | undefined;
+                modelMemory?: string | undefined;
+                anomaliesDetected?: string | undefined;
+                ingestionDelay?: string | undefined;
+            };
+        };
+        mubot: {
+            healthEndpoints: {
+                api?: string | undefined;
+                postgres?: string | undefined;
+                ingestion?: string | undefined;
+                reconciliation?: string | undefined;
+            };
+            metricsQueries: {
+                recordsProcessed?: string | undefined;
+                dbWriteLatency?: string | undefined;
+                reconciliationRate?: string | undefined;
+                dataQualityScore?: string | undefined;
+            };
+        };
+        observability: {
+            healthEndpoints: {
+                prometheus?: string | undefined;
+                grafana?: string | undefined;
+                loki?: string | undefined;
+                tempo?: string | undefined;
+            };
+            metricsQueries: {
+                activeTargets?: string | undefined;
+                totalTargets?: string | undefined;
+                logIngestion?: string | undefined;
+                activeAlerts?: string | undefined;
+                queryLatency?: string | undefined;
+            };
+        };
     };
     kubernetes: {
         kubeconfigPath: string;

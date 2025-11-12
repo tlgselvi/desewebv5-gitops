@@ -4,8 +4,8 @@ import { z } from 'zod';
  */
 export declare const FeedbackSchema: z.ZodObject<{
     source: z.ZodDefault<z.ZodEnum<{
-        ui: "ui";
         api: "api";
+        ui: "ui";
         agent: "agent";
     }>>;
     type: z.ZodDefault<z.ZodEnum<{

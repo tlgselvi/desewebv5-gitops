@@ -170,6 +170,9 @@ const configSchema = z.object({
     })
     .default({
       prometheus: {},
+      cache: { ttlSeconds: 60 },
+      finbot: { healthEndpoints: {}, metricsQueries: {} },
+      aiops: { healthEndpoints: {}, metricsQueries: {} },
       mubot: { healthEndpoints: {}, metricsQueries: {} },
       observability: { healthEndpoints: {}, metricsQueries: {} },
     }),

@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { createServer } from "http";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
 import { checkDatabaseConnection, closeDatabaseConnection, } from "./db/index.js";
@@ -125,12 +126,43 @@ app.get("/health", async (req, res) => {
 });
 // API routes
 setupRoutes(app);
+const MCP_UI_TARGET = process.env.MCP_UI_TARGET ?? "http://127.0.0.1:3100";
+const proxyErrorHandler = (error, req, res, target) => {
+    const originalUrl = req.originalUrl ?? req.url ?? "unknown";
+    logger.error("MCP UI proxy error", {
+        error: error.message,
+        stack: error.stack,
+        route: originalUrl,
+        target: target ?? MCP_UI_TARGET,
+    });
+    if (!res.headersSent) {
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+            error: "proxy_error",
+            message: "Failed to load MCP UI content",
+            route: originalUrl,
+            timestamp: new Date().toISOString(),
+        }));
+    }
+};
+const createProxy = (overrides = {}) => createProxyMiddleware({
+    target: MCP_UI_TARGET,
+    changeOrigin: true,
+    xfwd: true,
+    autoRewrite: true,
+    ...overrides,
+    onError: proxyErrorHandler,
+});
+app.use(["/mcp", "/_next", "/favicon.ico", "/icon"], createProxy());
+app.use(["/finbot", "/aiops", "/observability"], createProxy({
+    pathRewrite: (path) => `/mcp${path}`,
+}));
 // Swagger documentation
 if (config.nodeEnv !== "production") {
     setupSwagger(app);
 }
 // 404 handler (must be before error handler)
-app.use("*", (req, res, next) => {
+app.use((req, res, next) => {
     // Only handle 404 if no response was sent
     if (!res.headersSent) {
         res.status(404).json({
