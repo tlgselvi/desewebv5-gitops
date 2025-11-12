@@ -1,4 +1,5 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
+import type { Application } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -15,8 +16,8 @@ import { initializeMCPWebSocket, pushContextUpdate } from "./websocket-server.js
  * Purpose: Model Context Protocol server for MuBot module
  */
 
-const app = express();
-const PORT = process.env.MUBOT_MCP_PORT || 5556;
+const app: Application = express();
+const PORT = Number(process.env.MUBOT_MCP_PORT ?? 5556);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 
 app.use(express.json());
@@ -41,7 +42,7 @@ app.use("/mubot", optionalAuth);
  * Health check endpoint
  */
 app.get("/mubot/health", (req: Request, res: Response) => {
-  res.json({
+  return res.json({
     status: "healthy",
     service: "mubot-mcp",
     version: "1.0.0",
@@ -102,7 +103,7 @@ app.post(
       // Push context update to WebSocket subscribers
       await pushContextUpdate("mubot", "ingestion", response.response.context);
 
-      res.json(response);
+      return res.json(response);
     } catch (error) {
       logger.error("MuBot MCP query error", {
         error: error instanceof Error ? error.message : String(error),
@@ -131,7 +132,7 @@ app.get(
 
     const context = {
       module: "mubot",
-      version: "v1.0",
+        version: "v6.8.1",
       endpoints: [
         "/api/v1/mubot/data-ingestion",
         "/api/v1/mubot/data-quality",
@@ -150,19 +151,19 @@ app.get(
     // Cache context (5 minutes TTL)
     await redis.setex(cacheKey, 300, JSON.stringify(context));
 
-    res.json(context);
+    return res.json(context);
   })
 );
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: Function) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error("MuBot MCP server error", {
     error: err.message,
     stack: err.stack,
     url: req.url,
   });
   
-  res.status(500).json({
+  return res.status(500).json({
     error: "internal_error",
     message: "Failed to process MuBot MCP request",
     timestamp: new Date().toISOString(),

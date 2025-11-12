@@ -53,7 +53,7 @@
 - **EKSIKLER_VE_TAMAMLAMA_DURUMU.md** - Eksikler listesi
 - **MCP_KAPSAMLI_ANALIZ_VE_PLAN.md** - MCP analizi
 - **MCP_GERCEK_DURUM.md** - MCP durum
-- **GUNCELLEME_OZETI_v6.8.0.md** - Güncelleme özeti
+- **GUNCELLEME_OZETI_v6.8.1.md** - Güncelleme özeti (Kyverno & ArgoCD revizyonu)
 - **JARVIS_DENETIM_RAPORU.md** - JARVIS denetim
 - **JARVIS_BILESENLER_TAMAMLANDI.md** - JARVIS tamamlama
 - **CICD_GUIDE.md** - CI/CD rehberi

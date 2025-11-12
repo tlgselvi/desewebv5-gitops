@@ -3,11 +3,13 @@ import express, {
   type Response,
   type NextFunction,
 } from "express";
+import type { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import { createServer } from "http";
+import { createServer, type IncomingMessage, type ServerResponse } from "http";
+import { createProxyMiddleware } from "http-proxy-middleware";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 import {
@@ -27,7 +29,6 @@ import { setupSwagger } from "@/utils/swagger.js";
 import { gracefulShutdown } from "@/utils/gracefulShutdown.js";
 import {
   initializeWebSocketGateway,
-  getWebSocketGateway,
   close as closeWebSocketGateway,
 } from "@/ws/gateway.js";
 import {
@@ -37,7 +38,7 @@ import {
 import { auditMiddleware } from "@/middleware/audit.js";
 
 // Create Express app
-const app = express();
+const app: Application = express();
 
 app.use(
   helmet({
@@ -154,7 +155,7 @@ app.get("/health", async (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
+      process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
     environment: config.nodeEnv,
     database: dbStatus ? "connected" : "disconnected",
     memory: {
@@ -169,13 +170,69 @@ app.get("/health", async (req, res) => {
 // API routes
 setupRoutes(app);
 
+const MCP_UI_TARGET = process.env.MCP_UI_TARGET ?? "http://127.0.0.1:3100";
+const MCP_PROXY_LOG_LEVEL = config.nodeEnv === "development" ? "debug" : "warn";
+
+const handleProxyError = (
+  error: Error,
+  req: IncomingMessage,
+  res: ServerResponse,
+) => {
+  const originalUrl =
+    (req as Request).originalUrl ?? req.url ?? "unknown";
+
+  logger.error("MCP UI proxy error", {
+    error: error.message,
+    stack: error.stack,
+    route: originalUrl,
+    target: MCP_UI_TARGET,
+  });
+
+  if (!res.headersSent) {
+    res.writeHead(502, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+      error: "proxy_error",
+      message: "Failed to load MCP UI content",
+        route: originalUrl,
+      timestamp: new Date().toISOString(),
+      }),
+    );
+  }
+};
+
+app.use(
+  ["/mcp", "/_next", "/favicon.ico", "/icon"],
+  createProxyMiddleware({
+    target: MCP_UI_TARGET,
+    changeOrigin: true,
+    xfwd: true,
+    autoRewrite: true,
+    logLevel: MCP_PROXY_LOG_LEVEL,
+    onError: (err, req, res) => handleProxyError(err as Error, req, res),
+  }),
+);
+
+app.use(
+  ["/finbot", "/aiops", "/observability"],
+  createProxyMiddleware({
+    target: MCP_UI_TARGET,
+    changeOrigin: true,
+    xfwd: true,
+    autoRewrite: true,
+    logLevel: MCP_PROXY_LOG_LEVEL,
+    pathRewrite: (path) => `/mcp${path}`,
+    onError: (err, req, res) => handleProxyError(err as Error, req, res),
+  }),
+);
+
 // Swagger documentation
 if (config.nodeEnv !== "production") {
   setupSwagger(app);
 }
 
 // 404 handler (must be before error handler)
-app.use("*", (req, res, next) => {
+app.use((req, res, next) => {
   // Only handle 404 if no response was sent
   if (!res.headersSent) {
     res.status(404).json({
@@ -190,15 +247,15 @@ app.use("*", (req, res, next) => {
 
 // Error handling middleware (must be last)
 // Note: Express error handlers require 4 parameters (err, req, res, next)
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   // Ensure JSON response is sent
   if (!res.headersSent) {
     errorHandler(err, req, res, next);
   } else {
     // Headers already sent, log error but don't send response
     logger.error("Error occurred after response sent", {
-      error: err.message,
-      stack: err.stack,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
       url: req.url,
     });
   }
@@ -220,11 +277,11 @@ setImmediate(() => {
 
 // Start server with database connection test
 const server = httpServer.listen(config.port, async () => {
-  logger.info(`🚀 Dese EA Plan v6.8.0 server started`, {
+  logger.info(`🚀 Dese EA Plan v6.8.1 server started`, {
     port: config.port,
     environment: config.nodeEnv,
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.8.0",
+      process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
     domain: "cpt-optimization",
   });
 

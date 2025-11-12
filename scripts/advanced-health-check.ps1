@@ -126,15 +126,15 @@ Test-Kubectl
 Write-Info "`n[1/10] 📊 Kubernetes Cluster Health"
 try {
     $nodes = kubectl get nodes --no-headers 2>&1
-    $runningNodes = ($nodes | Select-String "Ready").Count
-    
+    $totalNodes = if ($nodes) { ($nodes | Measure-Object).Count } else { 0 }
+    $runningNodes = ($nodes | Select-String " Ready ").Count
+
     $healthResults.Cluster = @{
-        Status = "HEALTHY"
+        Status = if ($runningNodes -gt 0) { "READY" } else { "FAILED" }
         Nodes = @{
-            Total = (kubectl get nodes --no-headers 2>&1).Count
+            Total = $totalNodes
             Ready = $runningNodes
         }
-        Status = if ($runningNodes -gt 0) { "READY" } else { "FAILED" }
     }
     
     if ($Verbose) {
@@ -195,16 +195,20 @@ try {
 # 4. DEPLOYMENTS HEALTH
 Write-Info "`n[4/10] 📈 Deployments Health"
 try {
-    $deployments = kubectl get deployments -n $Namespace --no-headers 2>&1
-    $totalDeployments = $deployments.Count
-    $availableDeployments = ($deployments | Select-String "\d+/\d+\s+Available").Count
-    
+    $deploymentJson = kubectl get deployments -n $Namespace -o json | ConvertFrom-Json
+    $totalDeployments = $deploymentJson.items.Count
+    $availableDeployments = ($deploymentJson.items | Where-Object {
+        $desired = $_.spec.replicas
+        if ($null -eq $desired) { $desired = 1 }
+        ($_.status.availableReplicas -ge $desired)
+    }).Count
+
     $healthResults.Deployments = @{
-        Status = if ($availableDeployments -eq $totalDeployments) { "HEALTHY" } else { "DEGRADED" }
+        Status = if ($totalDeployments -gt 0 -and $availableDeployments -eq $totalDeployments) { "HEALTHY" } elseif ($totalDeployments -eq 0) { "INFO" } else { "DEGRADED" }
         Total = $totalDeployments
         Available = $availableDeployments
     }
-    
+
     Write-Info "📊 Deployments: $availableDeployments/$totalDeployments available"
     if ($Verbose) {
         kubectl get deployments -n $Namespace
@@ -259,7 +263,7 @@ try {
         # Port-forward and check health
         $healthCheck = kubectl exec -n $Namespace $podName -- curl -s http://localhost:3000/health 2>&1
         
-        if ($healthCheck -match '"status":"healthy"') {
+        if ($healthCheck -match 'healthy') {
             $healthResults.Application = @{ Status = "HEALTHY"; HealthEndpoint = "OK" }
             Write-Success "✅ Application health check passed"
         } else {

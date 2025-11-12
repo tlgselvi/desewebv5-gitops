@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { metricsHandler, recordUserAction } from '@/middleware/prometheus.js';
 import { logger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // GET metrics endpoint for Prometheus scraping
 router.get('/', metricsHandler);

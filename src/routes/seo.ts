@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { seoAnalyzer } from '@/services/seoAnalyzer.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
-import { logger, seoLogger } from '@/utils/logger.js';
+import { seoLogger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const SeoAnalysisSchema = z.object({
@@ -25,6 +25,11 @@ const MetricsQuerySchema = z.object({
 const TrendsQuerySchema = z.object({
   projectId: z.string().uuid(),
   days: z.coerce.number().min(1).max(365).default(30),
+});
+
+const AnalyzeUrlSchema = z.object({
+  url: z.string().url(),
+  options: SeoAnalysisSchema.shape.options.optional(),
 });
 
 /**
@@ -107,7 +112,7 @@ const TrendsQuerySchema = z.object({
  *       404:
  *         description: Project not found
  */
-router.post('/analyze', asyncHandler(async (req, res) => {
+router.post('/analyze', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const validatedData = SeoAnalysisSchema.parse(req.body);
 
   seoLogger.info('Starting SEO analysis', {
@@ -123,7 +128,7 @@ router.post('/analyze', asyncHandler(async (req, res) => {
     failed: result.failedAnalyses,
   });
 
-  res.json(result);
+  return res.json(result);
 }));
 
 /**
@@ -161,12 +166,12 @@ router.post('/analyze', asyncHandler(async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.get('/metrics', asyncHandler(async (req, res) => {
+router.get('/metrics', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const { projectId, limit } = MetricsQuerySchema.parse(req.query);
 
   const metrics = await seoAnalyzer.getProjectMetrics(projectId, limit);
 
-  res.json({ metrics });
+  return res.json({ metrics });
 }));
 
 /**
@@ -245,12 +250,12 @@ router.get('/metrics', asyncHandler(async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.get('/trends', asyncHandler(async (req, res) => {
+router.get('/trends', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const { projectId, days } = TrendsQuerySchema.parse(req.query);
 
   const trends = await seoAnalyzer.getProjectTrends(projectId, days);
 
-  res.json(trends);
+  return res.json(trends);
 }));
 
 /**
@@ -363,21 +368,14 @@ router.get('/trends', asyncHandler(async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.post('/analyze/url', asyncHandler(async (req, res) => {
-  const { url, options } = req.body;
-
-  if (!url) {
-    return res.status(400).json({
-      error: 'Validation Error',
-      message: 'URL is required',
-    });
-  }
+router.post('/analyze/url', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+  const { url, options } = AnalyzeUrlSchema.parse(req.body);
 
   seoLogger.info('Analyzing single URL', { url });
 
   const result = await seoAnalyzer.analyzeUrl(url, options);
 
-  res.json(result);
+  return res.json(result);
 }));
 
 export { router as seoRoutes };

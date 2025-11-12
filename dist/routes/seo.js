@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { seoAnalyzer } from '@/services/seoAnalyzer.js';
-import { asyncHandler } from '@/middleware/errorHandler.js';
-import { seoLogger } from '@/utils/logger.js';
+import { seoAnalyzer } from '../services/seoAnalyzer.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { seoLogger } from '../utils/logger.js';
 const router = Router();
 // Validation schemas
 const SeoAnalysisSchema = z.object({
@@ -21,6 +21,10 @@ const MetricsQuerySchema = z.object({
 const TrendsQuerySchema = z.object({
     projectId: z.string().uuid(),
     days: z.coerce.number().min(1).max(365).default(30),
+});
+const AnalyzeUrlSchema = z.object({
+    url: z.string().url(),
+    options: SeoAnalysisSchema.shape.options.optional(),
 });
 /**
  * @swagger
@@ -114,7 +118,7 @@ router.post('/analyze', asyncHandler(async (req, res) => {
         successful: result.successfulAnalyses,
         failed: result.failedAnalyses,
     });
-    res.json(result);
+    return res.json(result);
 }));
 /**
  * @swagger
@@ -154,7 +158,7 @@ router.post('/analyze', asyncHandler(async (req, res) => {
 router.get('/metrics', asyncHandler(async (req, res) => {
     const { projectId, limit } = MetricsQuerySchema.parse(req.query);
     const metrics = await seoAnalyzer.getProjectMetrics(projectId, limit);
-    res.json({ metrics });
+    return res.json({ metrics });
 }));
 /**
  * @swagger
@@ -235,7 +239,7 @@ router.get('/metrics', asyncHandler(async (req, res) => {
 router.get('/trends', asyncHandler(async (req, res) => {
     const { projectId, days } = TrendsQuerySchema.parse(req.query);
     const trends = await seoAnalyzer.getProjectTrends(projectId, days);
-    res.json(trends);
+    return res.json(trends);
 }));
 /**
  * @swagger
@@ -348,16 +352,10 @@ router.get('/trends', asyncHandler(async (req, res) => {
  *         description: Validation error
  */
 router.post('/analyze/url', asyncHandler(async (req, res) => {
-    const { url, options } = req.body;
-    if (!url) {
-        return res.status(400).json({
-            error: 'Validation Error',
-            message: 'URL is required',
-        });
-    }
+    const { url, options } = AnalyzeUrlSchema.parse(req.body);
     seoLogger.info('Analyzing single URL', { url });
     const result = await seoAnalyzer.analyzeUrl(url, options);
-    res.json(result);
+    return res.json(result);
 }));
 export { router as seoRoutes };
 //# sourceMappingURL=seo.js.map

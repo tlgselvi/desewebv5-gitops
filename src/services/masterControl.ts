@@ -1,16 +1,17 @@
-import { logger } from "@/utils/logger.js";
-import { config } from "@/config/index.js";
 import axios from "axios";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { readFile, writeFile, access } from "fs/promises";
-import { join } from "path";
 import { existsSync } from "fs";
+import { readFile, writeFile } from "fs/promises";
+import { exec } from "child_process";
+import { join } from "path";
+import { promisify } from "util";
+
+import { config } from "@/config/index.js";
+import { logger } from "@/utils/logger.js";
 
 const execAsync = promisify(exec);
 
 /**
- * EA Plan Master Control v6.8.0 - Self-Updating Orchestrator
+ * EA Plan Master Control v6.8.1 - Self-Updating Orchestrator
  * Mode: Persistent Orchestrator + Rules-Compliant + Self-Updating
  */
 
@@ -48,27 +49,59 @@ export interface RulesCompliance {
   };
 }
 
-export interface GitHubDockerStatus {
-  github: {
-    lens: { installed: boolean; version?: string };
-    repo: { connected: boolean; url?: string; branches?: string[] };
-    pipeline: { healthy: boolean; lastRun?: string; status?: string };
+type LensStatus = {
+  installed: boolean;
+  version?: string;
+};
+
+type RepoStatus = {
+  connected: boolean;
+  url?: string;
+  branches?: string[];
+};
+
+type PipelineStatus = {
+  healthy: boolean;
+  lastRun?: string;
+  status?: string;
   };
-  docker: {
-    registry: { accessible: boolean; url?: string; images?: number };
-    local: { running: boolean; images?: number };
+
+type RegistryStatus = {
+  accessible: boolean;
+  url?: string;
+  images?: number;
+};
+
+type LocalDockerStatus = {
+  running: boolean;
+  images?: number;
   };
-  sync: {
+
+type SyncStatus = {
     status: "synced" | "out-of-sync" | "error";
     lastSync?: string;
     mismatches?: string[];
+  error?: string;
+};
+
+export interface GitHubDockerStatus {
+  github: {
+    lens: LensStatus;
+    repo: RepoStatus;
+    pipeline: PipelineStatus;
   };
+  docker: {
+    registry: RegistryStatus;
+    local: LocalDockerStatus;
+  };
+  sync: SyncStatus;
+  error?: string;
 }
 
 export interface SelfUpdateStatus {
   analyzed: boolean;
   updates: Array<{
-    type: "context" | "prompt" | "pipeline" | "rules" | "config";
+    type: "context" | "prompt" | "pipeline" | "rules" | "config" | "securityPolicy";
     priority: "low" | "medium" | "high" | "critical";
     description: string;
     applied: boolean;
@@ -77,12 +110,71 @@ export interface SelfUpdateStatus {
   nextUpdate?: string;
 }
 
+type MetricsQueryResult = {
+  name: string;
+  value: number;
+  timestamp: string;
+};
+
+type ObservabilityHealth = "healthy" | "unhealthy";
+
+type KubernetesDeployment = {
+  metadata?: {
+    name?: string;
+    namespace?: string;
+  };
+  spec?: {
+    replicas?: number | null;
+  };
+  status?: {
+    readyReplicas?: number | null;
+  };
+};
+
+type KubernetesDeploymentList = {
+  items?: KubernetesDeployment[];
+};
+
+interface ObservabilityChecks {
+  targets: {
+    prometheus?: {
+      connected: boolean;
+      url?: string;
+      metricsCollected: number;
+      health: ObservabilityHealth;
+      error?: string;
+      verified: boolean;
+    };
+    grafana?: {
+      connected: boolean;
+      url?: string;
+      dashboards: number;
+      health: ObservabilityHealth;
+      error?: string;
+      verified: boolean;
+    };
+  };
+  metrics: {
+    requested: string[];
+    available: string[];
+    missing: string[];
+  };
+  health: {
+    prometheus?: ObservabilityHealth;
+    grafana?: ObservabilityHealth;
+  };
+  overall?: {
+    verified: boolean;
+    issues: string[];
+  };
+}
+
 export interface MetricsCollectionStatus {
   prometheus: {
     connected: boolean;
     url?: string;
     metricsCollected: number;
-    queries?: Array<{ name: string; value: number; timestamp: string }>;
+    queries?: MetricsQueryResult[];
     error?: string;
   };
   grafana: {
@@ -92,7 +184,7 @@ export interface MetricsCollectionStatus {
     error?: string;
   };
   collectedAt: string;
-  observabilityChecks?: Record<string, any>;
+  observabilityChecks?: ObservabilityChecks;
 }
 
 export interface ModelTrainingStatus {
@@ -161,7 +253,7 @@ export interface WorkflowStep {
   metrics?: string[];
   model?: string;
   dataset?: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   docura_image?: string;
   seo_observer?: boolean;
   target_phase?: string;
@@ -188,7 +280,7 @@ export interface WorkflowExecutionResult {
   steps: Array<{
     step: string;
     status: "completed" | "failed" | "skipped";
-    result?: any;
+    result?: unknown;
     error?: string;
     duration?: number;
   }>;
@@ -212,6 +304,8 @@ export interface DeploymentStatus {
     name: string;
     status: "running" | "pending" | "failed";
     replicas?: number;
+    desiredReplicas?: number;
+    namespace?: string;
   }[];
   healthScore: number; // 0-100
 }
@@ -219,7 +313,7 @@ export interface DeploymentStatus {
 export interface CEOReport {
   cevap: string;
   kanit: {
-    schemas: Record<string, any>;
+    schemas: Record<string, unknown>;
     metrics: Record<string, number>;
     evidence: string[];
   };
@@ -240,7 +334,7 @@ export class MasterControlService {
   private readonly namespaceMonitoring = "monitoring";
   private readonly namespaceWeb = "ea-web";
   private readonly version =
-    process.env.APP_VERSION?.replace("v", "") || "6.8.0";
+    process.env.APP_VERSION?.replace("v", "") || "6.8.1";
 
   /**
    * Step 1: Environment Verification
@@ -434,6 +528,20 @@ export class MasterControlService {
           const securityPolicyNames =
             policyContent.match(/name:\s*['"]?([^'\n"]+)['"]?/gi) || [];
 
+          if (
+            rulesPolicyNames.length > 0 &&
+            securityPolicyNames.length > 0 &&
+            rulesPolicyNames.length !== securityPolicyNames.length
+          ) {
+            violations.push({
+              rule: "rules.securityPolicy.mismatch",
+              severity: "medium",
+              message: "rules.yaml and securityPolicy.yaml reference a different number of policies",
+              fix: "Ensure both files contain matching policy definitions",
+            });
+            compliant = false;
+          }
+
           // Basic validation: Both files should have similar structure
           const rulesHasSecurity =
             rulesContent.toLowerCase().includes("security") ||
@@ -585,7 +693,10 @@ export class MasterControlService {
         if (stdout.includes("gh version")) {
           const versionMatch = stdout.match(/gh version (\d+\.\d+\.\d+)/);
           status.github.lens.installed = true;
-          status.github.lens.version = versionMatch?.[1];
+          const version = versionMatch?.[1];
+          if (version) {
+            status.github.lens.version = version;
+          }
         }
       } catch {
         status.github.lens.installed = false;
@@ -1001,18 +1112,16 @@ spec:
       "Master Control: Step 4 - Docura-Sync (Documentation + SEO Observer sync) started",
     );
 
-    const result = {
+    const result: {
+      docura: { synced: boolean; index?: string; build?: string; docs?: number };
+      seo: { synced: boolean; observer?: string; cronjob?: string; lastRun?: string };
+    } = {
       docura: {
         synced: false,
-        index: undefined as string | undefined,
-        build: undefined as string | undefined,
         docs: 0,
       },
       seo: {
         synced: false,
-        observer: undefined as string | undefined,
-        cronjob: undefined as string | undefined,
-        lastRun: undefined as string | undefined,
       },
     };
 
@@ -1121,7 +1230,7 @@ spec:
     };
 
     try {
-      const tagVersion = version || "v6.8.0-rc";
+      const tagVersion = version || "v6.8.1-rc";
       const imageNameFinal =
         imageName || process.env.DOCKER_IMAGE_NAME || "dese-ea-plan-v5";
       const registryFinal =
@@ -1375,13 +1484,20 @@ spec:
       }
 
       // Verify metrics availability if specified
-      if (metrics && metrics.length > 0) {
-        const availableMetrics =
-          metricsStatus.prometheus.queries?.map((m) => m.name) || [];
-        const missingMetrics = metrics.filter(
-          (m) =>
+      const requestedMetrics = metrics ?? [];
+      let availableMetrics: string[] = [];
+      let missingMetrics: string[] = [];
+
+      if (requestedMetrics.length > 0) {
+        const availableMetricNames =
+          metricsStatus.prometheus.queries?.map((m) => m.name ?? "") ?? [];
+        availableMetrics = availableMetricNames;
+        missingMetrics = requestedMetrics.filter(
+          (metricName) =>
             !availableMetrics.some(
-              (am) => am.includes(m) || m.includes(am.split("(")[0]),
+              (available) =>
+                available.includes(metricName) ||
+                metricName.includes((available.split("(")[0] ?? "").trim()),
             ),
         );
 
@@ -1389,40 +1505,71 @@ spec:
           allVerified = false;
           issues.push(`Missing metrics: ${missingMetrics.join(", ")}`);
         }
+      } else {
+        availableMetrics =
+          metricsStatus.prometheus.queries?.map((m) => m.name ?? "") ?? [];
       }
 
       verificationResult.verified = allVerified;
-      verificationResult.issues = issues.length > 0 ? issues : undefined;
+      verificationResult.issues = issues.length > 0 ? [...issues] : [];
 
       // Enhanced observability checks
-      verificationResult.observabilityChecks = {
-        targets: {
-          prometheus: {
-            connected: metricsStatus.prometheus.connected,
-            url: metricsStatus.prometheus.url,
-            metricsCollected: metricsStatus.prometheus.metricsCollected,
-            health:
-              metricsStatus.prometheus.connected &&
-              metricsStatus.prometheus.metricsCollected > 0
-                ? "healthy"
-                : "unhealthy",
-            verified:
-              metricsStatus.prometheus.connected &&
-              metricsStatus.prometheus.metricsCollected > 0,
-          },
-          grafana: {
-            connected: metricsStatus.grafana.connected,
-            url: metricsStatus.grafana.url,
-            dashboards: metricsStatus.grafana.dashboards || 0,
-            health: metricsStatus.grafana.connected ? "healthy" : "unhealthy",
-            verified: metricsStatus.grafana.connected,
-          },
+      const verificationChecks: ObservabilityChecks = {
+        targets: {},
+        metrics: {
+          requested: requestedMetrics,
+          available: availableMetrics,
+          missing: missingMetrics,
         },
+        health: {},
         overall: {
           verified: allVerified,
-          issues: issues.length > 0 ? issues : [],
+          issues: issues.length > 0 ? [...issues] : [],
         },
       };
+
+      const verificationPrometheusTarget: NonNullable<ObservabilityChecks["targets"]["prometheus"]> = {
+        connected: metricsStatus.prometheus.connected,
+        metricsCollected: metricsStatus.prometheus.metricsCollected,
+        health:
+          metricsStatus.prometheus.connected &&
+          metricsStatus.prometheus.metricsCollected > 0
+            ? "healthy"
+            : "unhealthy",
+        verified:
+          metricsStatus.prometheus.connected &&
+          metricsStatus.prometheus.metricsCollected > 0,
+      };
+      const verificationPrometheusUrlValue = metricsStatus.prometheus.url;
+      if (typeof verificationPrometheusUrlValue === "string" && verificationPrometheusUrlValue.length > 0) {
+        verificationPrometheusTarget.url = verificationPrometheusUrlValue;
+      }
+      const verificationPrometheusErrorValue = metricsStatus.prometheus.error;
+      if (typeof verificationPrometheusErrorValue === "string" && verificationPrometheusErrorValue.length > 0) {
+        verificationPrometheusTarget.error = verificationPrometheusErrorValue;
+      }
+
+      const verificationGrafanaTarget: NonNullable<ObservabilityChecks["targets"]["grafana"]> = {
+        connected: metricsStatus.grafana.connected,
+        dashboards: metricsStatus.grafana.dashboards || 0,
+        health: metricsStatus.grafana.connected ? "healthy" : "unhealthy",
+        verified: metricsStatus.grafana.connected,
+      };
+      const verificationGrafanaUrlValue = metricsStatus.grafana.url;
+      if (typeof verificationGrafanaUrlValue === "string" && verificationGrafanaUrlValue.length > 0) {
+        verificationGrafanaTarget.url = verificationGrafanaUrlValue;
+      }
+      const verificationGrafanaErrorValue = metricsStatus.grafana.error;
+      if (typeof verificationGrafanaErrorValue === "string" && verificationGrafanaErrorValue.length > 0) {
+        verificationGrafanaTarget.error = verificationGrafanaErrorValue;
+      }
+
+      verificationChecks.targets.prometheus = verificationPrometheusTarget;
+      verificationChecks.targets.grafana = verificationGrafanaTarget;
+      verificationChecks.health.prometheus = verificationPrometheusTarget.health;
+      verificationChecks.health.grafana = verificationGrafanaTarget.health;
+
+      verificationResult.observabilityChecks = verificationChecks;
     } catch (error) {
       logger.error("Observability verification error", { error });
       verificationResult.verified = false;
@@ -1463,9 +1610,7 @@ spec:
       const phase7BasePath = join(process.cwd(), "deploy", "base");
 
       // Check if phase-7 directory exists, otherwise use base + overlays
-      let manifestsDir = phase7ManifestsPath;
       if (!existsSync(phase7ManifestsPath)) {
-        manifestsDir = phase7BasePath;
         logger.info("Phase 7 directory not found, using base manifests");
       }
 
@@ -1479,7 +1624,7 @@ spec:
         // Apply overlays if exists
         const overlaysPath = join(process.cwd(), "deploy", "overlays", "prod");
         if (existsSync(overlaysPath)) {
-          const { stdout: overlaysOutput } = await execAsync(
+          await execAsync(
             `kubectl apply -k ${overlaysPath} 2>&1 || echo "Overlays apply skipped"`,
           );
         }
@@ -1502,16 +1647,16 @@ spec:
           );
 
           if (servicesJson && !servicesJson.includes("NotFound")) {
-            const services = JSON.parse(servicesJson);
-            status.servicesDeployed =
-              services.items?.map((dep: any) => ({
-                name: dep.metadata.name,
-                status:
-                  dep.status.readyReplicas === dep.spec.replicas
-                    ? "deployed"
-                    : "pending",
-                namespace: dep.metadata.namespace,
-              })) || [];
+            const services = JSON.parse(servicesJson) as KubernetesDeploymentList;
+            const deployments = Array.isArray(services.items) ? services.items : [];
+            status.servicesDeployed = deployments.map((dep) => ({
+              name: dep.metadata?.name ?? "unknown",
+              status:
+                (dep.status?.readyReplicas ?? 0) === (dep.spec?.replicas ?? 0)
+                  ? "deployed"
+                  : "pending",
+              namespace: dep.metadata?.namespace ?? this.namespaceWeb,
+            }));
           }
         } catch {
           // Ignore service listing errors
@@ -1565,21 +1710,20 @@ spec:
   }> {
     logger.info("Master Control: AIOps + SEO sync started");
 
-    const result = {
+    const result: {
+      aiops: { synced: boolean; model?: string; tuning?: boolean };
+      seo: { synced: boolean; observer?: string; cronjob?: string };
+      docura: { synced: boolean; index?: string; build?: string };
+    } = {
       aiops: {
         synced: false,
-        model: undefined as string | undefined,
         tuning: false,
       },
       seo: {
         synced: false,
-        observer: undefined as string | undefined,
-        cronjob: undefined as string | undefined,
       },
       docura: {
         synced: false,
-        index: undefined as string | undefined,
-        build: undefined as string | undefined,
       },
     };
 
@@ -1589,9 +1733,10 @@ spec:
         const { stdout } = await execAsync(
           `kubectl get configmap aiops-model -n ${this.namespaceMonitoring} -o jsonpath='{.metadata.name}'`,
         );
-        if (stdout.trim()) {
+        const modelName = stdout.trim();
+        if (modelName) {
           result.aiops.synced = true;
-          result.aiops.model = stdout.trim();
+          result.aiops.model = modelName;
         }
       } catch {
         // Try to apply AIOps model
@@ -1631,9 +1776,10 @@ spec:
         const { stdout } = await execAsync(
           `kubectl get cronjob seo-observer -n ${this.namespaceMonitoring} -o jsonpath='{.metadata.name}'`,
         );
-        if (stdout.trim()) {
+        const cronjobName = stdout.trim();
+        if (cronjobName) {
           result.seo.synced = true;
-          result.seo.cronjob = stdout.trim();
+          result.seo.cronjob = cronjobName;
         }
       } catch {
         // Try to apply SEO Observer
@@ -1653,9 +1799,10 @@ spec:
         const { stdout } = await execAsync(
           `kubectl get configmap docura-index -n ${this.namespaceMonitoring} -o jsonpath='{.metadata.name}' 2>&1`,
         );
-        if (stdout.trim() && !stdout.includes("NotFound")) {
+        const indexName = stdout.trim();
+        if (indexName && !indexName.includes("NotFound")) {
           result.docura.synced = true;
-          result.docura.index = stdout.trim();
+          result.docura.index = indexName;
         }
       } catch {
         // Try to apply Docura
@@ -1699,16 +1846,20 @@ spec:
         const { stdout } = await execAsync(
           `kubectl get deployments -n ${this.namespaceWeb} -o json`,
         );
-        const deployments = JSON.parse(stdout);
+        const deployments = JSON.parse(stdout) as KubernetesDeploymentList;
+        const deploymentItems = Array.isArray(deployments.items) ? deployments.items : [];
+        status.services = deploymentItems.map((dep) => {
+          const readyReplicas = dep.status?.readyReplicas ?? 0;
+          const desiredReplicas = dep.spec?.replicas ?? 0;
 
-        status.services = deployments.items.map((dep: any) => ({
-          name: dep.metadata.name,
-          status:
-            dep.status.readyReplicas === dep.spec.replicas
-              ? "running"
-              : "pending",
-          replicas: dep.status.readyReplicas || 0,
-        }));
+          return {
+            name: dep.metadata?.name ?? "unknown",
+            namespace: dep.metadata?.namespace ?? this.namespaceWeb,
+            replicas: readyReplicas,
+            desiredReplicas,
+            status: readyReplicas === desiredReplicas ? "running" : "pending",
+          };
+        });
 
         const runningServices = status.services.filter(
           (s) => s.status === "running",
@@ -1824,22 +1975,21 @@ spec:
     };
 
     // Next steps
-    const sonrakiAdim = {
+    const sonrakiAdim: CEOReport["sonrakiAdim"] = {
       action: "",
-      priority: "low" as "low" | "medium" | "high" | "critical",
-      estimatedTime: undefined as string | undefined,
-      dependencies: [] as string[],
+      priority: "low",
     };
 
     if (!rulesStatus.compliant && rulesStatus.violations.length > 0) {
       const criticalViolations = rulesStatus.violations.filter(
         (v) => v.severity === "critical" || v.severity === "high",
       );
-      if (criticalViolations.length > 0) {
+      const firstCritical = criticalViolations[0];
+      if (firstCritical) {
         sonrakiAdim.action =
-          criticalViolations[0].fix || "Rules compliance düzeltmesi";
+          firstCritical.fix || "Rules compliance düzeltmesi";
         sonrakiAdim.priority =
-          criticalViolations[0].severity === "critical" ? "critical" : "high";
+          firstCritical.severity === "critical" ? "critical" : "high";
         sonrakiAdim.estimatedTime = "15-30 dakika";
       }
     } else if (deploymentStatus.healthScore < 100) {
@@ -1871,7 +2021,11 @@ spec:
    * Step 6: Self-Update Cycle
    */
   async performSelfUpdate(
-    updates?: Array<{ type: string; description: string; content?: string }>,
+    updates?: Array<{
+      type: SelfUpdateStatus["updates"][number]["type"];
+      description: string;
+      content?: string;
+    }>,
   ): Promise<SelfUpdateStatus> {
     logger.info("Master Control: Self-update cycle started");
 
@@ -1883,9 +2037,6 @@ spec:
 
     try {
       // Analyze cursor output / context for updates
-      const cursorRulesPath = join(process.cwd(), ".cursorrules");
-      const hasCursorRules = existsSync(cursorRulesPath);
-
       // Check for context updates
       if (updates && updates.length > 0) {
         for (const update of updates) {
@@ -1977,7 +2128,7 @@ spec:
           }
 
           status.updates.push({
-            type: update.type as any,
+            type: update.type,
             priority:
               update.type === "securityPolicy" || update.type === "rules"
                 ? "high"
@@ -2084,6 +2235,10 @@ spec:
     try {
       for (let i = 0; i < request.workflow.length; i++) {
         const step = request.workflow[i];
+        if (!step) {
+          logger.warn("Workflow step is undefined", { index: i });
+          continue;
+        }
         const stepStartTime = Date.now();
 
         logger.info(
@@ -2094,7 +2249,7 @@ spec:
           },
         );
 
-        const stepResult: WorkflowExecutionResult["steps"][0] = {
+        const stepResult: WorkflowExecutionResult["steps"][number] = {
           step: step.step,
           status: "completed",
         };
@@ -2154,22 +2309,38 @@ spec:
               // Customize metrics collection based on step parameters
               const metricsStatus = await this.collectMetrics();
 
+              const sanitizedRequestedMetrics = Array.isArray(step.metrics)
+                ? step.metrics.filter(
+                    (metric): metric is string =>
+                      typeof metric === "string" && metric.length > 0,
+                  )
+                : [];
+
               // Filter metrics if specified
-              if (step.metrics && step.metrics.length > 0) {
-                metricsStatus.prometheus.queries =
-                  metricsStatus.prometheus.queries?.filter(
-                    (m) =>
-                      step.metrics?.includes(m.name.split("(")[0]) ||
-                      step.metrics?.includes(m.name),
-                  );
+              if (sanitizedRequestedMetrics.length > 0) {
+                const requestedMetricSet = new Set<string>(sanitizedRequestedMetrics);
+                const filteredQueries = (metricsStatus.prometheus.queries ?? []).filter(
+                  (query) => {
+                    const metricParts = query.name.split("(");
+                    const normalizedMetric =
+                      metricParts.length > 0
+                        ? metricParts[0] ?? query.name
+                        : query.name;
+                    return (
+                      requestedMetricSet.has(query.name) ||
+                      requestedMetricSet.has(normalizedMetric)
+                    );
+                  },
+                );
+                metricsStatus.prometheus.queries = filteredQueries;
               }
 
               // Enhanced observability check if enabled
               if (request.observability_check || request.full_cycle) {
-                const observabilityChecks: Record<string, any> = {
+                const observabilityChecks: ObservabilityChecks = {
                   targets: {},
                   metrics: {
-                    requested: step.metrics || [],
+                    requested: sanitizedRequestedMetrics,
                     available: [],
                     missing: [],
                   },
@@ -2180,52 +2351,93 @@ spec:
                 if (step.targets) {
                   for (const target of step.targets) {
                     if (target === "prometheus") {
-                      observabilityChecks.targets.prometheus = {
+                      const prometheusTarget: NonNullable<ObservabilityChecks["targets"]["prometheus"]> = {
                         connected: metricsStatus.prometheus.connected,
-                        url: metricsStatus.prometheus.url,
                         metricsCollected:
                           metricsStatus.prometheus.metricsCollected,
                         health: metricsStatus.prometheus.connected
                           ? "healthy"
                           : "unhealthy",
-                        error: metricsStatus.prometheus.error,
+                        verified:
+                          metricsStatus.prometheus.connected &&
+                          metricsStatus.prometheus.metricsCollected > 0,
                       };
-                      observabilityChecks.health.prometheus = metricsStatus
-                        .prometheus.connected
-                        ? "healthy"
-                        : "unhealthy";
+                      const prometheusUrlValue = metricsStatus.prometheus.url;
+                      if (typeof prometheusUrlValue === "string" && prometheusUrlValue.length > 0) {
+                        prometheusTarget.url = prometheusUrlValue;
+                      }
+                      const prometheusErrorValue = metricsStatus.prometheus.error;
+                      if (typeof prometheusErrorValue === "string" && prometheusErrorValue.length > 0) {
+                        prometheusTarget.error = prometheusErrorValue;
+                      }
+                      observabilityChecks.targets.prometheus = prometheusTarget;
+                      observabilityChecks.health.prometheus =
+                        metricsStatus.prometheus.connected
+                          ? "healthy"
+                          : "unhealthy";
                     }
                     if (target === "grafana") {
-                      observabilityChecks.targets.grafana = {
+                      const grafanaTarget: NonNullable<ObservabilityChecks["targets"]["grafana"]> = {
                         connected: metricsStatus.grafana.connected,
-                        url: metricsStatus.grafana.url,
                         dashboards: metricsStatus.grafana.dashboards || 0,
                         health: metricsStatus.grafana.connected
                           ? "healthy"
                           : "unhealthy",
-                        error: metricsStatus.grafana.error,
+                        verified: metricsStatus.grafana.connected,
                       };
-                      observabilityChecks.health.grafana = metricsStatus.grafana
-                        .connected
-                        ? "healthy"
-                        : "unhealthy";
+                      const grafanaUrlValue = metricsStatus.grafana.url;
+                      if (typeof grafanaUrlValue === "string" && grafanaUrlValue.length > 0) {
+                        grafanaTarget.url = grafanaUrlValue;
+                      }
+                      const grafanaErrorValue = metricsStatus.grafana.error;
+                      if (typeof grafanaErrorValue === "string" && grafanaErrorValue.length > 0) {
+                        grafanaTarget.error = grafanaErrorValue;
+                      }
+                      observabilityChecks.targets.grafana = grafanaTarget;
+                      observabilityChecks.health.grafana =
+                        metricsStatus.grafana.connected ? "healthy" : "unhealthy";
                     }
                   }
                 }
 
                 // Validate metrics availability
-                if (step.metrics && step.metrics.length > 0) {
-                  const availableMetrics =
-                    metricsStatus.prometheus.queries?.map((m) => m.name) || [];
-                  const missingMetrics = step.metrics.filter(
-                    (m) =>
-                      !availableMetrics.some(
-                        (am) => am.includes(m) || m.includes(am.split("(")[0]),
-                      ),
+                const availableMetrics = (
+                  metricsStatus.prometheus.queries ?? []
+                )
+                  .map((metric) =>
+                    typeof metric.name === "string" ? metric.name : "",
+                  )
+                  .filter((name): name is string => name.length > 0);
+                observabilityChecks.metrics.available = availableMetrics;
+
+                if (sanitizedRequestedMetrics.length > 0) {
+                  const availableMetricSet = new Set<string>();
+                  for (const metric of availableMetrics) {
+                    if (metric) {
+                      const metricParts = metric.split("(");
+                      const normalizedAvailable =
+                        metricParts.length > 0
+                          ? metricParts[0] ?? metric
+                          : metric;
+                      availableMetricSet.add(metric);
+                      availableMetricSet.add(normalizedAvailable);
+                    }
+                  }
+
+                  const missingMetrics = sanitizedRequestedMetrics.filter(
+                    (metricName) => {
+                      const metricParts = metricName.split("(");
+                      const normalizedMetric =
+                        metricParts.length > 0
+                          ? metricParts[0] ?? metricName
+                          : metricName;
+                      return (
+                        !availableMetricSet.has(metricName) &&
+                        !availableMetricSet.has(normalizedMetric)
+                      );
+                    },
                   );
 
-                  observabilityChecks.metrics.requested = step.metrics;
-                  observabilityChecks.metrics.available = availableMetrics;
                   observabilityChecks.metrics.missing = missingMetrics;
 
                   if (missingMetrics.length > 0) {
@@ -2234,6 +2446,14 @@ spec:
                     });
                   }
                 }
+
+                observabilityChecks.overall = {
+                  verified:
+                    (observabilityChecks.health.prometheus ?? "healthy") ===
+                      "healthy" &&
+                    (observabilityChecks.health.grafana ?? "healthy") === "healthy",
+                  issues: observabilityChecks.metrics.missing,
+                };
 
                 metricsStatus.observabilityChecks = observabilityChecks;
               }
@@ -2245,7 +2465,6 @@ spec:
             case "aiops-tune": {
               // Use step parameters for model training
               const modelType = step.model || "isolation-forest";
-              const dataset = step.dataset || "observability-metrics";
 
               // Store parameters for training job
               if (step.parameters) {
@@ -2260,7 +2479,7 @@ spec:
               }
 
               const trainingStatus = await this.trainPredictiveModels();
-              trainingStatus.modelType = modelType as any;
+              trainingStatus.modelType = modelType as ModelTrainingStatus["modelType"];
               stepResult.result = trainingStatus;
               break;
             }
@@ -2345,7 +2564,7 @@ spec:
             }
 
             case "github-tag-build": {
-              const version = step.version || "v6.8.0-rc";
+              const version = step.version || "v6.8.1-rc";
               const imageName =
                 step.image_name || process.env.DOCKER_IMAGE_NAME;
               const registry = step.registry || process.env.DOCKER_REGISTRY;
@@ -2448,7 +2667,7 @@ spec:
               if (statusOutput.trim()) {
                 await execAsync("git add .");
                 await execAsync(
-                  `git commit -m "EA Plan v6.8.0: Workflow execution auto-commit" || true`,
+                  `git commit -m "EA Plan v6.8.1: Workflow execution auto-commit" || true`,
                 );
 
                 try {
@@ -2476,7 +2695,7 @@ spec:
             await this.performSelfUpdate([
               {
                 type: "pipeline",
-                description: "Workflow execution self-update - v6.8.0-rc",
+                description: "Workflow execution self-update - v6.8.1-rc",
               },
             ]);
             logger.info("Self-update completed");
@@ -2615,7 +2834,7 @@ spec:
       ) {
         summary.tag =
           request.workflow.find((s) => s.step === "github-tag-build")
-            ?.version || "v6.8.0-rc";
+            ?.version || "v6.8.1-rc";
       }
 
       result.summary = summary;
@@ -2700,7 +2919,7 @@ spec:
    */
   async executeCommand(
     command: string,
-    params?: Record<string, any>,
+    params?: Record<string, unknown>,
   ): Promise<CEOReport> {
     logger.info("Master Control: Command execution", { command, params });
 
@@ -2745,12 +2964,66 @@ spec:
       case "phase-update":
         await this.updatePhase7();
         break;
-      case "self-update":
-        const updates = params?.updates as
-          | Array<{ type: string; description: string; content?: string }>
-          | undefined;
-        await this.performSelfUpdate(updates);
+      case "self-update": {
+        const rawUpdates = params?.updates;
+        const allowedUpdateTypes: Array<SelfUpdateStatus["updates"][number]["type"]> = [
+          "context",
+          "prompt",
+          "pipeline",
+          "rules",
+          "config",
+          "securityPolicy",
+        ];
+
+        const normalizedUpdates = Array.isArray(rawUpdates)
+          ? rawUpdates.reduce<Array<{
+              type: SelfUpdateStatus["updates"][number]["type"];
+              description: string;
+              content?: string;
+            }>>((acc, update) => {
+              if (
+                update &&
+                typeof update === "object" &&
+                "type" in update &&
+                typeof (update as { type: unknown }).type === "string" &&
+                allowedUpdateTypes.includes(
+                  (update as { type: string }).type as SelfUpdateStatus["updates"][number]["type"],
+                ) &&
+                "description" in update &&
+                typeof (update as { description: unknown }).description === "string"
+              ) {
+                const typedUpdate = update as {
+                  type: string;
+                  description: string;
+                  content?: string;
+                };
+
+                const normalizedUpdate: {
+                  type: SelfUpdateStatus["updates"][number]["type"];
+                  description: string;
+                  content?: string;
+                } = {
+                  type: typedUpdate.type as SelfUpdateStatus["updates"][number]["type"],
+                  description: typedUpdate.description,
+                };
+
+                if (typeof typedUpdate.content === "string") {
+                  normalizedUpdate.content = typedUpdate.content;
+                }
+
+                acc.push(normalizedUpdate);
+              }
+              return acc;
+            }, [])
+          : undefined;
+
+        await this.performSelfUpdate(
+          normalizedUpdates && normalizedUpdates.length > 0
+            ? normalizedUpdates
+            : undefined,
+        );
         break;
+      }
       default:
         logger.warn("Unknown command", { command });
     }

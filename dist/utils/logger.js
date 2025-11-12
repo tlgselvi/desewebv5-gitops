@@ -1,6 +1,6 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import { config } from '@/config/index.js';
+import { config } from '../config/index.js';
 // Custom log format
 const logFormat = winston.format.combine(winston.format.timestamp({
     format: 'YYYY-MM-DD HH:mm:ss.SSS',
@@ -18,7 +18,7 @@ export const logger = winston.createLogger({
     format: logFormat,
     defaultMeta: {
         service: 'dese-ea-plan-v5',
-        version: process.env.npm_package_version || '5.0.0',
+        version: process.env.npm_package_version || '6.8.1',
         environment: config.nodeEnv,
     },
     transports: [
@@ -64,7 +64,7 @@ export const logPerformance = (operation, startTime, metadata) => {
     logger.info(`Performance: ${operation}`, {
         operation,
         duration: `${duration}ms`,
-        ...metadata,
+        ...(metadata ?? {}),
     });
 };
 // Error logging utility
@@ -75,7 +75,7 @@ export const logError = (error, context) => {
             message: error.message,
             stack: error.stack,
         },
-        context,
+        context: context ?? {},
     });
 };
 // Audit logging utility
@@ -84,7 +84,7 @@ export const logAudit = (action, userId, metadata) => {
         action,
         userId,
         timestamp: new Date().toISOString(),
-        ...metadata,
+        ...(metadata ?? {}),
     });
 };
 //# sourceMappingURL=logger.js.map

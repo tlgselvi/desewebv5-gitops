@@ -1,4 +1,4 @@
-import { Express } from 'express';
+import type { Application } from 'express';
 import { seoRoutes } from './seo.js';
 import { contentRoutes } from './content.js';
 import { projectRoutes } from './projects.js';
@@ -9,10 +9,11 @@ import { aiopsRoutes } from './aiops.js';
 import { feedbackRoutes } from './feedback.js';
 import { autoRemediationRoutes } from './autoRemediation.js';
 import { jwksRoutes } from './jwks.js';
+import { mcpDashboardRoutes } from './mcpDashboard.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 
-export function setupRoutes(app: Express): void {
+export function setupRoutes(app: Application): void {
   const apiPrefix = `/api/${config.apiVersion}`;
 
   // Health check routes
@@ -41,12 +42,13 @@ export function setupRoutes(app: Express): void {
   app.use(`${apiPrefix}/seo`, seoRoutes);
   app.use(`${apiPrefix}/content`, contentRoutes);
   app.use(`${apiPrefix}/analytics`, analyticsRoutes);
+  app.use(`${apiPrefix}/mcp/dashboard`, mcpDashboardRoutes);
 
   // Root API endpoint
   app.get(apiPrefix, (req, res) => {
     res.json({
-      name: 'Dese EA Plan v6.8.0 API',
-      version: '6.8.0',
+      name: 'Dese EA Plan v6.8.1 API',
+      version: '6.8.1',
       description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),

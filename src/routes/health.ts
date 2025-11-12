@@ -3,7 +3,7 @@ import { checkDatabaseConnection } from '@/db/index.js';
 import { redis } from '@/services/storage/redisClient.js';
 import { logger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 /**
  * @swagger
@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
       status: dbStatus ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      version: process.env.npm_package_version || '6.8.0',
+      version: process.env.npm_package_version || '6.8.1',
       environment: process.env.NODE_ENV || 'development',
       database: dbStatus ? 'connected' : 'disconnected',
       memory: {
@@ -56,7 +56,9 @@ router.get('/', async (req, res) => {
 
     res.status(dbStatus ? 200 : 503).json(healthStatus);
   } catch (error) {
-    logger.error('Health check failed', { error });
+    logger.error('Health check failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -86,7 +88,7 @@ router.get('/ready', async (req, res) => {
     try {
       await redis.ping();
       redisStatus = true;
-    } catch (error) {
+    } catch {
       redisStatus = false;
     }
     

@@ -1,0 +1,32 @@
+{
+  "EndTime": "2025-11-07T16:17:51.6854706Z",
+  "StartTime": "2025-11-07T16:17:51.0218563Z",
+  "Status": "success",
+  "Steps": {
+    "MetricsPush": {
+      "PrometheusUrl": "http://localhost:9090",
+      "Status": "success",
+      "StatusCode": 200
+    },
+    "LogArchive": {
+      "FilesArchived": 0
+    },
+    "ContextStatsReport": {
+      "timestamp": "2025-11-07T16:17:51.3386956Z",
+      "memorySize": 30832.0,
+      "memoryFiles": 5,
+      "chainFiles": 2,
+      "mcpServerFiles": 6,
+      "scriptFiles": 13
+    },
+    "ContextCleanup": {
+      "FilesRemoved": 0,
+      "SizeFreed": 0
+    },
+    "MCPConnectivityAudit": {
+      "ServersChecked": 4,
+      "UnhealthyServers": 0,
+      "HealthyServers": 4
+    }
+  }
+}

@@ -90,7 +90,7 @@ async function initializeMasterContext(options: CliOptions): Promise<void> {
   const initContent = `# EA Plan Master Control v6.8 - Persistent Context
 # Mode: ${options.prompt_append ? "Prompt Append Chain" : "Persistent Orchestrator"}
 # Initialized: ${new Date().toISOString()}
-# Version: ${options.version || "v6.8.0"}
+# Version: ${options.version || "v6.8.1"}
 
 `;
 
@@ -188,7 +188,7 @@ async function ruleVerify(options: CliOptions): Promise<void> {
  * Command: github-tag-build (Docker + Git Tag)
  */
 async function githubTagBuild(options: CliOptions): Promise<void> {
-  const version = options.version || "v6.8.0-rc";
+  const version = options.version || "v6.8.1-rc";
   const isStable =
     version &&
     !version.includes("-rc") &&
@@ -308,7 +308,7 @@ async function githubTagBuild(options: CliOptions): Promise<void> {
 async function phaseUpdate(options: CliOptions): Promise<void> {
   console.log("🚀 Step 3: Deploy Phase 7");
 
-  const targetPhase = options.target || "v6.8.0";
+  const targetPhase = options.target || "v6.8.1";
 
   try {
     const result = await callAPI("/master-control/execute", "POST", {
@@ -489,7 +489,7 @@ async function execute(options: CliOptions): Promise<void> {
     if (!options.resume) {
       await appendToMasterContext(
         "INIT",
-        "Master Control v6.8.0 - Prompt Append Chain initialized",
+        "Master Control v6.8.1 - Prompt Append Chain initialized",
         options,
       );
     }
@@ -510,7 +510,7 @@ async function execute(options: CliOptions): Promise<void> {
       );
     } else {
       const executionLog =
-        "🚀 EA Plan Master Control v6.8.0 — Full Stable Release Execution\n";
+        "🚀 EA Plan Master Control v6.8.1 — Full Stable Release Execution\n";
       console.log(executionLog);
       await appendToMasterContext("EXECUTION_START", executionLog, options);
 
@@ -527,7 +527,7 @@ async function execute(options: CliOptions): Promise<void> {
 
       await githubTagBuild({
         ...options,
-        version: options.version || "v6.8.0",
+        version: options.version || "v6.8.1",
       });
 
       console.log = originalConsoleLog;
@@ -659,7 +659,7 @@ async function main(): Promise<void> {
 
   if (args.length === 0) {
     console.log(`
-EA Plan Master Control CLI v6.8.0-rc
+EA Plan Master Control CLI v6.8.1-rc
 
 Usage:
   master-control <command> [options]
@@ -674,7 +674,7 @@ Commands:
 
 Options:
   --strict                     Strict validation mode
-  --target <version>           Target phase version (e.g., v6.8.0)
+  --target <version>           Target phase version (e.g., v6.8.1)
   --apply_manifests           Apply Kubernetes manifests
   --commit_changes             Auto-commit changes
   --targets <list>             Comma-separated targets (e.g., prometheus,grafana)
@@ -684,7 +684,7 @@ Options:
   --validation                 Enable validation
   --observability_check        Enable observability check
   --auto_commit                Auto-commit changes
-  --version <tag>              Version tag (e.g., v6.8.0-rc)
+  --version <tag>              Version tag (e.g., v6.8.1-rc)
   --image_name <name>          Docker image name
   --registry <url>             Docker registry URL
   --argocd_app <name>          ArgoCD application name
@@ -698,14 +698,14 @@ Options:
 
 Examples:
   master-control rule-verify --strict
-  master-control github-tag-build --version v6.8.0-rc --registry ghcr.io/cptsystems
-  master-control phase-update --target v6.8.0 --apply_manifests --commit_changes
+  master-control github-tag-build --version v6.8.1-rc --registry ghcr.io/cptsystems
+  master-control phase-update --target v6.8.1 --apply_manifests --commit_changes
   master-control observe --targets prometheus,grafana --verify
   master-control execute --full_cycle --self_update
 
 Stable Release Workflow (Individual Steps):
   # 1. GitHub Tag (Stable) + Docker Image Push
-  master-control github-tag-build --version v6.8.0
+  master-control github-tag-build --version v6.8.1
   
   # 2. ArgoCD Sync (Production)
   master-control argocd-sync --argocd_app ea-plan-v6 --sync_timeout 300
@@ -718,7 +718,7 @@ Stable Release Workflow (Individual Steps):
 
 Full Stable Release Execution (Single Command):
   master-control execute --full_cycle --self_update --stable_release \\
-    --version v6.8.0 \\
+    --version v6.8.1 \\
     --registry ghcr.io/cptsystems \\
     --argocd_app ea-plan-v6 \\
     --sync_timeout 300 \\
@@ -730,7 +730,7 @@ Fast Testing (Skip Build):
 
 Production Execution (Full):
   master-control execute --full_cycle --self_update --stable_release \\
-    --version v6.8.0 \\
+    --version v6.8.1 \\
     --registry ghcr.io/cptsystems \\
     --argocd_app ea-plan-v6 \\
     --sync_timeout 300 \\
@@ -754,6 +754,10 @@ Resume Deployment (After Configuration):
   // Parse options
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
+    if (typeof arg !== "string") {
+      continue;
+    }
+
     if (arg.startsWith("--")) {
       const key = arg.substring(2).replace(/-/g, "_");
       const nextArg = args[i + 1];
@@ -778,7 +782,7 @@ Resume Deployment (After Configuration):
       ];
       if (booleanFlags.includes(key)) {
         (options as any)[key] = true;
-      } else if (nextArg && !nextArg.startsWith("--")) {
+      } else if (typeof nextArg === "string" && !nextArg.startsWith("--")) {
         // Value flags
         if (key === "target") options.target = nextArg;
         else if (key === "targets") options.targets = nextArg;

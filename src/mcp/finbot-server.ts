@@ -1,4 +1,5 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
+import type { Application } from "express";
 import { createServer } from "http";
 import rateLimit from "express-rate-limit";
 import { logger } from "@/utils/logger.js";
@@ -15,8 +16,8 @@ import { initializeMCPWebSocket, pushContextUpdate } from "./websocket-server.js
  * Purpose: Model Context Protocol server for FinBot module
  */
 
-const app = express();
-const PORT = process.env.FINBOT_MCP_PORT || 5555;
+const app: Application = express();
+const PORT = Number(process.env.FINBOT_MCP_PORT ?? 5555);
 const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
 
 app.use(express.json());
@@ -41,7 +42,7 @@ app.use("/finbot", optionalAuth);
  * Health check endpoint
  */
 app.get("/finbot/health", (req: Request, res: Response) => {
-  res.json({
+  return res.json({
     status: "healthy",
     service: "finbot-mcp",
     version: "1.0.0",
@@ -143,7 +144,7 @@ app.post(
       // Push context update to WebSocket subscribers
       await pushContextUpdate("finbot", "analytics", response.response.context);
 
-      res.json(response);
+      return res.json(response);
     } catch (error) {
       logger.error("FinBot MCP query error", {
         error: error instanceof Error ? error.message : String(error),
@@ -172,7 +173,7 @@ app.get(
 
     const context = {
       module: "finbot",
-      version: "v2.0",
+      version: "v6.8.1",
       endpoints: [
         "/api/v1/analytics/dashboard",
         "/api/v1/analytics/projects",
@@ -193,7 +194,7 @@ app.get(
     // Cache context (5 minutes TTL)
     await redis.setex(cacheKey, 300, JSON.stringify(context));
 
-    res.json(context);
+    return res.json(context);
   })
 );
 
@@ -247,14 +248,14 @@ app.post(
 );
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: Function) => {
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error("FinBot MCP server error", {
     error: err.message,
     stack: err.stack,
     url: req.url,
   });
   
-  res.status(500).json({
+  return res.status(500).json({
     error: "internal_error",
     message: "Failed to process FinBot MCP request",
     timestamp: new Date().toISOString(),

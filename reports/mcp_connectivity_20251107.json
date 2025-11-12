@@ -1,0 +1,30 @@
+[
+  {
+    "StatusCode": 200,
+    "ResponseTime": 137,
+    "Status": "healthy",
+    "Port": 5555,
+    "Name": "FinBot"
+  },
+  {
+    "StatusCode": 200,
+    "ResponseTime": 8,
+    "Status": "healthy",
+    "Port": 5556,
+    "Name": "MuBot"
+  },
+  {
+    "StatusCode": 200,
+    "ResponseTime": 6,
+    "Status": "healthy",
+    "Port": 5557,
+    "Name": "DESE"
+  },
+  {
+    "StatusCode": 200,
+    "ResponseTime": 5,
+    "Status": "healthy",
+    "Port": 5558,
+    "Name": "Observability"
+  }
+]

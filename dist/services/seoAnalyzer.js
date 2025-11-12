@@ -2,10 +2,10 @@ import lighthouse from 'lighthouse';
 import puppeteer from 'puppeteer';
 import { URL } from 'url';
 import { z } from 'zod';
-import { db, seoMetrics, seoProjects } from '@/db/index.js';
+import { db, seoMetrics, seoProjects } from '../db/index.js';
 import { eq } from 'drizzle-orm';
-import { seoLogger } from '@/utils/logger.js';
-import { recordSeoAnalysis } from '@/middleware/prometheus.js';
+import { seoLogger } from '../utils/logger.js';
+import { recordSeoAnalysis } from '../middleware/prometheus.js';
 // Validation schemas
 const SeoAnalysisRequestSchema = z.object({
     projectId: z.string().uuid(),
@@ -16,15 +16,16 @@ const SeoAnalysisRequestSchema = z.object({
         categories: z.array(z.string()).default(['performance', 'accessibility', 'best-practices', 'seo']),
     }).optional(),
 });
-const CoreWebVitalsSchema = z.object({
-    firstContentfulPaint: z.number().optional(),
-    largestContentfulPaint: z.number().optional(),
-    cumulativeLayoutShift: z.number().optional(),
-    firstInputDelay: z.number().optional(),
-    totalBlockingTime: z.number().optional(),
-    speedIndex: z.number().optional(),
-    timeToInteractive: z.number().optional(),
-});
+const toNullableDecimal = (value, fractionDigits = 2) => {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+        return null;
+    }
+    return numeric.toFixed(fractionDigits);
+};
 export class SeoAnalyzer {
     browser = null;
     async initialize() {
@@ -44,15 +45,19 @@ export class SeoAnalyzer {
             seoLogger.info('SEO Analyzer initialized successfully');
         }
         catch (error) {
-            seoLogger.error('Failed to initialize SEO Analyzer', { error });
-            throw error;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            seoLogger.error('Failed to initialize SEO Analyzer', { error: errorMessage });
+            throw error instanceof Error ? error : new Error(errorMessage);
         }
     }
-    async analyzeUrl(url, options = {}) {
+    async analyzeUrl(url, options) {
         if (!this.browser) {
             await this.initialize();
         }
-        const { device = 'desktop', throttling = '4G', categories = ['performance', 'accessibility', 'best-practices', 'seo'], } = options;
+        const normalizedOptions = options ?? {};
+        const device = normalizedOptions.device ?? 'desktop';
+        const throttling = normalizedOptions.throttling ?? '4G';
+        const categories = normalizedOptions.categories ?? ['performance', 'accessibility', 'best-practices', 'seo'];
         try {
             const page = await this.browser.newPage();
             // Set viewport based on device
@@ -69,12 +74,16 @@ export class SeoAnalyzer {
                 await client.send('Network.emulateNetworkConditions', throttlingConfig);
             }
             // Run Lighthouse
+            const wsEndpoint = await this.browser.wsEndpoint();
+            const parsedPort = Number(new URL(wsEndpoint).port);
             const lighthouseOptions = {
                 logLevel: 'error',
                 output: 'json',
                 onlyCategories: categories,
-                port: new URL(await this.browser.wsEndpoint()).port,
             };
+            if (!Number.isNaN(parsedPort)) {
+                lighthouseOptions.port = parsedPort;
+            }
             const result = await lighthouse(url, lighthouseOptions);
             await page.close();
             if (!result) {
@@ -83,8 +92,9 @@ export class SeoAnalyzer {
             return this.processLighthouseResults(result, url);
         }
         catch (error) {
-            seoLogger.error('SEO analysis failed', { url, error });
-            throw error;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            seoLogger.error('SEO analysis failed', { url, error: errorMessage });
+            throw error instanceof Error ? error : new Error(errorMessage);
         }
     }
     getThrottlingConfig(throttling) {
@@ -114,48 +124,68 @@ export class SeoAnalyzer {
                 latency: 0,
             },
         };
-        return configs[throttling] || configs['4G'];
+        const config = configs[throttling] ?? configs['4G'];
+        return config;
     }
     processLighthouseResults(result, url) {
-        const lhr = result.lhr;
+        const { lhr } = result;
         const audits = lhr.audits;
-        // Extract Core Web Vitals
-        const coreWebVitals = {
-            firstContentfulPaint: audits['first-contentful-paint']?.numericValue,
-            largestContentfulPaint: audits['largest-contentful-paint']?.numericValue,
-            cumulativeLayoutShift: audits['cumulative-layout-shift']?.numericValue,
-            firstInputDelay: audits['max-potential-fid']?.numericValue,
-            totalBlockingTime: audits['total-blocking-time']?.numericValue,
-            speedIndex: audits['speed-index']?.numericValue,
-            timeToInteractive: audits['interactive']?.numericValue,
+        const coreWebVitals = {};
+        const assignCoreVital = (key, value) => {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                coreWebVitals[key] = value;
+            }
         };
-        // Extract category scores
+        assignCoreVital('firstContentfulPaint', audits['first-contentful-paint']?.numericValue);
+        assignCoreVital('largestContentfulPaint', audits['largest-contentful-paint']?.numericValue);
+        assignCoreVital('cumulativeLayoutShift', audits['cumulative-layout-shift']?.numericValue);
+        assignCoreVital('firstInputDelay', audits['max-potential-fid']?.numericValue);
+        assignCoreVital('totalBlockingTime', audits['total-blocking-time']?.numericValue);
+        assignCoreVital('speedIndex', audits['speed-index']?.numericValue);
+        assignCoreVital('timeToInteractive', audits['interactive']?.numericValue);
+        const categories = lhr.categories;
         const scores = {
-            performance: Math.round((lhr.categories.performance?.score || 0) * 100),
-            accessibility: Math.round((lhr.categories.accessibility?.score || 0) * 100),
-            bestPractices: Math.round((lhr.categories['best-practices']?.score || 0) * 100),
-            seo: Math.round((lhr.categories.seo?.score || 0) * 100),
+            performance: Math.round(((categories.performance?.score ?? 0) || 0) * 100),
+            accessibility: Math.round(((categories.accessibility?.score ?? 0) || 0) * 100),
+            bestPractices: Math.round(((categories['best-practices']?.score ?? 0) || 0) * 100),
+            seo: Math.round(((categories.seo?.score ?? 0) || 0) * 100),
         };
-        // Extract opportunities and diagnostics
-        const opportunities = Object.values(audits)
+        const auditValues = Object.values(audits);
+        const opportunities = auditValues
             .filter((audit) => audit.details?.type === 'opportunity')
-            .map((audit) => ({
-            id: audit.id,
-            title: audit.title,
-            description: audit.description,
-            score: audit.score,
-            numericValue: audit.numericValue,
-            displayValue: audit.displayValue,
-        }));
-        const diagnostics = Object.values(audits)
+            .map((audit) => {
+            const opportunity = {
+                id: audit.id,
+                title: audit.title,
+                score: audit.score,
+            };
+            if (typeof audit.description === 'string') {
+                opportunity.description = audit.description;
+            }
+            if (typeof audit.numericValue === 'number') {
+                opportunity.numericValue = audit.numericValue;
+            }
+            if (typeof audit.displayValue === 'string') {
+                opportunity.displayValue = audit.displayValue;
+            }
+            return opportunity;
+        });
+        const diagnostics = auditValues
             .filter((audit) => audit.details?.type === 'diagnostic')
-            .map((audit) => ({
-            id: audit.id,
-            title: audit.title,
-            description: audit.description,
-            score: audit.score,
-            details: audit.details,
-        }));
+            .map((audit) => {
+            const diagnostic = {
+                id: audit.id,
+                title: audit.title,
+                score: audit.score,
+            };
+            if (typeof audit.description === 'string') {
+                diagnostic.description = audit.description;
+            }
+            if (audit.details) {
+                diagnostic.details = audit.details;
+            }
+            return diagnostic;
+        });
         return {
             url,
             scores,
@@ -190,28 +220,30 @@ export class SeoAnalyzer {
             try {
                 const analysis = await this.analyzeUrl(url, validatedRequest.options);
                 // Save to database
-                await db.insert(seoMetrics).values({
+                const metricRecord = {
                     projectId: validatedRequest.projectId,
                     url,
-                    performance: analysis.scores.performance,
-                    accessibility: analysis.scores.accessibility,
-                    bestPractices: analysis.scores.bestPractices,
-                    seo: analysis.scores.seo,
-                    firstContentfulPaint: analysis.coreWebVitals.firstContentfulPaint,
-                    largestContentfulPaint: analysis.coreWebVitals.largestContentfulPaint,
-                    cumulativeLayoutShift: analysis.coreWebVitals.cumulativeLayoutShift,
-                    firstInputDelay: analysis.coreWebVitals.firstInputDelay,
-                    totalBlockingTime: analysis.coreWebVitals.totalBlockingTime,
-                    speedIndex: analysis.coreWebVitals.speedIndex,
-                    timeToInteractive: analysis.coreWebVitals.timeToInteractive,
+                    performance: toNullableDecimal(analysis.scores.performance),
+                    accessibility: toNullableDecimal(analysis.scores.accessibility),
+                    bestPractices: toNullableDecimal(analysis.scores.bestPractices),
+                    seo: toNullableDecimal(analysis.scores.seo),
+                    firstContentfulPaint: toNullableDecimal(analysis.coreWebVitals.firstContentfulPaint, 2),
+                    largestContentfulPaint: toNullableDecimal(analysis.coreWebVitals.largestContentfulPaint, 2),
+                    cumulativeLayoutShift: toNullableDecimal(analysis.coreWebVitals.cumulativeLayoutShift, 4),
+                    firstInputDelay: toNullableDecimal(analysis.coreWebVitals.firstInputDelay, 2),
+                    totalBlockingTime: toNullableDecimal(analysis.coreWebVitals.totalBlockingTime, 2),
+                    speedIndex: toNullableDecimal(analysis.coreWebVitals.speedIndex, 2),
+                    timeToInteractive: toNullableDecimal(analysis.coreWebVitals.timeToInteractive, 2),
                     rawData: analysis.rawData,
-                });
+                };
+                await db.insert(seoMetrics).values(metricRecord);
                 results.push(analysis);
                 seoLogger.info('URL analysis completed', { url, scores: analysis.scores });
             }
             catch (error) {
-                seoLogger.error('URL analysis failed', { url, error });
-                errors.push({ url, error: error.message });
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                seoLogger.error('URL analysis failed', { url, error: errorMessage });
+                errors.push({ url, error: errorMessage });
             }
         }
         return {
@@ -258,25 +290,30 @@ export class SeoAnalyzer {
         }
         const latest = metrics[metrics.length - 1];
         const previous = metrics[metrics.length - 2];
+        const calculateTrend = (current, prev) => {
+            const currentValue = typeof current === 'string' ? Number.parseFloat(current) : current ?? null;
+            const previousValue = typeof prev === 'string' ? Number.parseFloat(prev) : prev ?? null;
+            if (currentValue === null || previousValue === null) {
+                return {
+                    current: currentValue,
+                    previous: previousValue,
+                    change: null,
+                    changePercent: null,
+                };
+            }
+            const change = currentValue - previousValue;
+            const changePercent = previousValue !== 0 ? (change / previousValue) * 100 : null;
+            return {
+                current: currentValue,
+                previous: previousValue,
+                change,
+                changePercent,
+            };
+        };
         return {
-            performance: {
-                current: latest.performance,
-                previous: previous.performance,
-                change: latest.performance - previous.performance,
-                changePercent: ((latest.performance - previous.performance) / previous.performance) * 100,
-            },
-            accessibility: {
-                current: latest.accessibility,
-                previous: previous.accessibility,
-                change: latest.accessibility - previous.accessibility,
-                changePercent: ((latest.accessibility - previous.accessibility) / previous.accessibility) * 100,
-            },
-            seo: {
-                current: latest.seo,
-                previous: previous.seo,
-                change: latest.seo - previous.seo,
-                changePercent: ((latest.seo - previous.seo) / previous.seo) * 100,
-            },
+            performance: calculateTrend(latest.performance, previous.performance),
+            accessibility: calculateTrend(latest.accessibility, previous.accessibility),
+            seo: calculateTrend(latest.seo, previous.seo),
         };
     }
     async cleanup() {

@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { db, seoMetrics, seoProjects, generatedContent, seoAlerts } from '@/db/index.js';
-import { eq, desc, gte, sql } from 'drizzle-orm';
+import { db, seoMetrics, generatedContent, seoAlerts } from '@/db/index.js';
+import { eq, desc, gte, sql, and } from 'drizzle-orm';
 import { asyncHandler } from '@/middleware/errorHandler.js';
-import { logger, analyticsLogger } from '@/utils/logger.js';
+import { analyticsLogger } from '@/utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const AnalyticsQuerySchema = z.object({
@@ -152,7 +152,7 @@ const DashboardQuerySchema = z.object({
  *       400:
  *         description: Validation error
  */
-router.get('/dashboard', asyncHandler(async (req, res) => {
+router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const { projectId, period } = DashboardQuerySchema.parse(req.query);
 
   // Calculate date range
@@ -318,7 +318,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
     alerts,
   };
 
-  res.json(dashboard);
+  return res.json(dashboard);
 }));
 
 /**
@@ -378,39 +378,84 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
  *       400:
  *         description: Validation error
  */
-router.get('/metrics', asyncHandler(async (req, res) => {
+router.get('/metrics', asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const { projectId, startDate, endDate, metric } = AnalyticsQuerySchema.parse(req.query);
 
-  let query = db
-    .select()
-    .from(seoMetrics)
-    .where(eq(seoMetrics.projectId, projectId));
+  const conditions = [eq(seoMetrics.projectId, projectId)];
 
   if (startDate) {
-    query = query.where(gte(seoMetrics.measuredAt, new Date(startDate)));
+    conditions.push(gte(seoMetrics.measuredAt, new Date(startDate)));
   }
 
   if (endDate) {
-    query = query.where(sql`${seoMetrics.measuredAt} <= ${new Date(endDate)}`);
+    conditions.push(sql`${seoMetrics.measuredAt} <= ${new Date(endDate)}`);
   }
 
-  const metrics = await query.orderBy(desc(seoMetrics.measuredAt));
+  const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
 
-  // Calculate summary statistics
-  const metricField = metric ? seoMetrics[metric as keyof typeof seoMetrics] : seoMetrics.performance;
-  const values = metrics.map(m => m[metricField as keyof typeof m] as number).filter(v => v !== null);
+  const metrics = await db
+    .select()
+    .from(seoMetrics)
+    .where(whereClause)
+    .orderBy(desc(seoMetrics.measuredAt));
+
+  const metricKey = metric ?? 'performance';
+  const allowedMetrics = [
+    'performance',
+    'accessibility',
+    'seo',
+    'bestPractices',
+  ] as const;
+
+  type MetricKey = (typeof allowedMetrics)[number];
+
+  const resolvedMetricKey = allowedMetrics.includes(metricKey as MetricKey)
+    ? (metricKey as MetricKey)
+    : 'performance';
+
+  type MetricRecord = typeof seoMetrics.$inferSelect;
+  const metricSelectors: Record<MetricKey, (record: MetricRecord) => number | string | null | undefined> = {
+    performance: (record) => record.performance,
+    accessibility: (record) => record.accessibility,
+    seo: (record) => record.seo,
+    bestPractices: (record) => record.bestPractices,
+  } as const;
+
+  const normalizeValue = (value: number | string | null | undefined): number | null => {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  };
+
+  const values = metrics
+    .map((entry) => normalizeValue(metricSelectors[resolvedMetricKey](entry as MetricRecord)))
+    .filter((value): value is number => value !== null);
 
   const summary = {
     count: values.length,
     average: values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0,
     min: values.length > 0 ? Math.min(...values) : 0,
     max: values.length > 0 ? Math.max(...values) : 0,
-    trend: values.length >= 2 
-      ? values[0] > values[values.length - 1] ? 'up' : values[0] < values[values.length - 1] ? 'down' : 'stable'
-      : 'stable',
+    trend: 'stable' as 'up' | 'down' | 'stable',
   };
 
-  res.json({ metrics, summary });
+  if (values.length >= 2) {
+    const firstValue = values[0]!;
+    const lastValue = values[values.length - 1]!;
+
+    if (firstValue > lastValue) {
+      summary.trend = 'up';
+    } else if (firstValue < lastValue) {
+      summary.trend = 'down';
+    }
+  }
+
+  return res.json({ metrics, summary });
 }));
 
 export { router as analyticsRoutes };

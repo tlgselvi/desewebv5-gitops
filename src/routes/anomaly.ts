@@ -1,10 +1,124 @@
 import { Router, Request, Response } from "express";
+import { z } from "zod";
 import { logger } from "@/utils/logger.js";
-import AnomalyDetector from "@/services/aiops/anomalyDetector.js";
+import { asyncHandler } from "@/middleware/errorHandler.js";
+import {
+  anomalyDetector,
+  type AnomalyScore,
+  type AnomalySeverity,
+  type TimelineRange,
+} from "@/services/aiops/anomalyDetector.js";
 import { anomalyAlertService } from "@/services/aiops/anomalyAlertService.js";
 
-const router = Router();
-const anomalyDetector = new AnomalyDetector();
+const router: Router = Router();
+
+const severityEnum = z.enum(["low", "medium", "high", "critical"]);
+
+const detectAnomalySchema = z.object({
+  metric: z.string().min(1),
+  values: z.array(z.number()).min(1),
+  timestamps: z.array(z.number()).optional(),
+});
+
+const percentileDetectionSchema = z.object({
+  values: z.array(z.number()).min(1),
+  timestamps: z.array(z.number()).optional(),
+});
+
+const anomalyScoreSchema = z.object({
+  index: z.number().int().nonnegative().optional(),
+  value: z.number(),
+  score: z.number(),
+  severity: severityEnum,
+  deviation: z.number().optional(),
+  percentile: z.string().min(1).optional(),
+  isAnomaly: z.boolean().optional(),
+  timestamp: z.number().int().optional(),
+  message: z.string().optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
+});
+
+const aggregateScoresSchema = z.object({
+  scores: z.array(anomalyScoreSchema).min(1),
+});
+
+const criticalDetectionSchema = z.object({
+  anomalies: z.array(anomalyScoreSchema).min(1),
+});
+
+const trendDetectionSchema = z.object({
+  values: z.array(z.number()).min(1),
+  timestamps: z.array(z.number()).optional(),
+  windowSize: z.number().int().positive().max(500).optional(),
+});
+
+const timelineSchema = z.object({
+  scores: z.array(anomalyScoreSchema).min(1),
+  timeRange: z
+    .object({
+      start: z.number().int().optional(),
+      end: z.number().int().optional(),
+      granularity: z.enum(["minute", "hour", "day"]).optional(),
+    })
+    .optional(),
+});
+
+const createAlertSchema = z.object({
+  metric: z.string().min(1),
+  anomalyScore: anomalyScoreSchema,
+  context: z.record(z.string(), z.unknown()).optional(),
+});
+
+const alertsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+  severity: severityEnum.optional(),
+});
+
+const historyQuerySchema = z.object({
+  startTime: z.coerce.number().int().optional(),
+  endTime: z.coerce.number().int().optional(),
+  severity: severityEnum.optional(),
+});
+
+const resolveAlertSchema = z.object({
+  resolvedBy: z.string().min(1).default("system"),
+});
+
+const statsQuerySchema = z.object({
+  timeRange: z.string().min(1).default("24h"),
+});
+
+const normalizeTimestamps = (values: number[], timestamps?: number[]): number[] => {
+  if (Array.isArray(timestamps) && timestamps.length === values.length) {
+    return timestamps;
+  }
+
+  const now = Date.now();
+  return values.map((_, index) => now - (values.length - index) * 1000);
+};
+
+const toAnomalyScore = (entry: z.infer<typeof anomalyScoreSchema>): AnomalyScore => {
+  const baseScore: AnomalyScore = {
+    index: entry.index ?? 0,
+    value: entry.value,
+    score: entry.score,
+    severity: entry.severity as AnomalySeverity,
+    deviation: entry.deviation ?? entry.score,
+    percentile: entry.percentile ?? "zscore",
+    isAnomaly: entry.isAnomaly ?? true,
+    timestamp: entry.timestamp ?? Date.now(),
+  };
+
+  if (entry.message !== undefined) {
+    baseScore.message = entry.message;
+  }
+
+  if (entry.context && Object.keys(entry.context).length > 0) {
+    baseScore.context = entry.context;
+  }
+
+  return baseScore;
+};
 
 /**
  * POST /api/v1/aiops/anomalies/detect
@@ -12,106 +126,55 @@ const anomalyDetector = new AnomalyDetector();
  */
 router.post(
   "/anomalies/detect",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { metric, values, timestamps } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { metric, values, timestamps } = detectAnomalySchema.parse(req.body);
 
-      if (!metric) {
-        res.status(400).json({
-          success: false,
-          error: "metric is required",
+    const detectionPayload = {
+      metric,
+      values,
+      timestamps: normalizeTimestamps(values, timestamps),
+    };
+
+    const anomalies = anomalyDetector.detectAnomalies(detectionPayload);
+
+    const criticalAnomalies = anomalies.filter(
+      (anomaly) => anomaly.severity === "critical" || anomaly.severity === "high",
+    );
+
+    const alerts: Array<Awaited<ReturnType<typeof anomalyAlertService.createCriticalAlert>>> = [];
+
+    for (const anomaly of criticalAnomalies) {
+      try {
+        const alert = await anomalyAlertService.createCriticalAlert(metric, anomaly, {
+          totalValues: values.length,
         });
-        return;
-      }
-
-      if (!values || !Array.isArray(values)) {
-        res.status(400).json({
-          success: false,
-          error: "values array is required",
+        alerts.push(alert);
+      } catch (error) {
+        logger.error("Failed to create alert for anomaly", {
+          error: error instanceof Error ? error.message : String(error),
+          metric,
+          anomaly,
         });
-        return;
       }
-
-      if (values.length === 0) {
-        res.status(400).json({
-          success: false,
-          error: "values array cannot be empty",
-        });
-        return;
-      }
-
-      // Validate timestamps length if provided
-      if (
-        timestamps &&
-        Array.isArray(timestamps) &&
-        timestamps.length !== values.length
-      ) {
-        res.status(400).json({
-          success: false,
-          error: "timestamps array length must match values array length",
-        });
-        return;
-      }
-
-      const data = {
-        metric,
-        values,
-        timestamps:
-          timestamps ||
-          values.map((_, i) => Date.now() - (values.length - i) * 1000),
-      };
-
-      const anomalies = anomalyDetector.detectAnomalies(data);
-
-      // Create alerts for critical/high severity anomalies
-      const criticalAnomalies = anomalies.filter(
-        (a) => a.severity === "critical" || a.severity === "high",
-      );
-
-      const alerts = [];
-      for (const anomaly of criticalAnomalies) {
-        try {
-          const alert = await anomalyAlertService.createCriticalAlert(
-            metric,
-            anomaly,
-            {
-              totalValues: values.length,
-            },
-          );
-          alerts.push(alert);
-        } catch (error) {
-          logger.error("Failed to create alert for anomaly", {
-            error: error instanceof Error ? error.message : String(error),
-            metric,
-            anomaly,
-          });
-        }
-      }
-
-      logger.info("Anomalies detected", {
-        metric,
-        totalValues: values.length,
-        anomalyCount: anomalies.length,
-        criticalCount: criticalAnomalies.length,
-        alertCount: alerts.length,
-      });
-
-      res.status(200).json({
-        success: true,
-        metric,
-        totalValues: values.length,
-        anomalyCount: anomalies.length,
-        anomalies,
-        alerts: alerts.length > 0 ? alerts : undefined,
-      });
-    } catch (error) {
-      logger.error("Error detecting anomalies", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to detect anomalies",
-      });
     }
-  },
+
+    logger.info("Anomalies detected", {
+      metric,
+      totalValues: values.length,
+      anomalyCount: anomalies.length,
+      criticalCount: criticalAnomalies.length,
+      alertCount: alerts.length,
+    });
+
+    return res.status(200).json({
+      success: true,
+      metric,
+      totalValues: values.length,
+      anomalyCount: anomalies.length,
+      anomalies,
+      alerts: alerts.length > 0 ? alerts : undefined,
+    });
+  }),
 );
 
 /**
@@ -120,46 +183,26 @@ router.post(
  */
 router.post(
   "/anomalies/p95",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { values, timestamps } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { values, timestamps } = percentileDetectionSchema.parse(req.body);
 
-      if (!values || !Array.isArray(values)) {
-        res.status(400).json({
-          success: false,
-          error: "values array is required",
-        });
-        return;
-      }
+    const result = anomalyDetector.detectp95Anomaly({
+      values,
+      timestamps: normalizeTimestamps(values, timestamps),
+    });
 
-      const data = {
-        values,
-        timestamps:
-          timestamps ||
-          values.map((_, i) => Date.now() - (values.length - i) * 1000),
-      };
+    logger.info("P95 anomaly detected", {
+      isAnomaly: result.result?.isAnomaly,
+      severity: result.result?.severity,
+      score: result.result?.score,
+    });
 
-      const result = anomalyDetector.detectp95Anomaly(data);
-
-      logger.info("P95 anomaly detected", {
-        isAnomaly: result.result?.isAnomaly,
-        severity: result.result?.severity,
-        score: result.result?.score,
-      });
-
-      res.status(200).json({
-        success: true,
-        anomaly: result.result,
-        percentiles: result.percentiles,
-      });
-    } catch (error) {
-      logger.error("Error detecting p95 anomaly", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to detect p95 anomaly",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      anomaly: result.result,
+      percentiles: result.percentiles,
+    });
+  }),
 );
 
 /**
@@ -168,46 +211,26 @@ router.post(
  */
 router.post(
   "/anomalies/p99",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { values, timestamps } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { values, timestamps } = percentileDetectionSchema.parse(req.body);
 
-      if (!values || !Array.isArray(values)) {
-        res.status(400).json({
-          success: false,
-          error: "values array is required",
-        });
-        return;
-      }
+    const result = anomalyDetector.detectp99Anomaly({
+      values,
+      timestamps: normalizeTimestamps(values, timestamps),
+    });
 
-      const data = {
-        values,
-        timestamps:
-          timestamps ||
-          values.map((_, i) => Date.now() - (values.length - i) * 1000),
-      };
+    logger.info("P99 anomaly detected", {
+      isAnomaly: result.result?.isAnomaly,
+      severity: result.result?.severity,
+      score: result.result?.score,
+    });
 
-      const result = anomalyDetector.detectp99Anomaly(data);
-
-      logger.info("P99 anomaly detected", {
-        isAnomaly: result.result?.isAnomaly,
-        severity: result.result?.severity,
-        score: result.result?.score,
-      });
-
-      res.status(200).json({
-        success: true,
-        anomaly: result.result,
-        percentiles: result.percentiles,
-      });
-    } catch (error) {
-      logger.error("Error detecting p99 anomaly", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to detect p99 anomaly",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      anomaly: result.result,
+      percentiles: result.percentiles,
+    });
+  }),
 );
 
 /**
@@ -216,39 +239,24 @@ router.post(
  */
 router.post(
   "/anomalies/aggregate",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { scores } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { scores } = aggregateScoresSchema.parse(req.body);
+    const normalizedScores = scores.map(toAnomalyScore);
 
-      if (!scores || !Array.isArray(scores)) {
-        res.status(400).json({
-          success: false,
-          error: "scores array is required",
-        });
-        return;
-      }
+    const aggregated = anomalyDetector.aggregateAnomalyScores(normalizedScores);
 
-      const aggregated = anomalyDetector.aggregateAnomalyScores(scores);
+    logger.info("Anomaly scores aggregated", {
+      totalScores: normalizedScores.length,
+      criticalCount: aggregated.criticalCount,
+      highCount: aggregated.highCount,
+      aggregatedScore: aggregated.aggregatedScore,
+    });
 
-      logger.info("Anomaly scores aggregated", {
-        totalScores: scores.length,
-        criticalCount: aggregated.criticalCount,
-        highCount: aggregated.highCount,
-        aggregatedScore: aggregated.aggregatedScore,
-      });
-
-      res.status(200).json({
-        success: true,
-        aggregated,
-      });
-    } catch (error) {
-      logger.error("Error aggregating anomaly scores", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to aggregate anomaly scores",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      aggregated,
+    });
+  }),
 );
 
 /**
@@ -257,38 +265,23 @@ router.post(
  */
 router.post(
   "/anomalies/critical",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { anomalies } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { anomalies } = criticalDetectionSchema.parse(req.body);
+    const normalizedAnomalies = anomalies.map(toAnomalyScore);
 
-      if (!anomalies || !Array.isArray(anomalies)) {
-        res.status(400).json({
-          success: false,
-          error: "anomalies array is required",
-        });
-        return;
-      }
+    const critical = anomalyDetector.identifyCriticalAnomalies(normalizedAnomalies);
 
-      const critical = anomalyDetector.identifyCriticalAnomalies(anomalies);
+    logger.info("Critical anomalies identified", {
+      totalServices: normalizedAnomalies.length,
+      criticalCount: critical.length,
+    });
 
-      logger.info("Critical anomalies identified", {
-        totalServices: anomalies.length,
-        criticalCount: critical.length,
-      });
-
-      res.status(200).json({
-        success: true,
-        critical,
-        count: critical.length,
-      });
-    } catch (error) {
-      logger.error("Error identifying critical anomalies", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to identify critical anomalies",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      critical,
+      count: critical.length,
+    });
+  }),
 );
 
 /**
@@ -297,48 +290,28 @@ router.post(
  */
 router.post(
   "/anomalies/trend",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { values, timestamps, windowSize } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { values, timestamps, windowSize } = trendDetectionSchema.parse(req.body);
 
-      if (!values || !Array.isArray(values)) {
-        res.status(400).json({
-          success: false,
-          error: "values array is required",
-        });
-        return;
-      }
-
-      const data = {
+    const trend = anomalyDetector.detectTrendDeviation(
+      {
         values,
-        timestamps:
-          timestamps ||
-          values.map((_, i) => Date.now() - (values.length - i) * 1000),
-      };
+        timestamps: normalizeTimestamps(values, timestamps),
+      },
+      windowSize ?? 10,
+    );
 
-      const trend = anomalyDetector.detectTrendDeviation(
-        data,
-        windowSize || 10,
-      );
+    logger.info("Trend deviation detected", {
+      trend: trend.trend,
+      deviation: trend.deviation,
+      isSignificant: trend.isSignificant,
+    });
 
-      logger.info("Trend deviation detected", {
-        trend: trend.trend,
-        deviation: trend.deviation,
-        isSignificant: trend.isSignificant,
-      });
-
-      res.status(200).json({
-        success: true,
-        trend,
-      });
-    } catch (error) {
-      logger.error("Error detecting trend deviation", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to detect trend deviation",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      trend,
+    });
+  }),
 );
 
 /**
@@ -347,41 +320,25 @@ router.post(
  */
 router.post(
   "/anomalies/timeline",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { scores, timeRange } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { scores, timeRange } = timelineSchema.parse(req.body);
+    const normalizedScores = scores.map(toAnomalyScore);
+    const timeline = anomalyDetector.generateAnomalyTimeline(
+      normalizedScores,
+      timeRange as TimelineRange | undefined,
+    );
 
-      if (!scores || !Array.isArray(scores)) {
-        res.status(400).json({
-          success: false,
-          error: "scores array is required",
-        });
-        return;
-      }
+    logger.info("Anomaly timeline generated", {
+      dataPoints: timeline.timeline.length,
+      totalAnomalies: timeline.summary.totalAnomalies,
+      criticalAnomalies: timeline.summary.criticalAnomalies,
+    });
 
-      const timeline = anomalyDetector.generateAnomalyTimeline(
-        scores,
-        timeRange,
-      );
-
-      logger.info("Anomaly timeline generated", {
-        dataPoints: timeline.timeline.length,
-        totalAnomalies: timeline.summary.totalAnomalies,
-        criticalAnomalies: timeline.summary.criticalAnomalies,
-      });
-
-      res.status(200).json({
-        success: true,
-        timeline,
-      });
-    } catch (error) {
-      logger.error("Error generating anomaly timeline", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to generate anomaly timeline",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      timeline,
+    });
+  }),
 );
 
 /**
@@ -390,50 +347,27 @@ router.post(
  */
 router.post(
   "/anomalies/alerts/create",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { metric, anomalyScore, context } = req.body;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { metric, anomalyScore, context } = createAlertSchema.parse(req.body);
+    const normalizedScore = toAnomalyScore(anomalyScore);
 
-      if (!metric) {
-        res.status(400).json({
-          success: false,
-          error: "metric is required",
-        });
-        return;
-      }
+    const alert = await anomalyAlertService.createCriticalAlert(
+      metric,
+      normalizedScore,
+      context,
+    );
 
-      if (!anomalyScore) {
-        res.status(400).json({
-          success: false,
-          error: "anomalyScore is required",
-        });
-        return;
-      }
+    logger.info("Manual anomaly alert created", {
+      alertId: alert.id,
+      metric,
+      severity: alert.severity,
+    });
 
-      const alert = await anomalyAlertService.createCriticalAlert(
-        metric,
-        anomalyScore,
-        context,
-      );
-
-      logger.info("Manual anomaly alert created", {
-        alertId: alert.id,
-        metric,
-        severity: alert.severity,
-      });
-
-      res.status(201).json({
-        success: true,
-        alert,
-      });
-    } catch (error) {
-      logger.error("Error creating anomaly alert", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to create anomaly alert",
-      });
-    }
-  },
+    return res.status(201).json({
+      success: true,
+      alert,
+    });
+  }),
 );
 
 /**
@@ -442,32 +376,24 @@ router.post(
  */
 router.get(
   "/anomalies/alerts",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const limit = parseInt(req.query.limit as string) || 50;
-      const severity = req.query.severity as string | undefined;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { limit, severity } = alertsQuerySchema.parse(req.query);
 
-      const alerts = await anomalyAlertService.getRecentAlerts(limit, severity);
+    const alerts = await anomalyAlertService.getRecentAlerts(limit, severity);
 
-      logger.info("Anomaly alerts retrieved", {
-        count: alerts.length,
-        severity,
-      });
+    logger.info("Anomaly alerts retrieved", {
+      count: alerts.length,
+      severity,
+    });
 
-      res.status(200).json({
-        success: true,
-        alerts,
-        count: alerts.length,
-        limit,
-      });
-    } catch (error) {
-      logger.error("Error retrieving anomaly alerts", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to retrieve anomaly alerts",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      alerts,
+      count: alerts.length,
+      limit,
+      severity,
+    });
+  }),
 );
 
 /**
@@ -476,37 +402,28 @@ router.get(
  */
 router.get(
   "/anomalies/alerts/history",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const startTime =
-        parseInt(req.query.startTime as string) ||
-        Date.now() - 24 * 60 * 60 * 1000; // Default 24h
-      const endTime = parseInt(req.query.endTime as string) || Date.now();
-      const severity = req.query.severity as string | undefined;
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { startTime, endTime, severity } = historyQuerySchema.parse(req.query);
 
-      const history = await anomalyAlertService.getAlertHistory(
-        startTime,
-        endTime,
-        severity,
-      );
+    const effectiveStart = startTime ?? Date.now() - 24 * 60 * 60 * 1000;
+    const effectiveEnd = endTime ?? Date.now();
 
-      logger.info("Anomaly alert history retrieved", {
-        totalCount: history.totalCount,
-        timeRange: history.timeRange,
-      });
+    const history = await anomalyAlertService.getAlertHistory(
+      effectiveStart,
+      effectiveEnd,
+      severity,
+    );
 
-      res.status(200).json({
-        success: true,
-        history,
-      });
-    } catch (error) {
-      logger.error("Error retrieving alert history", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to retrieve alert history",
-      });
-    }
-  },
+    logger.info("Anomaly alert history retrieved", {
+      totalCount: history.totalCount,
+      timeRange: history.timeRange,
+    });
+
+    return res.status(200).json({
+      success: true,
+      history,
+    });
+  }),
 );
 
 /**
@@ -515,39 +432,34 @@ router.get(
  */
 router.post(
   "/anomalies/alerts/:alertId/resolve",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { alertId } = req.params;
-      const { resolvedBy } = req.body;
-
-      const resolved = await anomalyAlertService.resolveAlert(
-        alertId,
-        resolvedBy,
-      );
-
-      if (!resolved) {
-        res.status(404).json({
-          success: false,
-          error: "Alert not found",
-        });
-        return;
-      }
-
-      logger.info("Anomaly alert resolved", { alertId, resolvedBy });
-
-      res.status(200).json({
-        success: true,
-        message: "Alert resolved successfully",
-        alertId,
-      });
-    } catch (error) {
-      logger.error("Error resolving alert", { error });
-      res.status(500).json({
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { alertId } = req.params;
+    if (!alertId) {
+      return res.status(400).json({
         success: false,
-        error: "Failed to resolve alert",
+        error: "Alert identifier is required",
       });
     }
-  },
+    const resolvedByParsed: z.infer<typeof resolveAlertSchema> = resolveAlertSchema.parse(req.body);
+    const resolvedByValue: string = resolvedByParsed.resolvedBy;
+
+    const resolved = await anomalyAlertService.resolveAlert(alertId, resolvedByValue);
+
+    if (!resolved) {
+      return res.status(404).json({
+        success: false,
+        error: "Alert not found",
+      });
+    }
+
+    logger.info("Anomaly alert resolved", { alertId, resolvedBy: resolvedByValue });
+
+    return res.status(200).json({
+      success: true,
+      message: "Alert resolved successfully",
+      alertId,
+    });
+  }),
 );
 
 /**
@@ -556,27 +468,19 @@ router.post(
  */
 router.get(
   "/anomalies/alerts/stats",
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const timeRange = (req.query.timeRange as string) || "24h";
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+    const { timeRange } = statsQuerySchema.parse(req.query);
 
-      const stats = await anomalyAlertService.getAlertStats(timeRange);
+    const stats = await anomalyAlertService.getAlertStats(timeRange);
 
-      logger.info("Anomaly alert stats retrieved", { timeRange, stats });
+    logger.info("Anomaly alert stats retrieved", { timeRange, stats });
 
-      res.status(200).json({
-        success: true,
-        stats,
-        timeRange,
-      });
-    } catch (error) {
-      logger.error("Error retrieving alert stats", { error });
-      res.status(500).json({
-        success: false,
-        error: "Failed to retrieve alert stats",
-      });
-    }
-  },
+    return res.status(200).json({
+      success: true,
+      stats,
+      timeRange,
+    });
+  }),
 );
 
 export { router as anomalyRoutes };

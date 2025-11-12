@@ -1,181 +1,71 @@
-# 🎯 Aktif Görev - Kritik Görevler Tamamlandı
+# 🎯 Aktif Görev - Kyverno Stabilizasyonu & Dokümantasyon Revizyonu
 
-**Başlangıç Tarihi:** 2025-01-27  
-**Durum:** ✅ Kritik Görevler Tamamlandı  
-**Öncelik:** 🟢 Tüm Kritik Görevler Tamamlandı  
-**Tamamlanma Oranı:** ~100% (Tüm görevler tamamlandı!)
+**Başlangıç Tarihi:** 2025-11-09  
+**Durum:** 🔄 Devam ediyor (Kyverno/ArgoCD stabil, dokümantasyon revizyonu sürüyor)  
+**Öncelik:** 🔴 Yüksek (MCP Faz 1 revizyon turu)  
+**Tamamlanma Oranı:** ~75%
 
 ---
 
 ## 📋 Görev Detayları
 
 ### Amaç
-MCP Server'ları production-ready hale getirmek için temel iyileştirmeler yapmak.
+1. Kyverno admission controller düzeltmelerini dokümantasyon ve versiyon notlarına taşımak.  
+2. MCP Faz 1 gerçek durumunu (auth + cache + gerçek API) raporlara ve hafıza kayıtlarına yansıtmak.  
+3. ArgoCD/GitOps senaryoları için yeni sürüm rehberleri hazırlamak.
 
 ### Kapsam
-- 4 MCP Server (FinBot, MuBot, DESE, Observability)
-- Gerçek backend entegrasyonu
-- Authentication & Security
-- Error handling & Logging
-- Caching
+- Üst düzey raporlar (analiz, detay, master doc) ✅  
+- Release/Güncelleme özetleri ✅  
+- Cursor hafıza kayıtları (aktif görev, proje durumu, Jarvis) 🔄  
+- MCP referans dokümanları (`MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`) 🔄  
+- Sürüm kayıtları (`VERSIYON_GUNCELLEME_RAPORU.md`, `GENEL_GUNCELLEME_OZETI.md`, `GUNCELLEME_OZETI_v6.8.1.md`) ✅
 
 ---
 
 ## ✅ Görev Listesi
 
-### Faz 1: Gerçek Backend Entegrasyonu
+### 1. Kyverno Stabilizasyonu (Teknik)
+- ✅ Kyverno CRD’leri ayrı kustomize kaynağına taşındı (`sync-wave -1`, `ServerSideApply=true`)
+- ✅ Admission controller kaynak limitleri düşürüldü; gereksiz controller’lar kapatıldı
+- ✅ Helm test hook’u devre dışı bırakıldı (metrics pod)
+- ✅ ArgoCD `security` uygulaması tekrar `Synced/Healthy`
 
-#### 1. FinBot MCP Server
-- [x] FinBot API bağlantısı ekle (Backend Analytics API)
-- [x] Mock data'yı gerçek API çağrılarıyla değiştir
-- [x] Error handling ekle (asyncHandler + global error handler)
-- [x] Redis cache ekle (60 saniye TTL)
-- [ ] Test et
-
-**Dosya:** `src/mcp/finbot-server.ts`  
-**Durum:** ✅ Tamamlandı (Backend entegrasyonu, cache, error handling)
-
-#### 2. MuBot MCP Server
-- [x] MuBot MCP Server oluşturuldu (port 5556)
-- [x] Backend API yapısı hazır (gerçek API endpoint'leri eklendiğinde kullanılabilir)
-- [x] Error handling ekle (asyncHandler + global error handler)
-- [x] Redis cache ekle (60 saniye TTL)
-- [ ] Test et
-
-**Dosya:** `src/mcp/mubot-server.ts`  
-**Durum:** ✅ Oluşturuldu ve yapılandırıldı (backend entegrasyonu hazır, cache, error handling)
-
-#### 3. DESE MCP Server
-- [x] Backend API bağlantısı ekle (`/api/v1/aiops/collect`)
-- [x] Mock data'yı gerçek API çağrılarıyla değiştir
-- [x] Error handling ekle (asyncHandler + global error handler)
-- [x] Redis cache ekle (60 saniye TTL)
-- [ ] Test et
-
-**Dosya:** `src/mcp/dese-server.ts`  
-**Durum:** ✅ Tamamlandı (Backend entegrasyonu, cache, error handling)
-
-#### 4. Observability MCP Server
-- [x] Observability MCP Server oluşturuldu (port 5558)
-- [x] Prometheus API bağlantısı ekle (`/api/v1/query`)
-- [x] Backend metrics endpoint bağlantısı (`/metrics`)
-- [x] Error handling ekle (asyncHandler + global error handler)
-- [x] Redis cache ekle (30 saniye TTL - metrics değişken)
-- [ ] Test et
-
-**Dosya:** `src/mcp/observability-server.ts`  
-**Durum:** ✅ Tamamlandı (Prometheus entegrasyonu, backend metrics, cache, error handling)
-
-### Faz 2: Authentication & Security
-
-- [x] JWT validation middleware ekle (tüm MCP server'lara) ✅
-- [x] RBAC permission check ekle (authorize middleware hazır) ✅
-- [x] Rate limiting ekle (express-rate-limit) ✅
-- [ ] Test et (Manuel test aşaması)
-
-### Faz 3: Error Handling & Logging
-
-- [x] Error handler middleware ekle (asyncHandler + global error handler)
-- [x] Structured logging ekle (logger utility kullanımı)
-- [ ] Retry logic ekle (opsiyonel - sonraki faz)
-- [ ] Test et
-
-**Durum:** ✅ Tamamlandı (Error handling ve logging iyileştirildi)
+### 2. Dokümantasyon Revizyonu
+- ✅ `RELEASE_NOTES_v6.8.1.md`, `GUNCELLEME_OZETI_v6.8.1.md`, `GENEL_GUNCELLEME_OZETI.md`, `VERSIYON_GUNCELLEME_RAPORU.md`
+- ✅ `PROJE_DURUM_ANALIZ_RAPORU.md`, `PROJE_DURUM_DETAYLI_RAPOR.md`, `PROJECT_MASTER_DOC.md`, `DOKUMENTASYON_GUNCELLEME_RAPORU.md`
+- 🔄 Cursor hafıza dosyaları (`AKTIF_GOREV.md`, `PROJE_DURUMU.md`, `JARVIS_DURUMU.md`) – güncelleniyor
+- 🔄 MCP referans dosyaları – yeni duruma göre revize edilecek
 
 ---
 
 ## 📊 İlerleme Durumu
 
 ### Tamamlanan
-- ✅ MCP analiz ve planlama
-- ✅ Cursor rules güncelleme
-- ✅ Odaklanma rehberi oluşturma
-- ✅ **Faz 1: Gerçek Backend Entegrasyonu** (4/4 MCP Server tamamlandı)
-  - ✅ FinBot MCP Server - Backend Analytics API entegrasyonu
-  - ✅ MuBot MCP Server - Oluşturuldu ve yapılandırıldı
-  - ✅ DESE MCP Server - AIOps API entegrasyonu
-  - ✅ Observability MCP Server - Prometheus + Backend metrics entegrasyonu
-- ✅ **Faz 2: Authentication & Security** (JWT + RBAC + Rate Limiting) ✅
-  - ✅ JWT validation middleware (`src/middleware/auth.ts` oluşturuldu)
-  - ✅ Tüm MCP server'lara authentication eklendi
-  - ✅ Rate limiting eklendi (15 dakika/100 istek)
-  - ✅ RBAC authorize middleware hazır
-- ✅ **Faz 3: Error Handling & Logging** (asyncHandler + structured logging)
-- ✅ **Redis Cache Entegrasyonu** (Tüm MCP server'lara eklendi)
-- ✅ **Test Düzeltmeleri** (aiops.test.ts ve metrics.test.ts route düzeltmeleri)
-- ✅ **FinBot Consumer Business Logic** (`src/bus/streams/finbot-consumer.ts` oluşturuldu)
-- ✅ **WebSocket Gateway JWT Validation** (`src/ws/gateway.ts` oluşturuldu)
-- ✅ **Python Servislerinde Mock Data** (5 Python servisi gerçek API entegrasyonu)
+- ✅ Kyverno manifest refaktörü (CRD ayrıştırma + kustomize güncellemesi)
+- ✅ ArgoCD senkronizasyonu ve manuel `argocd app sync security`
+- ✅ Release/güncelleme dokümantasyonu v6.8.1 statüsüne çekildi
+- ✅ Üst düzey raporlar güncellendi; master doc yeni öncelik tablosunu içeriyor
 
 ### Devam Eden
-- ⏳ Test aşaması (Manuel testler yapılacak)
-
-### Bekleyen (Opsiyonel)
-- ⏳ Retry logic (Opsiyonel - sonraki faz)
-
----
-
-## 🚀 Sonraki Adım
-
-**Tamamlanan Kritik Görevler (2025-01-27):**
-1. ✅ **MCP Server Authentication & Security** (Faz 2)
-   - ✅ JWT validation middleware (`src/middleware/auth.ts`)
-   - ✅ Tüm 4 MCP server'a authentication eklendi
-   - ✅ Rate limiting eklendi
-   - ✅ RBAC authorize middleware hazır
-2. ✅ **Test Düzeltmeleri**
-   - ✅ AIOps route threshold validation eklendi
-   - ✅ Metrics route action validation eklendi
-3. ✅ **FinBot Consumer Business Logic**
-   - ✅ `src/bus/streams/finbot-consumer.ts` oluşturuldu
-   - ✅ 4 event handler implementasyonu (TransactionCreated, TransactionUpdated, AccountCreated, BudgetUpdated)
-   - ✅ DLQ (Dead Letter Queue) logic eklendi
-4. ✅ **WebSocket Gateway JWT Validation**
-   - ✅ `src/ws/gateway.ts` oluşturuldu
-   - ✅ JWT token validation eklendi
-   - ✅ Topic subscription/unsubscription implementasyonu
-5. ✅ **Python Servislerinde Mock Data**
-   - ✅ AIOps decision-engine.py - Prometheus API entegrasyonu
-   - ✅ MuBot ingestion.py - Gerçek data source entegrasyonu
-   - ✅ FinBot forecast.py - Backend API entegrasyonu
-   - ✅ Self-optimization-loop.py - Prometheus + Backend entegrasyonu
-   - ✅ SEO drift-analyzer.py - Backend SEO API entegrasyonu
-
-**Tamamlanan Son Görevler (2025-01-27):**
-- ✅ Sprint 2.6 Gün 4: Alert Dashboard UI
-- ✅ Sprint 2.6 Gün 5: Sprint Review
-- ✅ Sprint 2.6 %100 tamamlandı
-- ✅ Güvenlik Güncellemeleri (Deprecated paketler güncellendi)
-  - ✅ multer kaldırıldı (kullanılmıyordu)
-  - ✅ supertest 6.3.4 → 7.0.0
-  - ✅ @typescript-eslint 6.13.1 → 7.0.0
-- ✅ JARVIS Diagnostic Scripts (Phase 1, 2, 3 ve summary template)
-  - ✅ jarvis-diagnostic-phase1.ps1 (MCP connectivity)
-  - ✅ jarvis-diagnostic-phase2.ps1 (System health)
-  - ✅ jarvis-diagnostic-phase3.ps1 (Performance metrics)
-  - ✅ jarvis_diagnostic_summary.md (Report template)
-- ✅ MCP Server WebSocket Support (Tüm 4 server'a eklendi)
-  - ✅ WebSocket server implementasyonu
-  - ✅ Real-time context push
-  - ✅ Event streaming
-- ✅ MCP Server Context Aggregation (Multi-module query support)
-  - ✅ Context aggregator implementasyonu
-  - ✅ Aggregation endpoint: `/observability/aggregate`
-
-**Şimdi Yapılacak (Opsiyonel):**
-1. ⏳ Test aşaması - Tüm sistemleri test et
-2. ⏳ Production deployment hazırlığı
-3. ⏳ Sprint 2.7 planlaması (gelecek)
-
-**Önemli Dosyalar:**
-- `EKSIKLER_VE_TAMAMLAMA_DURUMU.md` ⭐⭐ - Tüm eksikler listesi
-- `MCP_GERCEK_DURUM.md` - Gerçek durum analizi
-- `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md` - Detaylı plan
+- 🔄 `MCP_GERCEK_DURUM.md`, `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md`, `DESE_JARVIS_CONTEXT.md` (MCP Faz 1 gerçek durum)
+- 🔄 Cursor hafıza dosyaları (bu kayıt dahil) – yeni odak ile hizalanıyor
+- 🔄 `.cursor/memory/PROJE_DURUMU.md`, `.cursor/memory/JARVIS_DURUMU.md` revize edilecek
 
 ---
 
-**Son Güncelleme:** 2025-01-27 (Saat: Şimdi)  
-**Versiyon:** 6.8.0  
-**Tamamlanma Oranı:** ~100% (Tüm görevler tamamlandı!) 🎉
-**Durum:** ✅ Production-ready (Kritik eksikler giderildi)
+## 🚀 Sonraki Adımlar
+
+1. `MCP_GERCEK_DURUM.md` → Gerçek entegrasyon, auth/cache, Kyverno iyileştirmeleri eklenecek  
+2. `MCP_KAPSAMLI_ANALIZ_VE_PLAN.md` → Faz 2/3 durumları ve yeni backlog notları işlenecek  
+3. `.cursor/memory/PROJE_DURUMU.md`, `.cursor/memory/JARVIS_DURUMU.md` → Yeni özetlerle hizalanacak  
+4. ArgoCD/GitOps rehberlerinde (özellikle `gitops-workflow.md`) Kyverno senaryoları ve manual sync prosedürü dokümante edilecek  
+5. Jarvis rapor planı: günlük efficiency chain & haftalık diagnostic özetleri sürdürülüyor (bilgi amaçlı)
+
+---
+
+**Son Güncelleme:** 2025-11-09  
+**Versiyon:** 6.8.1  
+**Tamamlanma Oranı:** ~75%  
+**Durum:** 🔄 Kyverno stabilizasyonu tamam, dokümantasyon/memory revizyonu devam ediyor
 

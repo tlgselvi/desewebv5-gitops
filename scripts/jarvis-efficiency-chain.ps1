@@ -125,7 +125,7 @@ function Step-ContextStatsReport {
     Write-Log "Generating context statistics report..."
     
     $stats = @{
-        timestamp = (Get-Date).ToISOString()
+        timestamp = (Get-Date).ToUniversalTime().ToString("o")
         memoryFiles = if (Test-Path ".cursor/memory") { (Get-ChildItem -Path ".cursor/memory" -File).Count } else { 0 }
         memorySize = if (Test-Path ".cursor/memory") { (Get-ChildItem -Path ".cursor/memory" -File | Measure-Object -Property Length -Sum).Sum } else { 0 }
         chainFiles = if (Test-Path ".cursor/chains") { (Get-ChildItem -Path ".cursor/chains" -File).Count } else { 0 }
@@ -179,7 +179,7 @@ Write-Log "=== JARVIS Efficiency Chain Started ===" -Level "INFO"
 Write-Log "Reports path: $ReportsPath"
 
 $summary = @{
-    StartTime = (Get-Date).ToISOString()
+    StartTime = (Get-Date).ToUniversalTime().ToString("o")
     Steps = @{}
 }
 
@@ -190,12 +190,12 @@ try {
     $summary.Steps.ContextStatsReport = Step-ContextStatsReport
     $summary.Steps.MetricsPush = Step-MetricsPush
     
-    $summary.EndTime = (Get-Date).ToISOString()
+    $summary.EndTime = (Get-Date).ToUniversalTime().ToString("o")
     $summary.Status = "success"
     
     Write-Log "=== JARVIS Efficiency Chain Completed Successfully ===" -Level "INFO"
 } catch {
-    $summary.EndTime = (Get-Date).ToISOString()
+    $summary.EndTime = (Get-Date).ToUniversalTime().ToString("o")
     $summary.Status = "failed"
     $summary.Error = $_.Exception.Message
     Write-Log "JARVIS Efficiency Chain failed: $($_.Exception.Message)" -Level "ERROR"

@@ -26,55 +26,97 @@ export const createError = (message: string, statusCode: number = 500): AppError
   return error;
 };
 
+type ErrorResponse = {
+  error: string;
+  message: string;
+  timestamp: string;
+  path: string;
+  method: string;
+  details?: unknown;
+  stack?: string;
+};
+
+interface RequestWithUser extends Request {
+  user?: {
+    id?: string;
+  };
+}
+
+const hasCodeProperty = (value: unknown): value is { code?: unknown } => {
+  return typeof value === 'object' && value !== null && 'code' in value;
+};
+
+const toAppError = (error: unknown): AppError => {
+  if (error instanceof CustomError) {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    const candidate = error as AppError;
+    if (candidate.statusCode === undefined) {
+      candidate.statusCode = 500;
+    }
+    if (candidate.isOperational === undefined) {
+      candidate.isOperational = false;
+    }
+    return candidate;
+  }
+
+  return new CustomError('Internal Server Error', 500);
+};
+
 export const errorHandler = (
-  error: AppError,
-  req: Request,
+  error: unknown,
+  req: RequestWithUser,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
-  let statusCode = error.statusCode || 500;
-  let message = error.message || 'Internal Server Error';
-  let details: any = undefined;
+  const zodError = error instanceof ZodError ? error : null;
+  const appError = zodError ? new CustomError('Validation Error', 400) : toAppError(error);
+
+  let statusCode = appError.statusCode || 500;
+  let message = appError.message || 'Internal Server Error';
+  let details: unknown = undefined;
 
   // Handle different error types
-  if (error instanceof ZodError) {
+  if (zodError) {
     statusCode = 400;
     message = 'Validation Error';
     details = {
-      issues: error.issues.map(issue => ({
+      issues: zodError.issues.map(issue => ({
         field: issue.path.join('.'),
         message: issue.message,
         code: issue.code,
       })),
     };
-  } else if (error.name === 'ValidationError') {
+  } else if (appError.name === 'ValidationError') {
     statusCode = 400;
     message = 'Validation Error';
-  } else if (error.name === 'CastError') {
+  } else if (appError.name === 'CastError') {
     statusCode = 400;
     message = 'Invalid ID format';
-  } else if (error.name === 'MongoError' && (error as any).code === 11000) {
+  } else if (appError.name === 'MongoError' && hasCodeProperty(appError) && appError.code === 11000) {
     statusCode = 409;
     message = 'Duplicate field value';
-  } else if (error.name === 'JsonWebTokenError') {
+  } else if (appError.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
-  } else if (error.name === 'TokenExpiredError') {
+  } else if (appError.name === 'TokenExpiredError') {
     statusCode = 401;
     message = 'Token expired';
-  } else if (error.name === 'MulterError') {
+  } else if (appError.name === 'MulterError' && hasCodeProperty(appError)) {
     statusCode = 400;
     message = 'File upload error';
-    details = { code: (error as any).code };
+    details = { code: appError.code };
   }
 
   // Log error
   if (statusCode >= 500) {
     logger.error('Server Error', {
       error: {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
+        name: appError.name,
+        message: appError.message,
+        stack: appError.stack,
       },
       request: {
         method: req.method,
@@ -84,13 +126,13 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: (req as any).user?.id,
+      user: req.user?.id,
     });
   } else {
     logger.warn('Client Error', {
       error: {
-        name: error.name,
-        message: error.message,
+        name: appError.name,
+        message: appError.message,
       },
       request: {
         method: req.method,
@@ -98,13 +140,13 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: (req as any).user?.id,
+      user: req.user?.id,
     });
   }
 
   // Send error response
-  const errorResponse: any = {
-    error: error.name || 'Error',
+  const errorResponse: ErrorResponse = {
+    error: appError.name || 'Error',
     message,
     timestamp: new Date().toISOString(),
     path: req.url,
@@ -117,16 +159,20 @@ export const errorHandler = (
 
   // Include stack trace in development
   if (config.nodeEnv === 'development') {
-    errorResponse.stack = error.stack;
+    if (appError.stack) {
+      errorResponse.stack = appError.stack;
+    }
   }
 
   res.status(statusCode).json(errorResponse);
 };
 
 // Async error wrapper
-export const asyncHandler = (fn: Function) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+export const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown> | unknown,
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    void Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 

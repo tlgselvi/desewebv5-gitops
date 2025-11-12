@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { z } from "zod";
 import { masterControl } from "@/services/masterControl.js";
 import { asyncHandler } from "@/middleware/errorHandler.js";
 import { authenticate, authorize } from "@/middleware/auth.js";
 import { logger } from "@/utils/logger.js";
 
-const router = Router();
+const router: Router = Router();
 
 // Master Control routes require admin authentication
 router.use(authenticate);
@@ -28,7 +28,7 @@ const CommandSchema = z.object({
     "self-update",
     "docura-sync",
   ]),
-  params: z.record(z.any()).optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -56,12 +56,12 @@ const CommandSchema = z.object({
  */
 router.get(
   "/status",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control status requested");
 
     const report = await masterControl.generateCEOReport();
 
-    res.status(200).json(report);
+    return res.status(200).json(report);
   }),
 );
 
@@ -79,12 +79,12 @@ router.get(
  */
 router.get(
   "/verify",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Environment verification requested");
 
     const status = await masterControl.verifyEnvironment();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       status,
     });
@@ -105,12 +105,12 @@ router.get(
  */
 router.get(
   "/compliance",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Rules compliance check requested");
 
     const compliance = await masterControl.checkRulesCompliance();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       compliance,
     });
@@ -131,12 +131,12 @@ router.get(
  */
 router.post(
   "/sync",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: AIOps + SEO + Docura sync requested");
 
     const syncStatus = await masterControl.syncAIOpsSEO();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       sync: syncStatus,
     });
@@ -157,12 +157,12 @@ router.post(
  */
 router.get(
   "/github-docker",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: GitHub + Docker status requested");
 
     const status = await masterControl.syncGitHubDocker();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       status,
     });
@@ -183,12 +183,12 @@ router.get(
  */
 router.post(
   "/observe",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Step 2 - Observe requested");
 
     const status = await masterControl.collectMetrics();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       step: "Step 2: Observe",
       status,
@@ -210,12 +210,12 @@ router.post(
  */
 router.post(
   "/aiops-tune",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Step 3 - AIOps-Tune requested");
 
     const status = await masterControl.trainPredictiveModels();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       step: "Step 3: AIOps-Tune",
       status,
@@ -237,12 +237,12 @@ router.post(
  */
 router.post(
   "/docura-sync",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Step 4 - Docura-Sync requested");
 
     const status = await masterControl.syncDocura();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       step: "Step 4: Docura-Sync",
       status,
@@ -264,12 +264,12 @@ router.post(
  */
 router.post(
   "/phase-update",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Step 5 - Phase-Update requested");
 
     const status = await masterControl.updatePhase7();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       step: "Step 5: Phase-Update",
       status,
@@ -291,12 +291,12 @@ router.post(
  */
 router.get(
   "/deploy",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     logger.info("Master Control: Deployment status requested");
 
     const deploymentStatus = await masterControl.manageDeploymentCycle();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       deployment: deploymentStatus,
     });
@@ -361,7 +361,7 @@ router.get(
  *                           type: boolean
  *                         version:
  *                           type: string
- *                           description: Version tag for GitHub and Docker (e.g., v6.8.0-rc)
+ *                           description: Version tag for GitHub and Docker (e.g., v6.8.1-rc)
  *                         image_name:
  *                           type: string
  *                           description: Docker image name
@@ -399,7 +399,7 @@ router.get(
  */
 router.post(
   "/execute",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     // Check if it's a workflow execution request
     if (req.body.workflow && Array.isArray(req.body.workflow)) {
       logger.info("Master Control: Workflow execution requested", {
@@ -427,7 +427,7 @@ router.post(
             metrics: z.array(z.string()).optional(),
             model: z.string().optional(),
             dataset: z.string().optional(),
-            parameters: z.record(z.any()).optional(),
+            parameters: z.record(z.string(), z.unknown()).optional(),
             docura_image: z.string().optional(),
             seo_observer: z.boolean().optional(),
             target_phase: z.string().optional(),
@@ -460,7 +460,7 @@ router.post(
         workflow: validated.workflow || [],
       } as import("@/services/masterControl.js").WorkflowExecutionRequest);
 
-      res.status(200).json(workflowResult);
+      return res.status(200).json(workflowResult);
     } else {
       // Legacy command execution
       const validated = CommandSchema.parse(req.body);
@@ -473,7 +473,7 @@ router.post(
 
       const report = await masterControl.executeCommand(command, params);
 
-      res.status(200).json(report);
+      return res.status(200).json(report);
     }
   }),
 );
@@ -511,7 +511,7 @@ router.post(
  */
 router.post(
   "/self-update",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     const { updates } = req.body;
 
     logger.info("Master Control: Self-update requested", {
@@ -520,7 +520,7 @@ router.post(
 
     const status = await masterControl.performSelfUpdate(updates);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       status,
     });
@@ -547,14 +547,14 @@ router.post(
  */
 router.get(
   "/report",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response): Promise<Response> => {
     const { command } = req.query;
 
     logger.info("Master Control: CEO report generation requested", { command });
 
     const report = await masterControl.generateCEOReport(command as string);
 
-    res.status(200).json(report);
+    return res.status(200).json(report);
   }),
 );
 

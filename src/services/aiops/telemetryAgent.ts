@@ -1,10 +1,26 @@
 import axios from 'axios';
+import { logger } from '@/utils/logger.js';
 
 export interface TelemetryData {
   timestamp: number;
   avgLatency: number;
   drift: boolean;
   metrics: Record<string, number>;
+}
+
+interface PrometheusSample {
+  metric: Record<string, string>;
+  value: [number, string];
+}
+
+interface PrometheusQueryResponse {
+  status: 'success' | 'error';
+  data?: {
+    resultType?: string;
+    result?: PrometheusSample[];
+  };
+  errorType?: string;
+  error?: string;
 }
 
 export class TelemetryAgent {
@@ -17,16 +33,22 @@ export class TelemetryAgent {
   /**
    * Collect metrics from Prometheus
    */
-  async collectMetrics(): Promise<any> {
+  async collectMetrics(): Promise<PrometheusQueryResponse> {
     try {
       const query = 'rate(http_request_duration_seconds_sum[5m])';
       const response = await axios.get(`${this.prometheusUrl}/api/v1/query`, {
         params: { query },
       });
-      return response.data;
+      return response.data as PrometheusQueryResponse;
     } catch (error) {
-      console.error('Error collecting metrics from Prometheus:', error);
-      return {};
+      logger.error('TelemetryAgent: failed to collect metrics from Prometheus', {
+        error: error instanceof Error ? error.message : String(error),
+        prometheusUrl: this.prometheusUrl,
+      });
+      return {
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 
@@ -41,15 +63,27 @@ export class TelemetryAgent {
   /**
    * Calculate average latency from metrics
    */
-  calculateAverageLatency(data: any): number {
+  calculateAverageLatency(data: PrometheusQueryResponse): number {
     try {
-      const values = data?.data?.result?.map((item: any) => parseFloat(item.value[1])) || [];
-      if (values.length === 0) return 0;
-      
-      const sum = values.reduce((acc: number, val: number) => acc + val, 0);
+      const results = data.data?.result ?? [];
+      const values = results
+        .map((item) => {
+          const rawValue = item.value?.[1];
+          const parsed = rawValue ? Number.parseFloat(rawValue) : Number.NaN;
+          return Number.isNaN(parsed) ? null : parsed;
+        })
+        .filter((value): value is number => value !== null);
+
+      if (values.length === 0) {
+        return 0;
+      }
+
+      const sum = values.reduce((acc, val) => acc + val, 0);
       return sum / values.length;
     } catch (error) {
-      console.error('Error calculating average latency:', error);
+      logger.error('TelemetryAgent: error calculating average latency', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return 0;
     }
   }
@@ -57,7 +91,7 @@ export class TelemetryAgent {
   /**
    * Run telemetry collection and detection
    */
-  async run(interval: number = 60000): Promise<TelemetryData> {
+  async run(_interval: number = 60000): Promise<TelemetryData> {
     const data = await this.collectMetrics();
     const avgLatency = this.calculateAverageLatency(data);
     const drift = this.detectDrift(avgLatency, 1.0);
@@ -73,7 +107,7 @@ export class TelemetryAgent {
       },
     };
 
-    console.log(JSON.stringify(telemetryData));
+    logger.info('TelemetryAgent: telemetry data collected', telemetryData);
     return telemetryData;
   }
 

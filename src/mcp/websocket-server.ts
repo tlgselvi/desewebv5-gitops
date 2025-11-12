@@ -3,7 +3,8 @@ import { Server as HTTPServer } from "http";
 import { logger } from "@/utils/logger.js";
 import jwt from "jsonwebtoken";
 import { config } from "@/config/index.js";
-import { redis } from "@/services/storage/redisClient.js";
+
+type MCPModule = "finbot" | "mubot" | "dese" | "observability";
 
 /**
  * MCP WebSocket Server
@@ -21,11 +22,10 @@ interface MCPWebSocketClient extends WebSocket {
 
 interface MCPWebSocketMessage {
   type: "subscribe" | "unsubscribe" | "query" | "context_update" | "event";
-  module?: "finbot" | "mubot" | "dese" | "observability" | "all";
+  module?: MCPModule | "all";
   topic?: string;
-  payload?: any;
+  payload?: unknown;
   token?: string;
-  [key: string]: any;
 }
 
 interface MCPWebSocketServer {
@@ -34,13 +34,44 @@ interface MCPWebSocketServer {
   topicSubscriptions: Map<string, Set<string>>; // topic -> Set of client IDs
 }
 
-const mcpServers = new Map<string, MCPWebSocketServer>();
-const moduleTopics = new Map<string, Set<string>>([
-  ["finbot", new Set(["accounts", "transactions", "budgets", "analytics"])],
-  ["mubot", new Set(["ingestion", "quality", "accounting"])],
-  ["dese", new Set(["anomalies", "correlations", "alerts"])],
-  ["observability", new Set(["metrics", "logs", "traces"])],
+const mcpServers = new Map<MCPModule, MCPWebSocketServer>();
+
+const allowedMessageModules = new Set<MCPWebSocketMessage["module"]>([
+  "finbot",
+  "mubot",
+  "dese",
+  "observability",
+  "all",
 ]);
+
+const isMCPWebSocketMessage = (
+  value: unknown,
+): value is MCPWebSocketMessage => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.type !== "string") {
+    return false;
+  }
+
+  if (record.module !== undefined) {
+    if (typeof record.module !== "string" || !allowedMessageModules.has(record.module as MCPWebSocketMessage["module"])) {
+      return false;
+    }
+  }
+
+  if (record.topic !== undefined && typeof record.topic !== "string") {
+    return false;
+  }
+
+  if (record.token !== undefined && typeof record.token !== "string") {
+    return false;
+  }
+
+  return true;
+};
 
 /**
  * Validate JWT token
@@ -121,7 +152,7 @@ function broadcastToTopic(
  * Initialize MCP WebSocket Server for a module
  */
 export function initializeMCPWebSocket(
-  module: string,
+  module: MCPModule,
   httpServer: HTTPServer,
   port: number
 ): WebSocketServer {
@@ -155,7 +186,7 @@ export function initializeMCPWebSocket(
     // Send welcome message
     sendToClient(ws, {
       type: "event",
-      module: module as any,
+      module,
       payload: {
         message: "Connected to MCP WebSocket server",
         module,
@@ -165,7 +196,19 @@ export function initializeMCPWebSocket(
 
     ws.on("message", async (data: RawData) => {
       try {
-        const message: MCPWebSocketMessage = JSON.parse(data.toString());
+        const parsed = JSON.parse(data.toString()) as unknown;
+        if (!isMCPWebSocketMessage(parsed)) {
+          sendToClient(ws, {
+            type: "event",
+            module,
+            payload: {
+              error: "Invalid message format",
+            },
+          });
+          return;
+        }
+
+        const message = parsed;
 
         // Handle authentication
         if (message.type === "query" && message.token) {
@@ -178,7 +221,7 @@ export function initializeMCPWebSocket(
 
             sendToClient(ws, {
               type: "event",
-              module: module as any,
+              module,
               payload: {
                 message: "Authentication successful",
                 userId: user.id,
@@ -187,7 +230,7 @@ export function initializeMCPWebSocket(
           } else {
             sendToClient(ws, {
               type: "event",
-              module: module as any,
+              module,
               payload: {
                 error: "Authentication failed",
               },
@@ -201,7 +244,7 @@ export function initializeMCPWebSocket(
         if (!ws.isAuthenticated && message.type !== "query") {
           sendToClient(ws, {
             type: "event",
-            module: module as any,
+            module,
             payload: {
               error: "Authentication required",
             },
@@ -221,7 +264,7 @@ export function initializeMCPWebSocket(
 
           sendToClient(ws, {
             type: "event",
-            module: module as any,
+            module,
             payload: {
               message: `Subscribed to topic: ${message.topic}`,
               topic: message.topic,
@@ -243,7 +286,7 @@ export function initializeMCPWebSocket(
 
           sendToClient(ws, {
             type: "event",
-            module: module as any,
+            module,
             payload: {
               message: `Unsubscribed from topic: ${message.topic}`,
               topic: message.topic,
@@ -265,7 +308,7 @@ export function initializeMCPWebSocket(
 
         sendToClient(ws, {
           type: "event",
-          module: module as any,
+          module,
           payload: {
             error: "Invalid message format",
           },
@@ -309,9 +352,9 @@ export function initializeMCPWebSocket(
  * Push context update to subscribed clients
  */
 export async function pushContextUpdate(
-  module: string,
+  module: MCPModule,
   topic: string,
-  context: any
+  context: unknown
 ): Promise<void> {
   const server = mcpServers.get(module);
   if (!server) {
@@ -322,7 +365,7 @@ export async function pushContextUpdate(
   const fullTopic = `${module}:${topic}`;
   const message: MCPWebSocketMessage = {
     type: "context_update",
-    module: module as any,
+    module,
     topic,
     payload: {
       context,
@@ -343,9 +386,9 @@ export async function pushContextUpdate(
  * Push event to subscribed clients
  */
 export async function pushEvent(
-  module: string,
+  module: MCPModule,
   topic: string,
-  event: any
+  event: unknown
 ): Promise<void> {
   const server = mcpServers.get(module);
   if (!server) {
@@ -356,7 +399,7 @@ export async function pushEvent(
   const fullTopic = `${module}:${topic}`;
   const message: MCPWebSocketMessage = {
     type: "event",
-    module: module as any,
+    module,
     topic,
     payload: {
       event,
@@ -376,7 +419,7 @@ export async function pushEvent(
 /**
  * Get WebSocket server statistics
  */
-export function getWebSocketStats(module: string): {
+export function getWebSocketStats(module: MCPModule): {
   connectedClients: number;
   topics: number;
   subscriptions: number;

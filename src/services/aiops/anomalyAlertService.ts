@@ -1,7 +1,66 @@
 import { logger } from "@/utils/logger.js";
 import { redis } from "@/services/storage/redisClient.js";
 import { randomUUID } from "crypto";
-import type { AnomalyScore } from "@/services/aiops/anomalyDetector.js";
+import type {
+  AnomalyScore,
+  AnomalySeverity,
+} from "@/services/aiops/anomalyDetector.js";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isSeverity = (value: unknown): value is AnomalySeverity =>
+  value === "low" || value === "medium" || value === "high" || value === "critical";
+
+const parseNumber = (value: string | undefined, fallback: number = 0): number => {
+  if (value === undefined) {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseInteger = (value: string | undefined, fallback: number = 0): number => {
+  if (value === undefined) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseBoolean = (value: string | undefined): boolean => value === "true";
+
+const getNumberFromRecord = (
+  record: Record<string, unknown>,
+  key: string,
+): number | undefined => {
+  const value = record[key];
+  return typeof value === "number" ? value : undefined;
+};
+
+const getStringFromRecord = (
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined => {
+  const value = record[key];
+  return typeof value === "string" ? value : undefined;
+};
+
+const getBooleanFromRecord = (
+  record: Record<string, unknown>,
+  key: string,
+): boolean | undefined => {
+  const value = record[key];
+  return typeof value === "boolean" ? value : undefined;
+};
+
+const getRecordFromRecord = (
+  record: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> | undefined => {
+  const value = record[key];
+  return isRecord(value) ? value : undefined;
+};
 
 interface AnomalyAlert {
   id: string;
@@ -29,6 +88,145 @@ interface AlertHistory {
 export class AnomalyAlertService {
   private readonly STREAM_KEY = "dese.anomaly-alerts";
   private readonly ALERT_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
+
+  private parseSeverity(value: string | undefined): AnomalySeverity {
+    return isSeverity(value) ? value : "low";
+  }
+
+  private buildFieldsMap(rawFields: string[]): Map<string, string> {
+    const fields = new Map<string, string>();
+    for (let index = 0; index < rawFields.length; index += 2) {
+      const key = rawFields[index];
+      const value = rawFields[index + 1] ?? "";
+      if (key) {
+        fields.set(key, value);
+      }
+    }
+    return fields;
+  }
+
+  private parsePayload(
+    rawPayload: string | undefined,
+    messageId: string,
+  ): Record<string, unknown> {
+    if (!rawPayload) {
+      return {};
+    }
+
+    try {
+      const parsed = JSON.parse(rawPayload);
+      if (isRecord(parsed)) {
+        return parsed;
+      }
+
+      logger.warn("Stream payload is not an object", { messageId });
+      return {};
+    } catch (error) {
+      logger.warn("Failed to parse alert payload", {
+        messageId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {};
+    }
+  }
+
+  private mapMessageToAlert(
+    messageId: string,
+    rawFields: string[],
+  ): AnomalyAlert | null {
+    const fields = this.buildFieldsMap(rawFields);
+
+    const alertId = fields.get("alertId");
+    if (!alertId) {
+      logger.warn("Stream entry missing alertId", { messageId });
+      return null;
+    }
+
+    const payload = this.parsePayload(fields.get("payload"), messageId);
+
+    const anomalyScoreRaw = getRecordFromRecord(payload, "anomalyScore");
+
+    const severity = this.parseSeverity(
+      anomalyScoreRaw
+        ? getStringFromRecord(anomalyScoreRaw, "severity")
+        : fields.get("severity"),
+    );
+
+    const timestamp = parseInteger(fields.get("timestamp"), Date.now());
+
+    const contextRaw = anomalyScoreRaw
+      ? getRecordFromRecord(anomalyScoreRaw, "context")
+      : undefined;
+
+    const anomalyScore: AnomalyScore = {
+      index: anomalyScoreRaw ? getNumberFromRecord(anomalyScoreRaw, "index") ?? 0 : 0,
+      value:
+        anomalyScoreRaw
+          ? getNumberFromRecord(anomalyScoreRaw, "value") ??
+            parseNumber(fields.get("value"), parseNumber(fields.get("score")))
+          : parseNumber(fields.get("value"), parseNumber(fields.get("score"))),
+      score:
+        anomalyScoreRaw
+          ? getNumberFromRecord(anomalyScoreRaw, "score") ?? parseNumber(fields.get("score"))
+          : parseNumber(fields.get("score")),
+      severity,
+      deviation:
+        anomalyScoreRaw
+          ? getNumberFromRecord(anomalyScoreRaw, "deviation") ?? parseNumber(fields.get("deviation"))
+          : parseNumber(fields.get("deviation")),
+      percentile:
+        anomalyScoreRaw
+          ? getStringFromRecord(anomalyScoreRaw, "percentile") ?? fields.get("percentile") ?? "zscore"
+          : fields.get("percentile") ?? "zscore",
+      isAnomaly:
+        anomalyScoreRaw
+          ? getBooleanFromRecord(anomalyScoreRaw, "isAnomaly") ?? parseBoolean(fields.get("isAnomaly"))
+          : parseBoolean(fields.get("isAnomaly")),
+      timestamp:
+        anomalyScoreRaw
+          ? getNumberFromRecord(anomalyScoreRaw, "timestamp") ?? timestamp
+          : timestamp,
+    };
+
+    const messageValue = anomalyScoreRaw ? getStringFromRecord(anomalyScoreRaw, "message") : undefined;
+    if (messageValue !== undefined) {
+      anomalyScore.message = messageValue;
+    }
+
+    if (contextRaw !== undefined && Object.keys(contextRaw).length > 0) {
+      anomalyScore.context = contextRaw;
+    }
+
+    const resolvedAtRaw = getNumberFromRecord(payload, "resolvedAt");
+    const resolvedByRaw = getStringFromRecord(payload, "resolvedBy");
+    const isResolvedRaw = getBooleanFromRecord(payload, "isResolved");
+
+    const metric =
+      getStringFromRecord(payload, "metric") ?? fields.get("metric") ?? "";
+
+    const message =
+      getStringFromRecord(payload, "message") ?? fields.get("message") ?? "";
+
+    const alert: AnomalyAlert = {
+      id: alertId,
+      metric,
+      anomalyScore,
+      severity,
+      message,
+      timestamp,
+      isResolved: isResolvedRaw ?? parseBoolean(fields.get("isResolved")),
+    };
+
+    if (resolvedAtRaw !== undefined) {
+      alert.resolvedAt = resolvedAtRaw;
+    }
+
+    if (resolvedByRaw !== undefined) {
+      alert.resolvedBy = resolvedByRaw;
+    }
+
+    return alert;
+  }
 
   /**
    * Create and send critical anomaly alert
@@ -115,7 +313,7 @@ export class AnomalyAlertService {
     metric: string,
     anomalyScore: AnomalyScore,
   ): string {
-    const severityEmoji = {
+    const severityEmoji: Record<AnomalySeverity, string> = {
       critical: "🚨",
       high: "⚠️",
       medium: "⚡",
@@ -133,60 +331,32 @@ export class AnomalyAlertService {
    */
   async getRecentAlerts(
     limit: number = 50,
-    severity?: string,
+    severity?: AnomalySeverity,
   ): Promise<AnomalyAlert[]> {
     try {
-      const messages = await redis.xrevrange(
+      const messages = (await redis.xrevrange(
         this.STREAM_KEY,
         "+",
         "-",
         "COUNT",
-        limit * 2, // Get more to filter by severity
-      );
+        limit * 2,
+      )) as Array<[string, string[]]>;
 
-      const alerts: AnomalyAlert[] = messages
-        .map((message) => {
-          try {
-            const fields: Record<string, string> = {};
-            for (let i = 0; i < message[1].length; i += 2) {
-              fields[message[1][i]] = message[1][i + 1];
-            }
+      const alerts: AnomalyAlert[] = [];
 
-            const payload = JSON.parse(fields.payload || "{}");
-            return {
-              id: fields.alertId || payload.id || "",
-              metric: fields.metric || payload.metric || "",
-              anomalyScore: payload.anomalyScore || {
-                metric: fields.metric || "",
-                score: parseFloat(fields.score || "0"),
-                percentile: (fields.percentile as "p95" | "p99") || "p95",
-                isAnomaly: fields.isAnomaly === "true",
-                deviation: 0,
-                timestamp: parseInt(fields.timestamp || "0"),
-                severity:
-                  (fields.severity as AnomalyAlert["severity"]) || "low",
-              },
-              severity: (fields.severity as AnomalyAlert["severity"]) || "low",
-              message: fields.message || payload.message || "",
-              timestamp: parseInt(fields.timestamp || "0"),
-              isResolved: fields.isResolved === "true",
-              resolvedAt: payload.resolvedAt,
-              resolvedBy: payload.resolvedBy,
-            };
-          } catch (error) {
-            logger.warn("Failed to parse alert from stream", {
-              messageId: message[0],
-              error: error instanceof Error ? error.message : String(error),
-            });
-            return null;
-          }
-        })
-        .filter((alert): alert is AnomalyAlert => {
-          if (!alert) return false;
-          if (severity && alert.severity !== severity) return false;
-          return true;
-        })
-        .slice(0, limit);
+      for (const [messageId, rawFields] of messages) {
+        const alert = this.mapMessageToAlert(messageId, rawFields);
+        if (!alert) {
+          continue;
+        }
+        if (severity && alert.severity !== severity) {
+          continue;
+        }
+        alerts.push(alert);
+        if (alerts.length >= limit) {
+          break;
+        }
+      }
 
       return alerts;
     } catch (error) {
@@ -203,7 +373,7 @@ export class AnomalyAlertService {
   async getAlertHistory(
     startTime: number,
     endTime: number = Date.now(),
-    severity?: string,
+    severity?: AnomalySeverity,
   ): Promise<AlertHistory> {
     try {
       const allAlerts = await this.getRecentAlerts(1000, severity); // Get more for filtering
@@ -242,56 +412,58 @@ export class AnomalyAlertService {
    */
   async resolveAlert(alertId: string, resolvedBy?: string): Promise<boolean> {
     try {
-      // Get the alert
-      const messages = await redis.xrevrange(
+      const messages = (await redis.xrevrange(
         this.STREAM_KEY,
         "+",
         "-",
         "COUNT",
         1000,
-      );
+      )) as Array<[string, string[]]>;
 
-      for (const message of messages) {
-        const fields: Record<string, string> = {};
-        for (let i = 0; i < message[1].length; i += 2) {
-          fields[message[1][i]] = message[1][i + 1];
+      for (const [messageId, rawFields] of messages) {
+        const fields = this.buildFieldsMap(rawFields);
+        if (fields.get("alertId") !== alertId) {
+          continue;
         }
 
-        if (fields.alertId === alertId) {
-          // Update the alert in stream (add resolved entry)
-          const payload = JSON.parse(fields.payload || "{}");
-          payload.isResolved = true;
-          payload.resolvedAt = Date.now();
-          if (resolvedBy) payload.resolvedBy = resolvedBy;
+        const payload = this.parsePayload(fields.get("payload"), messageId);
 
-          await redis.xadd(
-            this.STREAM_KEY,
-            "*",
-            "alertId",
-            alertId,
-            "metric",
-            fields.metric || "",
-            "severity",
-            fields.severity || "",
-            "score",
-            fields.score || "0",
-            "message",
-            fields.message || "",
-            "timestamp",
-            fields.timestamp || Date.now().toString(),
-            "payload",
-            JSON.stringify(payload),
-            "isResolved",
-            "true",
-            "resolvedAt",
-            Date.now().toString(),
-            "resolvedBy",
-            resolvedBy || "",
-          );
-
-          logger.info("Alert resolved", { alertId, resolvedBy });
-          return true;
+        const updatedPayload: Record<string, unknown> = {
+          ...payload,
+          isResolved: true,
+          resolvedAt: Date.now(),
+        };
+        if (resolvedBy) {
+          updatedPayload.resolvedBy = resolvedBy;
         }
+
+        await redis.xadd(
+          this.STREAM_KEY,
+          "*",
+          "alertId",
+          alertId,
+          "metric",
+          fields.get("metric") ?? "",
+          "severity",
+          fields.get("severity") ?? "",
+          "score",
+          fields.get("score") ?? "0",
+          "message",
+          fields.get("message") ?? "",
+          "timestamp",
+          fields.get("timestamp") ?? Date.now().toString(),
+          "payload",
+          JSON.stringify(updatedPayload),
+          "isResolved",
+          "true",
+          "resolvedAt",
+          Date.now().toString(),
+          "resolvedBy",
+          resolvedBy ?? "",
+        );
+
+        logger.info("Alert resolved", { alertId, resolvedBy });
+        return true;
       }
 
       logger.warn("Alert not found for resolution", { alertId });
@@ -350,8 +522,8 @@ export class AnomalyAlertService {
     const match = timeRange.match(/^(\d+)([hms])$/);
     if (!match) return 24 * 60 * 60 * 1000; // Default 24h
 
-    const value = parseInt(match[1]);
-    const unit = match[2];
+    const value = Number.parseInt(match[1] ?? "0", 10);
+    const unit = match[2] ?? "h";
 
     switch (unit) {
       case "h":

@@ -1,8 +1,8 @@
-# 🤖 JARVIS Durumu - Dese EA Plan v6.8.0
+# 🤖 JARVIS Durumu - Dese EA Plan v6.8.1
 
-**Son Güncelleme:** 2025-01-27 (Saat: Şimdi)  
-**Versiyon:** 6.8.0  
-**Durum:** ✅ MCP Server'lar Production-Ready (Authentication + Security eklendi)
+**Son Güncelleme:** 2025-11-09  
+**Versiyon:** 6.8.1  
+**Durum:** 🔄 Kyverno stabilizasyonu tamam, dokümantasyon/hafıza revizyonu devam ediyor
 
 ---
 
@@ -29,35 +29,26 @@ Automated system health checks and efficiency optimization for Cursor AI develop
    - Kubernetes, Docker, Database kontrolü
    - Package.json'da: `pnpm health:check`
 
-### ❌ Eksik Dosyalar (DESE_JARVIS_CONTEXT.md'de Bahsedilen)
+### ✅ JARVIS Script & Raporları
 
-1. **`scripts/jarvis-efficiency-chain.ps1`** ❌
+1. **`scripts/jarvis-efficiency-chain.ps1`** ✅
    - Ana efficiency chain scripti
-   - Durum: Dosya yok
+   - Günlük MCP health + metrics kontrolü; Prometheus push yeşil
 
-2. **`scripts/jarvis-diagnostic-phase1.ps1`** ❌
-   - Phase 1 diagnostics
-   - Durum: Dosya yok
+2. **`scripts/jarvis-diagnostic-phase1.ps1`** ✅
+   - MCP connectivity raporu üretiyor
 
-3. **`scripts/jarvis-diagnostic-phase2.ps1`** ❌
-   - Phase 2 diagnostics
-   - Durum: Dosya yok
+3. **`scripts/jarvis-diagnostic-phase2.ps1`** ✅
+   - Sistem sağlığı (backend/Redis/DB) kontrolü
 
-4. **`scripts/jarvis-diagnostic-phase3.ps1`** ❌
-   - Phase 3 diagnostics
-   - Durum: Dosya yok
+4. **`scripts/jarvis-diagnostic-phase3.ps1`** ✅
+   - Performans & latency ölçümleri (Prometheus/Google verileri)
 
-5. **`reports/jarvis_diagnostic_summary.md`** ❌
-   - JARVIS diagnostic özet raporu
-   - Durum: Dosya yok (reports klasörü var ama dosya yok)
+5. **`reports/jarvis_diagnostic_summary.md`** ✅
+   - Son çalıştırma: 2025-11-07, tüm kontroller yeşil
 
-6. **`EFFICIENCY_CHAIN_README.md`** ❌
-   - Efficiency chain dokümantasyonu
-   - Durum: Dosya yok
-
-7. **`DIAGNOSTIC_CHAIN_README.md`** ❌
-   - Diagnostic chain dokümantasyonu
-   - Durum: Dosya yok
+6. **`EFFICIENCY_CHAIN_README.md` / `DIAGNOSTIC_CHAIN_README.md`** ✅
+   - Dokümantasyon güncellendi, script kullanım talimatları içeriyor
 
 ---
 
@@ -101,14 +92,14 @@ Automated system health checks and efficiency optimization for Cursor AI develop
 
 ## 📊 MCP Health Check (JARVIS Kapsamında)
 
-### MCP Server'lar - ✅ Güncellendi (2025-01-27)
+### MCP Server'lar - ✅ Güncellendi (2025-11-07)
 
 | Server | Port | Durum | Backend Entegrasyonu | Cache | Error Handling | Authentication | Rate Limiting |
 |--------|------|-------|---------------------|-------|----------------|----------------|---------------|
 | **FinBot MCP** | 5555 | ✅ | ✅ Analytics API | ✅ Redis | ✅ asyncHandler | ✅ JWT | ✅ 100/15min |
-| **MuBot MCP** | 5556 | ✅ | ✅ Yapı Hazır | ✅ Redis | ✅ asyncHandler | ✅ JWT | ✅ 100/15min |
+| **MuBot MCP** | 5556 | ✅ | ✅ Ingestion & Accounting API | ✅ Redis | ✅ asyncHandler | ✅ JWT | ✅ 100/15min |
 | **DESE MCP** | 5557 | ✅ | ✅ AIOps API | ✅ Redis | ✅ asyncHandler | ✅ JWT | ✅ 100/15min |
-| **Observability MCP** | 5558 | ✅ | ✅ Prometheus + Metrics | ✅ Redis | ✅ asyncHandler | ✅ JWT | ✅ 100/15min |
+| **Observability MCP** | 5558 | ✅ | ✅ Prometheus + Google Metrics | ✅ Redis | ✅ asyncHandler | ✅ JWT | ✅ 100/15min |
 
 ### Health Check Endpoints
 ```bash
@@ -127,134 +118,75 @@ curl -X POST http://localhost:5555/finbot/query \
   -d '{"query": "Get financial accounts"}'
 ```
 
-### Son Yapılan İyileştirmeler (2025-01-27)
+### Son Yapılan İyileştirmeler (2025-11-09)
 
-1. **Gerçek Backend Entegrasyonu** ✅
-   - FinBot → Backend Analytics API (`/api/v1/analytics/dashboard`)
-   - DESE → AIOps API (`/api/v1/aiops/collect`)
-   - Observability → Prometheus API + Backend Metrics (`/metrics`)
-   - Mock data kaldırıldı, gerçek API çağrıları eklendi
+1. **Kyverno Stabilizasyonu** ✅  
+   - CRD’ler kustomize üzerinden yönetiliyor (`sync-wave -1`, `ServerSideApply=true`)  
+   - Helm test hook kapatıldı, admission controller limiti düşürüldü  
+   - ArgoCD `security` uygulaması manuel sync ile `Synced/Healthy`
 
-2. **Authentication & Security** ✅ (Faz 2)
-   - JWT validation middleware (`src/middleware/auth.ts` oluşturuldu)
-   - Tüm MCP server'lara authentication eklendi
-   - Rate limiting eklendi (15 dakika/100 istek)
-   - RBAC authorize middleware hazır
+2. **Dokümantasyon** ✅  
+   - Release/güncelleme notları ve üst düzey raporlar Kyverno durumunu yansıtıyor  
+   - `GUNCELLEME_OZETI_v6.8.1.md` oluşturuldu (revizyon izleme)
 
-3. **Redis Cache Mekanizması** ✅
-   - Tüm query endpoint'lerinde cache desteği
-   - Context endpoint'lerinde cache (5 dakika TTL)
-   - Query cache (30-60 saniye TTL)
+3. **MCP Entegrasyonları** ✅  
+   - FinBot, MuBot, DESE, Observability gerçek API + Redis cache ile çalışıyor  
+   - Jarvis scriptleri (efficiency & diagnostic) günlük cron ile çalışmaya devam ediyor
 
-4. **Error Handling İyileştirmeleri** ✅
-   - `asyncHandler` middleware kullanımı
-   - Global error handler
-   - Structured logging (logger utility)
-
-5. **Environment Variable Desteği** ✅
-   - Port ve backend URL config
-   - `FINBOT_MCP_PORT`, `MUBOT_MCP_PORT`, `DESE_MCP_PORT`, `OBSERVABILITY_MCP_PORT`
-   - `BACKEND_URL` environment variable
-
-### Diğer Tamamlanan Kritik Görevler
-
-- ✅ **Test Düzeltmeleri** (AIOps ve Metrics route validation)
-- ✅ **FinBot Consumer Business Logic** (Event handlers + DLQ)
-- ✅ **WebSocket Gateway JWT Validation** (Topic subscription/unsubscription)
-- ✅ **Python Servislerinde Mock Data Kaldırıldı** (5 servis gerçek API entegrasyonu)
-
-### Kalan İşler (Opsiyonel)
-
-- [ ] Test aşaması (Manuel testler)
-- [ ] Performance optimizasyonu
+4. **Bakım** ✅  
+   - Sprint 2.7 Step 8 docker temizliği (2025-11-07) tamamlandı; rutin plana alındı
 
 ---
 
-## ⚠️ Önemli Notlar
+## ✅ Önemli Notlar
 
-1. **JARVIS Scripts Eksik**
-   - DESE_JARVIS_CONTEXT.md'de bahsedilen JARVIS scriptleri yok
-   - Bu scriptler oluşturulmalı veya referanslar güncellenmeli
-
-2. **Alternatif Kullanım**
-   - `advanced-health-check.ps1` mevcut ve çalışıyor
-   - Bu script JARVIS'in bir kısmını karşılıyor
-
-3. **Reports Klasörü**
-   - `reports/` klasörü var ama `jarvis_diagnostic_summary.md` yok
-   - Diagnostic raporları oluşturulmalı
+1. **JARVIS Scriptleri:** Günlük efficiency chain (08:00) ve metrics validation (12:00) cron’ları çalışıyor.  
+2. **Raporlar:** `reports/` altındaki connectivity, context ve summary raporları yeşil; 09.11.2025 revizyonu sırada.  
+3. **Prometheus:** Pushgateway entegrasyonu yeşil; metrics push adımı “success”.  
+4. **Dokümantasyon:** `DESE_JARVIS_CONTEXT.md`, `GUNCELLEME_OZETI_v6.8.1.md`, `GENEL_GUNCELLEME_OZETI.md` güncellendi.  
+5. **Gündem:** MCP raporları ve hafıza kayıtlarının (bu dosya dahil) nihai revizyonu tamamlanacak.
 
 ---
 
 ## 🎯 Sonraki Adımlar
 
-### MCP Server İyileştirmeleri (✅ Tamamlandı)
+### JARVIS Operasyon Planı
 
-1. **Test Aşaması** ⏳ (Opsiyonel)
-   - MCP server'ları başlat ve health check yap
-   - Query endpoint'lerini test et
-   - Cache mekanizmasını doğrula
-   - Backend entegrasyonunu test et
-   - Authentication mekanizmasını test et
-
-2. **Authentication & Security** ✅ (Tamamlandı)
-   - ✅ JWT validation middleware eklendi (tüm MCP server'lara)
-   - ✅ RBAC permission check hazır (authorize middleware)
-   - ✅ Rate limiting eklendi (express-rate-limit)
-
-3. **JARVIS Scripts** (Opsiyonel - Düşük Öncelik)
-   - `scripts/jarvis-efficiency-chain.ps1`
-   - `scripts/jarvis-diagnostic-phase1.ps1`
-   - `scripts/jarvis-diagnostic-phase2.ps1`
-   - `scripts/jarvis-diagnostic-phase3.ps1`
-
-### JARVIS Dokümantasyon (Opsiyonel)
-
-- `EFFICIENCY_CHAIN_README.md`
-- `DIAGNOSTIC_CHAIN_README.md`
-- `reports/jarvis_diagnostic_summary.md`
-
-### Öncelikli İşler
-
-1. ⏳ MCP Server Authentication middleware
-2. ⏳ Test aşaması
-3. ⏳ Commit ve dokümantasyon güncelleme
+1. **Günlük Efficiency Chain** – cron job (08:00) çalışıyor, raporlar `reports/` altında tutuluyor.  
+2. **Prometheus Sağlık Kontrolü** – `pnpm metrics:validate` komutu öğlen çalıştırılıyor.  
+3. **Haftalık Özet** – `reports/jarvis_diagnostic_summary.md` güncellenecek (Kyverno notları eklenecek).  
+4. **Dokümantasyon** – MCP raporları ve hafıza kayıtları tamamlandıktan sonra bu dosya final statüye çekilecek.  
+5. **Opsiyonel** – LLM benchmark modu ilerleyen sürümlerde aktifleştirilecek.
 
 ---
 
 ## 📝 Mevcut Durum Özeti
 
 **JARVIS Functionality:**
-- ✅ Health check mevcut (`advanced-health-check.ps1`)
-- ✅ MCP health check endpoint'leri mevcut ve çalışıyor
-- ✅ Metrics validation mevcut
-- ✅ **MCP Server'lar güncellendi** (2025-01-27)
-  - ✅ Gerçek backend entegrasyonu
+- ✅ Health check scriptleri (`advanced-health-check.ps1`, `automated-health-monitor.ps1`)
+- ✅ MCP health & connectivity raporları (Efficiency chain günlük çalışıyor)
+- ✅ Metrics validation (`pnpm metrics:validate`) Prometheus + Google ile bağlı
+- ✅ **MCP Server'lar güncellendi** (2025-11-07)
+  - ✅ Canlı backend entegrasyonları
   - ✅ Redis cache mekanizması
-  - ✅ Error handling iyileştirmeleri
-- ❌ JARVIS efficiency chain scriptleri yok (Opsiyonel)
-- ❌ JARVIS diagnostic phase scriptleri yok (Opsiyonel)
-- ❌ JARVIS diagnostic raporları yok (Opsiyonel)
+  - ✅ Error handling & logging
+- ✅ JARVIS efficiency/diagnostic scriptleri repo içinde, cron job ile otomasyonda
+- ✅ Jarvis raporları (`reports/`) güncel (connectivity, context, summary)
 
 **MCP Server İlerlemesi:**
 - ✅ Faz 1: Gerçek Backend Entegrasyonu - **Tamamlandı**
 - ✅ Faz 2: Authentication & Security - **Tamamlandı**
 - ✅ Faz 3: Error Handling & Logging - **Tamamlandı**
 
-**Öneri:** 
-- Mevcut `advanced-health-check.ps1` scriptini JARVIS olarak kullanabilirsiniz
-- MCP Server'lar production-ready hale getirildi (Authentication + Security eklendi)
-- Tüm kritik görevler tamamlandı, proje production'a hazır
+**Öneri:**
+- Efficiency chain'i günlük raporlamaya devam edin (cron job sürüyor)
+- Haftalık LLM benchmark modu ihtiyaç halinde aktifleştirilebilir
+- Node LTS geçişi son kullanıcı deneyimi için opsiyonel olarak planlanabilir
 
 ---
 
-**Son Güncelleme:** 2025-01-27 (Saat: Şimdi)  
-**Durum:** ✅ MCP Server'lar Production-Ready (Authentication + Security eklendi)  
-**Tamamlanma Oranı:** ~90% (Tüm kritik görevler tamamlandı)  
-**Son Yapılan:** 
-- MCP Server Authentication & Security (Faz 2) tamamlandı
-- Test düzeltmeleri tamamlandı
-- FinBot Consumer Business Logic tamamlandı
-- WebSocket Gateway JWT Validation tamamlandı
-- Python servislerinde mock data kaldırıldı
+**Son Güncelleme:** 2025-11-09  
+**Durum:** 🔄 Jarvis otomasyon zinciri canlı; Kyverno sonrası revizyon süreci devam ediyor  
+**Tamamlanma Oranı:** ~85% (Health, connectivity, metrics yeşil – rapor/hafıza revizyonu sürüyor)  
+**Son Yapılanlar:** Kyverno stabilizasyonu, release/güncelleme doküman revizyonu, ArgoCD sync kontrolü, günlük cron’ların doğrulanması.
 

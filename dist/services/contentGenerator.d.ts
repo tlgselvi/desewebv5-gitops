@@ -1,60 +1,52 @@
 import { z } from 'zod';
 declare const ContentGenerationRequestSchema: z.ZodObject<{
     projectId: z.ZodString;
-    contentType: z.ZodEnum<["landing_page", "blog_post", "service_page", "product_page"]>;
+    contentType: z.ZodEnum<{
+        landing_page: "landing_page";
+        blog_post: "blog_post";
+        service_page: "service_page";
+        product_page: "product_page";
+    }>;
     templateId: z.ZodOptional<z.ZodString>;
-    keywords: z.ZodArray<z.ZodString, "many">;
+    keywords: z.ZodArray<z.ZodString>;
     targetAudience: z.ZodOptional<z.ZodString>;
-    tone: z.ZodDefault<z.ZodEnum<["professional", "casual", "technical", "friendly"]>>;
+    tone: z.ZodDefault<z.ZodEnum<{
+        professional: "professional";
+        casual: "casual";
+        technical: "technical";
+        friendly: "friendly";
+    }>>;
     wordCount: z.ZodDefault<z.ZodNumber>;
     includeImages: z.ZodDefault<z.ZodBoolean>;
     eEatCompliance: z.ZodDefault<z.ZodBoolean>;
-}, "strip", z.ZodTypeAny, {
-    projectId: string;
-    contentType: "landing_page" | "blog_post" | "service_page" | "product_page";
-    keywords: string[];
-    tone: "professional" | "casual" | "technical" | "friendly";
-    wordCount: number;
-    includeImages: boolean;
-    eEatCompliance: boolean;
-    templateId?: string | undefined;
-    targetAudience?: string | undefined;
-}, {
-    projectId: string;
-    contentType: "landing_page" | "blog_post" | "service_page" | "product_page";
-    keywords: string[];
-    templateId?: string | undefined;
-    targetAudience?: string | undefined;
-    tone?: "professional" | "casual" | "technical" | "friendly" | undefined;
-    wordCount?: number | undefined;
-    includeImages?: boolean | undefined;
-    eEatCompliance?: boolean | undefined;
-}>;
-declare const EEAtscoreSchema: z.ZodObject<{
-    expertise: z.ZodNumber;
-    experience: z.ZodNumber;
-    authoritativeness: z.ZodNumber;
-    trustworthiness: z.ZodNumber;
-    overall: z.ZodNumber;
-}, "strip", z.ZodTypeAny, {
-    expertise: number;
-    experience: number;
-    authoritativeness: number;
-    trustworthiness: number;
-    overall: number;
-}, {
-    expertise: number;
-    experience: number;
-    authoritativeness: number;
-    trustworthiness: number;
-    overall: number;
-}>;
+}, z.core.$strip>;
 export type ContentGenerationRequest = z.infer<typeof ContentGenerationRequestSchema>;
-export type EEAtscore = z.infer<typeof EEAtscoreSchema>;
+export type EEAtscore = {
+    expertise: number;
+    experience: number;
+    authoritativeness: number;
+    trustworthiness: number;
+    overall: number;
+};
+interface GeneratedContentInternal {
+    title: string;
+    content: string;
+    qualityScore: number;
+}
+interface GeneratedContentResponse extends GeneratedContentInternal {
+    id: string;
+    projectId: string;
+    templateId?: string | null;
+    contentType: ContentGenerationRequest['contentType'];
+    keywords: string[];
+    status: string;
+    eEatScore: EEAtscore;
+    generatedAt: string;
+}
 export declare class ContentGenerator {
     private openai;
     constructor();
-    generateContent(request: ContentGenerationRequest): Promise<any>;
+    generateContent(request: ContentGenerationRequest): Promise<GeneratedContentResponse>;
     private generateFromTemplate;
     private generateFromScratch;
     private buildPrompt;
@@ -70,46 +62,46 @@ export declare class ContentGenerator {
         name: string;
         type: string;
         template: string;
-        variables?: Record<string, any>;
+        variables?: Record<string, unknown>;
     }): Promise<{
-        type: string;
         name: string;
+        type: string;
         qualityThreshold: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         template: string;
-        variables: Record<string, any> | null;
+        variables: Record<string, unknown> | null;
         eEatScore: string | null;
-    } | undefined>;
+    }>;
     getTemplates(type?: string): Promise<{
-        type: string;
-        name: string;
-        qualityThreshold: string | null;
         id: string;
+        name: string;
+        type: string;
+        template: string;
+        variables: Record<string, unknown> | null;
+        eEatScore: string | null;
+        qualityThreshold: string | null;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
-        template: string;
-        variables: Record<string, any> | null;
-        eEatScore: string | null;
     }[]>;
     getGeneratedContent(projectId: string, contentType?: string): Promise<{
-        status: string;
-        url: string | null;
-        content: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         projectId: string;
-        eEatScore: string | null;
         templateId: string | null;
         title: string;
+        content: string;
         contentType: string;
+        url: string | null;
         keywords: string[] | null;
+        eEatScore: string | null;
         qualityScore: string | null;
+        status: string;
         publishedAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
     }[]>;
 }
 export declare const contentGenerator: ContentGenerator;

@@ -71,29 +71,23 @@ export const prometheusMiddleware = (req, res, next) => {
     const route = req.route?.path || req.path;
     // Increment in-progress requests
     httpRequestInProgress.inc({ method: req.method, route });
-    // Override res.end to capture metrics
-    const originalEnd = res.end;
-    res.end = function (chunk, encoding) {
+    res.once('finish', () => {
         const duration = (Date.now() - start) / 1000;
         const statusCode = res.statusCode.toString();
-        // Record metrics
         httpRequestDuration.observe({ method: req.method, route, status_code: statusCode }, duration);
         httpRequestTotal.inc({ method: req.method, route, status_code: statusCode });
-        // Decrement in-progress requests
         httpRequestInProgress.dec({ method: req.method, route });
-        // Call original end method
-        originalEnd.call(this, chunk, encoding);
-    };
+    });
     next();
 };
 // Metrics endpoint
-export const metricsHandler = async (req, res) => {
+export const metricsHandler = async (_req, res) => {
     try {
         res.set('Content-Type', register.contentType);
         const metrics = await register.metrics();
         res.end(metrics);
     }
-    catch (error) {
+    catch {
         res.status(500).end('Error generating metrics');
     }
 };

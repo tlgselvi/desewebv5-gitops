@@ -18,16 +18,11 @@ export const auditMiddleware = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Log after response is sent
-  const originalEnd = res.end;
-  
-  res.end = function(chunk?: any, encoding?: any): Response {
-    // Extract user information if available
+  res.once('finish', () => {
     const userId = req.user?.id || 'anonymous';
     const userEmail = req.user?.email || 'anonymous';
     const userRole = req.user?.role || 'unknown';
 
-    // Log audit event
     logger.info('Audit Event', {
       action: `${req.method} ${req.path}`,
       userId,
@@ -38,10 +33,7 @@ export const auditMiddleware = (
       statusCode: res.statusCode,
       timestamp: new Date().toISOString(),
     });
-
-    // Call original end method
-    return originalEnd.call(this, chunk, encoding);
-  };
+  });
 
   next();
 };

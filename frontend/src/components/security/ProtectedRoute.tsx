@@ -1,9 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { getUserRole } from "../../lib/auth";
 
-export default function ProtectedRoute({ role, children }: { role: string; children: React.ReactNode }) {
+export default function ProtectedRoute({ role, children }: { role: string; children: ReactNode }) {
   const router = useRouter();
   useEffect(() => {
     const userRole = getUserRole();

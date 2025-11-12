@@ -1,91 +1,81 @@
-# Dese EA Plan v6.8.0 - GitOps Workflow
+# Dese EA Plan v6.8.1 - GitOps Workflow
 
-**Version:** v6.8.0  
-**Last Update:** 2025-01-27
+**Version:** v6.8.1  
+**Last Update:** 2025-11-09  
+**Durum:** 🔄 Kyverno stabilizasyonu sonrası GitOps revizyonu tamamlandı
 
 ## 🚀 GitOps Senkronizasyon Sistemi
 
-### 📁 Repository Yapısı
+# Kyverno & ArgoCD Yapılandırması (Yeni)
+
 ```
 desewebv5-gitops/
-├── manifests/
-│   ├── monitoring/
-│   │   ├── prometheus.yaml
-│   │   ├── grafana.yaml
-│   │   ├── loki.yaml
-│   │   ├── tempo.yaml
-│   │   └── seo-observer.yaml
-│   └── base/
-│       ├── namespace.yaml
-│       └── kustomization.yaml
-├── .github/
-│   └── workflows/
-│       └── gitops-sync.yml
-└── README.md
+├── gitops/
+│   ├── apps/
+│   │   ├── security/
+│   │   │   └── base/
+│   │   │       ├── kyverno-crds.yaml      # CRD'ler (sync-wave: -1, SSA=true)
+│   │   │       ├── kyverno-helm.yaml      # Kyverno kaynakları (CRD hariç)
+│   │   │       ├── kyverno-policies.yaml  # Kyverno policy set
+│   │   │       ├── kustomization.yaml     # Kaynak sıralaması
+│   │   │       └── security-base.yaml
+│   │   └── monitoring/
+│   │       └── base/ ...                  # Prometheus, Grafana, Loki, Tempo
+│   ├── clusters/
+│   │   └── prod.yaml                      # ArgoCD Application tanımı
+│   └── overlays/                          # Ortam bazlı yamalar
+├── docs/                                  # GitOps ve operasyon rehberleri
+└── scripts/                               # Senkron ve bakım scriptleri
 ```
 
-### 🔄 Otomatik Senkronizasyon
+### 🔄 GitOps Senkronizasyon Akışı
 
-#### 1. GitHub Actions Workflow
-```yaml
-name: GitOps Sync
-on:
-  push:
-    branches: [main]
-    paths: ['manifests/**']
-  schedule:
-    - cron: '*/5 * * * *'  # Her 5 dakikada bir
+1. **Commit → Main**  
+   - Kaynak dosyalar (özellikle `gitops/apps/security/base/**`) güncellendiğinde PR → merge süreci.
+2. **ArgoCD Monitoring**  
+   - `argocd app list` ile uygulamaların `Synced/Healthy` durumu izlenir.
+3. **Kyverno CRD Uygulaması (Tek Seferlik veya Büyük Güncelleme)**  
+   - CRD’ler `kyverno-crds.yaml` içinde; ArgoCD `sync-wave: -1` + `ServerSideApply=true` ile otomatik uygular.
+   - Acil durumda manuel:
+     ```bash
+     kubectl apply -f gitops/apps/security/base/kyverno-crds.yaml --server-side
+     ```
+4. **Kyverno Kaynakları (Helm Renderı)**  
+   - Kaynak limitleri güncel (`20m/96Mi`), helm test hook devre dışı.
+   - Admission controller manifestleri `kyverno-helm.yaml` içerisinde.
+5. **ArgoCD Manuel Sync (Gerekirse)**  
+   - Port-forward:
+     ```bash
+     kubectl port-forward svc/argocd-server -n argocd 8080:443
+     ```
+   - Login:
+     ```bash
+     argocd login localhost:8080 --username admin --password <pw> --insecure
+     ```
+   - Sync:
+     ```bash
+     argocd app sync security
+     ```
 
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Deploy to Kubernetes
-      run: |
-        kubectl apply -f manifests/monitoring/
-        kubectl apply -f manifests/base/
-```
+### 🧠 Önemli Notlar (Kyverno)
+- CRD’ler ana manifestten ayrıldı; annotation limit hatası yok.
+- Helm test pod’u (`kyverno-admission-controller-metrics`) devre dışı (prod ortamda gereksiz).
+- Kyverno admission controller token secret’ı otomatik (`createSelfSignedCert: true`).
+- `kyverno` namespace’i `CreateNamespace=true` sync opsiyonuyla ArgoCD tarafından yönetiliyor.
 
-#### 2. Local GitOps Script
+### 🔧 Lokal Senkron (Monitoring Örneği)
+
 ```bash
-#!/bin/bash
-# gitops-sync.sh
-kubectl apply -f manifests/monitoring/
-kubectl apply -f manifests/base/
+# Monitoring stack'i elle uygulamak için
+kubectl apply -k gitops/apps/monitoring/base
+
+# Kyverno CRD'leri manuel uygulamak gerekiyorsa
+kubectl apply -f gitops/apps/security/base/kyverno-crds.yaml --server-side
+
+# Durum kontrolü
+kubectl get pods -n kyverno
 kubectl get pods -n monitoring
 ```
-
-### 📊 Monitoring Stack Export
-- **Export Dosyası:** `monitoring-stack-export.yaml`
-- **Boyut:** 45,962 bytes
-- **İçerik:** Tüm Kubernetes manifestleri
-
-### 🔧 Kurulum Adımları
-
-1. **Repository Oluştur:**
-   ```bash
-   git init desewebv5-gitops
-   cd desewebv5-gitops
-   mkdir -p manifests/monitoring
-   mkdir -p manifests/base
-   ```
-
-2. **Manifestleri Kopyala:**
-   ```bash
-   cp ../prometheus-deployment.yaml manifests/monitoring/
-   cp ../aiops-extensions.yaml manifests/monitoring/
-   cp ../seo-observer.yaml manifests/monitoring/
-   ```
-
-3. **GitOps Sync Script:**
-   ```bash
-   #!/bin/bash
-   echo "🔄 GitOps Sync başlatılıyor..."
-   kubectl apply -f manifests/monitoring/
-   echo "✅ Monitoring stack güncellendi"
-   kubectl get pods -n monitoring
-   ```
 
 ### 🎯 Avantajlar
 - ✅ **Version Control:** Tüm değişiklikler Git'te takip edilir
@@ -94,18 +84,23 @@ kubectl get pods -n monitoring
 - ✅ **Collaboration:** Ekip çalışması için ideal
 - ✅ **Automation:** Otomatik deployment
 
-### 🔍 Durum Kontrolü
+### 🔍 ArgoCD Durum Kontrolü
+
 ```bash
-# Pod durumları
-kubectl get pods -n monitoring
+# Uygulama listesi
+argocd app list
 
-# Service durumları  
-kubectl get svc -n monitoring
+# Durum sorgusu (security uygulaması)
+argocd app get security
 
-# Tüm kaynaklar
-kubectl get all -n monitoring
+# Kyverno admission controller logları (troubleshooting için)
+kubectl logs deployment/kyverno-admission-controller -n kyverno
 ```
 
-## 🎉 GitOps Senkronizasyonu Aktif!
+## ✅ Özet
 
-Monitoring stack artık GitOps ile yönetiliyor. Tüm değişiklikler Git repository'sinde takip edilecek ve otomatik olarak Kubernetes cluster'ına uygulanacak.
+- Kyverno CRD ve kaynakları ArgoCD ile güvenle yönetiliyor.
+- Helm test hook kapalı; admission controller kaynak limitleri optimize.
+- ArgoCD manuel sync adımları dokümante edildi (`argocd login`, `argocd app sync security`).
+- Monitoring, security ve diğer uygulamalar için Kustomize tabanlı yapı kullanılıyor.
+- Lokal veya CI/CD ortamında ihtiyaç duyulan kubectl komutları örneklerle sağlandı.

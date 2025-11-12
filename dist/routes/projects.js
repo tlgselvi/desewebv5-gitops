@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db, seoProjects, users } from '@/db/index.js';
-import { eq } from 'drizzle-orm';
-import { asyncHandler } from '@/middleware/errorHandler.js';
-import { logger } from '@/utils/logger.js';
+import { db, seoProjects, users } from '../db/index.js';
+import { and, eq } from 'drizzle-orm';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { logger } from '../utils/logger.js';
 const router = Router();
 // Validation schemas
+const ProjectsListQuerySchema = z.object({
+    ownerId: z.string().uuid().optional(),
+    status: z.enum(['active', 'inactive', 'archived']).optional(),
+});
+const ProjectIdParamsSchema = z.object({
+    id: z.string().uuid(),
+});
 const CreateProjectSchema = z.object({
     name: z.string().min(1).max(255),
     description: z.string().optional(),
@@ -50,8 +57,15 @@ const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true }
  *                     $ref: '#/components/schemas/SeoProject'
  */
 router.get('/', asyncHandler(async (req, res) => {
-    const { ownerId, status } = req.query;
-    let query = db
+    const { ownerId, status } = ProjectsListQuerySchema.parse(req.query);
+    const conditions = [];
+    if (ownerId) {
+        conditions.push(eq(seoProjects.ownerId, ownerId));
+    }
+    if (status) {
+        conditions.push(eq(seoProjects.status, status));
+    }
+    const baseQuery = db
         .select({
         id: seoProjects.id,
         name: seoProjects.name,
@@ -73,14 +87,13 @@ router.get('/', asyncHandler(async (req, res) => {
     })
         .from(seoProjects)
         .leftJoin(users, eq(seoProjects.ownerId, users.id));
-    if (ownerId) {
-        query = query.where(eq(seoProjects.ownerId, ownerId));
-    }
-    if (status) {
-        query = query.where(eq(seoProjects.status, status));
-    }
-    const projects = await query;
-    res.json({ projects });
+    const whereClause = conditions.length === 1
+        ? conditions[0]
+        : conditions.length > 1
+            ? and(...conditions)
+            : undefined;
+    const projects = await (whereClause ? baseQuery.where(whereClause) : baseQuery);
+    return res.json({ projects });
 }));
 /**
  * @swagger
@@ -106,7 +119,7 @@ router.get('/', asyncHandler(async (req, res) => {
  *         description: Project not found
  */
 router.get('/:id', asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const { id } = ProjectIdParamsSchema.parse(req.params);
     const project = await db
         .select({
         id: seoProjects.id,
@@ -137,7 +150,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
             message: `Project with ID ${id} not found`,
         });
     }
-    res.json(project[0]);
+    return res.json(project[0]);
 }));
 /**
  * @swagger
@@ -211,17 +224,25 @@ router.post('/', asyncHandler(async (req, res) => {
             message: `User with ID ${validatedData.ownerId} not found`,
         });
     }
-    const project = await db
+    const createdProjects = await db
         .insert(seoProjects)
         .values(validatedData)
         .returning();
+    const [project] = createdProjects;
+    if (!project) {
+        logger.error('Project creation returned empty result', { ownerId: validatedData.ownerId });
+        return res.status(500).json({
+            error: 'creation_failed',
+            message: 'Project could not be created',
+        });
+    }
     logger.info('Project created', {
-        projectId: project[0].id,
-        name: project[0].name,
-        domain: project[0].domain,
+        projectId: project.id,
+        name: project.name,
+        domain: project.domain,
         ownerId: validatedData.ownerId,
     });
-    res.status(201).json(project[0]);
+    return res.status(201).json(project);
 }));
 /**
  * @swagger
@@ -279,7 +300,7 @@ router.post('/', asyncHandler(async (req, res) => {
  *         description: Project not found
  */
 router.put('/:id', asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const { id } = ProjectIdParamsSchema.parse(req.params);
     const validatedData = UpdateProjectSchema.parse(req.body);
     // Check if project exists
     const existingProject = await db
@@ -301,11 +322,19 @@ router.put('/:id', asyncHandler(async (req, res) => {
     })
         .where(eq(seoProjects.id, id))
         .returning();
+    const [project] = updatedProject;
+    if (!project) {
+        logger.error('Project update returned empty result', { projectId: id });
+        return res.status(500).json({
+            error: 'update_failed',
+            message: 'Project could not be updated',
+        });
+    }
     logger.info('Project updated', {
         projectId: id,
         changes: Object.keys(validatedData),
     });
-    res.json(updatedProject[0]);
+    return res.json(project);
 }));
 /**
  * @swagger
@@ -327,7 +356,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
  *         description: Project not found
  */
 router.delete('/:id', asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const { id } = ProjectIdParamsSchema.parse(req.params);
     // Check if project exists
     const existingProject = await db
         .select()
@@ -348,7 +377,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     })
         .where(eq(seoProjects.id, id));
     logger.info('Project archived', { projectId: id });
-    res.status(204).send();
+    return res.status(204).send();
 }));
 export { router as projectRoutes };
 //# sourceMappingURL=projects.js.map

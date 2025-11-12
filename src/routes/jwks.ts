@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // JWT/JWKS endpoint for key rotation
 router.get('/.well-known/jwks.json', (_req: Request, res: Response): void => {

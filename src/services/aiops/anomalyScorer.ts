@@ -35,7 +35,7 @@ export class AnomalyScorer {
     if (data.length === 0) return 0;
     
     const zScores = this.calculateZScore([...data, value]);
-    return zScores[zScores.length - 1];
+    return zScores[zScores.length - 1] ?? 0;
   }
 
   /**

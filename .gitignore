@@ -63,3 +63,7 @@ secrets/
 # Temporary files
 *.tmp
 *.temp
+
+# Next.js build output
+frontend/.next/
+frontend/pnpm-lock.yaml

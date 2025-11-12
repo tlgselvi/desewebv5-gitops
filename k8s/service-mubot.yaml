@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dese-mubot-service
+  namespace: default
+  labels:
+    app: dese-mubot
+    tier: aiops
+    version: v6.8.1
+spec:
+  type: ClusterIP
+  selector:
+    app: dese-mubot
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+

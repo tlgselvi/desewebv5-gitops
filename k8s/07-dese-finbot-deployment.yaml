@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dese-finbot-deployment
+  labels:
+    app: dese-finbot
+    tier: aiops
+    version: v6.8.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dese-finbot
+  template:
+    metadata:
+      labels:
+        app: dese-finbot
+        tier: aiops
+        version: v6.8.1
+    spec:
+      containers:
+        - name: dese-finbot
+          image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-finbot:v6.8.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: dese-db-secret
+                  key: DATABASE_URL
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: dese-redis-secret
+                  key: REDIS_URL
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+

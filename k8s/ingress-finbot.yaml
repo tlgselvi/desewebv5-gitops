@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dese-finbot-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: finbot.poolfab.com.tr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dese-finbot-service
+                port:
+                  number: 80
+

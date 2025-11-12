@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db, seoMetrics, generatedContent, seoAlerts } from '@/db/index.js';
-import { eq, desc, gte, sql } from 'drizzle-orm';
-import { asyncHandler } from '@/middleware/errorHandler.js';
-import { analyticsLogger } from '@/utils/logger.js';
+import { db, seoMetrics, generatedContent, seoAlerts } from '../db/index.js';
+import { eq, desc, gte, sql, and } from 'drizzle-orm';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { analyticsLogger } from '../utils/logger.js';
 const router = Router();
 // Validation schemas
 const AnalyticsQuerySchema = z.object({
@@ -288,7 +288,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
         recentContent,
         alerts,
     };
-    res.json(dashboard);
+    return res.json(dashboard);
 }));
 /**
  * @swagger
@@ -349,30 +349,66 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
  */
 router.get('/metrics', asyncHandler(async (req, res) => {
     const { projectId, startDate, endDate, metric } = AnalyticsQuerySchema.parse(req.query);
-    let query = db
-        .select()
-        .from(seoMetrics)
-        .where(eq(seoMetrics.projectId, projectId));
+    const conditions = [eq(seoMetrics.projectId, projectId)];
     if (startDate) {
-        query = query.where(gte(seoMetrics.measuredAt, new Date(startDate)));
+        conditions.push(gte(seoMetrics.measuredAt, new Date(startDate)));
     }
     if (endDate) {
-        query = query.where(sql `${seoMetrics.measuredAt} <= ${new Date(endDate)}`);
+        conditions.push(sql `${seoMetrics.measuredAt} <= ${new Date(endDate)}`);
     }
-    const metrics = await query.orderBy(desc(seoMetrics.measuredAt));
-    // Calculate summary statistics
-    const metricField = metric ? seoMetrics[metric] : seoMetrics.performance;
-    const values = metrics.map(m => m[metricField]).filter(v => v !== null);
+    const whereClause = conditions.length === 1 ? conditions[0] : and(...conditions);
+    const metrics = await db
+        .select()
+        .from(seoMetrics)
+        .where(whereClause)
+        .orderBy(desc(seoMetrics.measuredAt));
+    const metricKey = metric ?? 'performance';
+    const allowedMetrics = [
+        'performance',
+        'accessibility',
+        'seo',
+        'bestPractices',
+    ];
+    const resolvedMetricKey = allowedMetrics.includes(metricKey)
+        ? metricKey
+        : 'performance';
+    const metricSelectors = {
+        performance: (record) => record.performance,
+        accessibility: (record) => record.accessibility,
+        seo: (record) => record.seo,
+        bestPractices: (record) => record.bestPractices,
+    };
+    const normalizeValue = (value) => {
+        if (typeof value === 'number') {
+            return Number.isFinite(value) ? value : null;
+        }
+        if (typeof value === 'string') {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+        return null;
+    };
+    const values = metrics
+        .map((entry) => normalizeValue(metricSelectors[resolvedMetricKey](entry)))
+        .filter((value) => value !== null);
     const summary = {
         count: values.length,
         average: values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0,
         min: values.length > 0 ? Math.min(...values) : 0,
         max: values.length > 0 ? Math.max(...values) : 0,
-        trend: values.length >= 2
-            ? values[0] > values[values.length - 1] ? 'up' : values[0] < values[values.length - 1] ? 'down' : 'stable'
-            : 'stable',
+        trend: 'stable',
     };
-    res.json({ metrics, summary });
+    if (values.length >= 2) {
+        const firstValue = values[0];
+        const lastValue = values[values.length - 1];
+        if (firstValue > lastValue) {
+            summary.trend = 'up';
+        }
+        else if (firstValue < lastValue) {
+            summary.trend = 'down';
+        }
+    }
+    return res.json({ metrics, summary });
 }));
 export { router as analyticsRoutes };
 //# sourceMappingURL=analytics.js.map
