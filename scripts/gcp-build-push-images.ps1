@@ -1,7 +1,11 @@
 # Docker Image Build ve Google Artifact Registry Push Scripti
 # Dese EA Plan v6.8.0 - Cloud Migration Faz 5
 # Tarih: 2025-01-27
-# Kullanım: .\scripts\gcp-build-push-images.ps1
+# Kullanım: .\scripts\gcp-build-push-images.ps1 -Version "v6.8.2"
+
+param(
+    [string]$Version = "v6.8.2"
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -9,7 +13,6 @@ $ErrorActionPreference = "Stop"
 $PROJECT_ID = "ea-plan-seo-project"
 $REGION = "europe-west3"
 $REPOSITORY = "dese-ea-plan-images"
-$VERSION = "v6.8.0"
 $REGISTRY = "$REGION-docker.pkg.dev"
 $FULL_REGISTRY = "$REGISTRY/$PROJECT_ID/$REPOSITORY"
 
@@ -19,7 +22,7 @@ Write-Host ""
 Write-Host "Proje ID: $PROJECT_ID" -ForegroundColor White
 Write-Host "Region: $REGION" -ForegroundColor White
 Write-Host "Repository: $REPOSITORY" -ForegroundColor White
-Write-Host "Version: $VERSION" -ForegroundColor White
+Write-Host "Version: $Version" -ForegroundColor White
 Write-Host ""
 
 # Proje kontrolü
@@ -97,12 +100,12 @@ Write-Host ""
 
 # 4.1. API Image
 Write-Host "🔨 dese-api image build ediliyor..." -ForegroundColor Cyan
-docker build -t "${FULL_REGISTRY}/dese-api:${VERSION}" -t "${FULL_REGISTRY}/dese-api:latest" -f Dockerfile .
+docker build -t "${FULL_REGISTRY}/dese-api:${Version}" -t "${FULL_REGISTRY}/dese-api:latest" -f Dockerfile .
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ dese-api build başarılı" -ForegroundColor Green
     Write-Host "📤 dese-api push ediliyor..." -ForegroundColor Cyan
-    docker push "${FULL_REGISTRY}/dese-api:${VERSION}"
+    docker push "${FULL_REGISTRY}/dese-api:${Version}"
     docker push "${FULL_REGISTRY}/dese-api:latest"
     Write-Host "✅ dese-api push başarılı" -ForegroundColor Green
 } else {
@@ -114,12 +117,12 @@ Write-Host ""
 
 # 4.2. Frontend Image
 Write-Host "🔨 dese-frontend image build ediliyor..." -ForegroundColor Cyan
-docker build -t "${FULL_REGISTRY}/dese-frontend:${VERSION}" -t "${FULL_REGISTRY}/dese-frontend:latest" -f frontend/Dockerfile ./frontend
+docker build -t "${FULL_REGISTRY}/dese-frontend:${Version}" -t "${FULL_REGISTRY}/dese-frontend:latest" -f frontend/Dockerfile ./frontend
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ dese-frontend build başarılı" -ForegroundColor Green
     Write-Host "📤 dese-frontend push ediliyor..." -ForegroundColor Cyan
-    docker push "${FULL_REGISTRY}/dese-frontend:${VERSION}"
+    docker push "${FULL_REGISTRY}/dese-frontend:${Version}"
     docker push "${FULL_REGISTRY}/dese-frontend:latest"
     Write-Host "✅ dese-frontend push başarılı" -ForegroundColor Green
 } else {
@@ -132,7 +135,7 @@ Write-Host ""
 # 4.3. FinBot Image (Python FastAPI)
 Write-Host "🔨 dese-finbot image build ediliyor..." -ForegroundColor Cyan
 if (Test-Path "deploy/finbot-v2/Dockerfile") {
-    docker build -t "${FULL_REGISTRY}/dese-finbot:${VERSION}" -t "${FULL_REGISTRY}/dese-finbot:latest" -f deploy/finbot-v2/Dockerfile ./deploy/finbot-v2
+    docker build -t "${FULL_REGISTRY}/dese-finbot:${Version}" -t "${FULL_REGISTRY}/dese-finbot:latest" -f deploy/finbot-v2/Dockerfile ./deploy/finbot-v2
 } else {
     Write-Host "⚠️  FinBot Dockerfile bulunamadı, basit Python image oluşturuluyor..." -ForegroundColor Yellow
     
@@ -149,7 +152,7 @@ CMD ["uvicorn", "finbot-forecast:app", "--host", "0.0.0.0", "--port", "8000"]
     $tempDockerfile = "deploy/finbot-v2/Dockerfile.temp"
     $dockerfileContent | Out-File -FilePath $tempDockerfile -Encoding UTF8
     
-    docker build -t "${FULL_REGISTRY}/dese-finbot:${VERSION}" -t "${FULL_REGISTRY}/dese-finbot:latest" -f $tempDockerfile ./deploy/finbot-v2
+    docker build -t "${FULL_REGISTRY}/dese-finbot:${Version}" -t "${FULL_REGISTRY}/dese-finbot:latest" -f $tempDockerfile ./deploy/finbot-v2
     
     # Geçici Dockerfile'ı sil
     Remove-Item $tempDockerfile -ErrorAction SilentlyContinue
@@ -158,7 +161,7 @@ CMD ["uvicorn", "finbot-forecast:app", "--host", "0.0.0.0", "--port", "8000"]
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ dese-finbot build başarılı" -ForegroundColor Green
     Write-Host "📤 dese-finbot push ediliyor..." -ForegroundColor Cyan
-    docker push "${FULL_REGISTRY}/dese-finbot:${VERSION}"
+    docker push "${FULL_REGISTRY}/dese-finbot:${Version}"
     docker push "${FULL_REGISTRY}/dese-finbot:latest"
     Write-Host "✅ dese-finbot push başarılı" -ForegroundColor Green
 } else {
@@ -171,7 +174,7 @@ Write-Host ""
 # 4.4. MuBot Image (Python)
 Write-Host "🔨 dese-mubot image build ediliyor..." -ForegroundColor Cyan
 if (Test-Path "deploy/mubot-v2/Dockerfile") {
-    docker build -t "${FULL_REGISTRY}/dese-mubot:${VERSION}" -t "${FULL_REGISTRY}/dese-mubot:latest" -f deploy/mubot-v2/Dockerfile ./deploy/mubot-v2
+    docker build -t "${FULL_REGISTRY}/dese-mubot:${Version}" -t "${FULL_REGISTRY}/dese-mubot:latest" -f deploy/mubot-v2/Dockerfile ./deploy/mubot-v2
 } else {
     Write-Host "⚠️  MuBot Dockerfile bulunamadı, basit Python image oluşturuluyor..." -ForegroundColor Yellow
     
@@ -188,7 +191,7 @@ CMD ["python", "mubot-ingestion.py"]
     $tempDockerfile = "deploy/mubot-v2/Dockerfile.temp"
     $dockerfileContent | Out-File -FilePath $tempDockerfile -Encoding UTF8
     
-    docker build -t "${FULL_REGISTRY}/dese-mubot:${VERSION}" -t "${FULL_REGISTRY}/dese-mubot:latest" -f $tempDockerfile ./deploy/mubot-v2
+    docker build -t "${FULL_REGISTRY}/dese-mubot:${Version}" -t "${FULL_REGISTRY}/dese-mubot:latest" -f $tempDockerfile ./deploy/mubot-v2
     
     # Geçici Dockerfile'ı sil
     Remove-Item $tempDockerfile -ErrorAction SilentlyContinue
@@ -197,7 +200,7 @@ CMD ["python", "mubot-ingestion.py"]
 if ($LASTEXITCODE -eq 0) {
     Write-Host "✅ dese-mubot build başarılı" -ForegroundColor Green
     Write-Host "📤 dese-mubot push ediliyor..." -ForegroundColor Cyan
-    docker push "${FULL_REGISTRY}/dese-mubot:${VERSION}"
+    docker push "${FULL_REGISTRY}/dese-mubot:${Version}"
     docker push "${FULL_REGISTRY}/dese-mubot:latest"
     Write-Host "✅ dese-mubot push başarılı" -ForegroundColor Green
 } else {
@@ -208,14 +211,14 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host ""
 Write-Host "✅ Tüm image'lar başarıyla build edildi ve push edildi!" -ForegroundColor Green
 Write-Host ""
-Write-Host "📋 Push Edilen Image'lar:" -ForegroundColor Yellow
-Write-Host "  - ${FULL_REGISTRY}/dese-api:${VERSION}" -ForegroundColor White
+Write-Host "📋 Push Edilen Image'lar (v${Version}):" -ForegroundColor Yellow
+Write-Host "  - ${FULL_REGISTRY}/dese-api:${Version}" -ForegroundColor White
 Write-Host "  - ${FULL_REGISTRY}/dese-api:latest" -ForegroundColor White
-Write-Host "  - ${FULL_REGISTRY}/dese-frontend:${VERSION}" -ForegroundColor White
+Write-Host "  - ${FULL_REGISTRY}/dese-frontend:${Version}" -ForegroundColor White
 Write-Host "  - ${FULL_REGISTRY}/dese-frontend:latest" -ForegroundColor White
-Write-Host "  - ${FULL_REGISTRY}/dese-finbot:${VERSION}" -ForegroundColor White
+Write-Host "  - ${FULL_REGISTRY}/dese-finbot:${Version}" -ForegroundColor White
 Write-Host "  - ${FULL_REGISTRY}/dese-finbot:latest" -ForegroundColor White
-Write-Host "  - ${FULL_REGISTRY}/dese-mubot:${VERSION}" -ForegroundColor White
+Write-Host "  - ${FULL_REGISTRY}/dese-mubot:${Version}" -ForegroundColor White
 Write-Host "  - ${FULL_REGISTRY}/dese-mubot:latest" -ForegroundColor White
 Write-Host ""
 Write-Host "📝 Sonraki Adımlar:" -ForegroundColor Yellow
@@ -223,6 +226,5 @@ Write-Host "1. Repository'deki image'ları kontrol edin:" -ForegroundColor White
 Write-Host "   gcloud artifacts docker images list ${FULL_REGISTRY}" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "2. Deployment YAML'larında image URL'lerini güncelleyin:" -ForegroundColor White
-Write-Host "   image: ${FULL_REGISTRY}/dese-api:${VERSION}" -ForegroundColor Cyan
+Write-Host "   image: ${FULL_REGISTRY}/dese-api:${Version}" -ForegroundColor Cyan
 Write-Host ""
-

@@ -1,0 +1,286 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e9]:
+            - link "Dese EA Plan v6.8.1" [ref=e10] [cursor=pointer]:
+              - /url: /
+              - text: Dese EA Plan
+              - generic [ref=e11]: v6.8.1
+            - paragraph [ref=e12]: Kyverno stabilizasyonu · MCP Faz 1 revizyonu
+        - generic [ref=e13]:
+          - button "Yeni Görev Kaydı" [ref=e14]
+          - button "Tema modunu değiştir" [ref=e15]:
+            - img [ref=e16]
+            - generic [ref=e22]: Tema modunu değiştir
+          - button "Menüyü aç" [ref=e23]:
+            - img [ref=e24]
+      - generic [ref=e26]:
+        - link "Genel Bakış" [ref=e27] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e28]: Genel Bakış
+        - link "AIOps" [ref=e29] [cursor=pointer]:
+          - /url: /mcp/aiops
+          - generic [ref=e30]: AIOps
+        - link "FinBot kritik" [ref=e31] [cursor=pointer]:
+          - /url: /mcp/finbot
+          - generic [ref=e32]: FinBot
+          - generic [ref=e33]: kritik
+        - link "Observability" [ref=e34] [cursor=pointer]:
+          - /url: /mcp/observability
+          - generic [ref=e35]: Observability
+        - link "Oturum" [ref=e36] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=e37]: Oturum
+    - main [ref=e38]:
+      - region "Observability MCP · Prometheus · Grafana · Loki · Tempo" [ref=e40]:
+        - generic [ref=e41]:
+          - heading "Observability MCP · Prometheus · Grafana · Loki · Tempo" [level=1] [ref=e42]
+          - paragraph [ref=e43]: Kyverno, ArgoCD ve FinBot akışlarından gelen metrikleri tek grafikte topla
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - generic [ref=e48]:
+                - text: Observability MCP · Prometheus · Grafana · Loki · Tempo
+                - heading "Gözlemlenebilirlik ve Alarm Orkestrasyonu" [level=2] [ref=e50]
+                - paragraph [ref=e51]: Kyverno, ArgoCD ve FinBot akışlarından gelen metrikleri tek grafikte birleştiriyoruz. Redis cache + Tempo entegrasyonu ile hataların kök nedenini dakikalar içinde izleyin.
+              - generic [ref=e53]:
+                - button "Alert Action Planı" [ref=e54]:
+                  - img [ref=e55]
+                  - text: Alert Action Planı
+                - button "Dashboard Kataloğu" [ref=e58]:
+                  - img [ref=e59]
+                  - text: Dashboard Kataloğu
+            - generic [ref=e65]:
+              - generic [ref=e66]: Prometheus · scrape 15s
+              - generic [ref=e67]: Grafana sync · manuel onay gerekli
+              - generic [ref=e68]: Loki ingestion %98 başarı
+              - generic [ref=e69]: Tempo trace sampling %92
+          - generic [ref=e70]:
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - img [ref=e75]
+                - heading "İzleme Altyapısı Sağlığı" [level=2] [ref=e77]
+              - paragraph [ref=e78]: Observability yığınını oluşturan servislerin anlık durumu.
+            - generic [ref=e81]:
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - heading "Prometheus" [level=3] [ref=e85]
+                  - paragraph [ref=e86]: "Son kontrol: 2025-11-17T07:58:10.588Z"
+                - generic [ref=e87]:
+                  - img [ref=e88]
+                  - text: Bilinmiyor
+              - generic [ref=e92]:
+                - generic [ref=e93]:
+                  - heading "Grafana" [level=3] [ref=e94]
+                  - paragraph [ref=e95]: "Son kontrol: 2025-11-17T07:58:10.589Z"
+                - generic [ref=e96]:
+                  - img [ref=e97]
+                  - text: Bilinmiyor
+              - generic [ref=e101]:
+                - generic [ref=e102]:
+                  - heading "Loki Ingester" [level=3] [ref=e103]
+                  - paragraph [ref=e104]: "Son kontrol: 2025-11-17T07:58:10.590Z"
+                - generic [ref=e105]:
+                  - img [ref=e106]
+                  - text: Bilinmiyor
+              - generic [ref=e110]:
+                - generic [ref=e111]:
+                  - heading "Tempo Distributor" [level=3] [ref=e112]
+                  - paragraph [ref=e113]: "Son kontrol: 2025-11-17T07:58:10.592Z"
+                - generic [ref=e114]:
+                  - img [ref=e115]
+                  - text: Bilinmiyor
+            - generic [ref=e118]: "Veri kaynağı: Prometheus self-scrape, Grafana health, Loki ve Tempo API'leri."
+          - generic [ref=e119]:
+            - generic [ref=e121]:
+              - generic [ref=e122]:
+                - img [ref=e124]
+                - heading "Genel Metrikler" [level=2] [ref=e127]
+              - paragraph [ref=e128]: Sistem genelindeki anlık izleme verileri.
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - generic [ref=e133]:
+                  - heading "Aktif Hedefler" [level=3] [ref=e134]
+                  - img [ref=e135]
+                - paragraph [ref=e139]: N/A
+                - generic [ref=e141]: Prometheus scrape pool
+              - generic [ref=e142]:
+                - generic [ref=e143]:
+                  - heading "Log Ingestion Oranı" [level=3] [ref=e144]
+                  - img [ref=e145]
+                - paragraph [ref=e149]: N/A
+                - generic [ref=e151]: Son 15 dakika
+              - generic [ref=e152]:
+                - generic [ref=e153]:
+                  - heading "Aktif Alarmlar" [level=3] [ref=e154]
+                  - img [ref=e155]
+                - paragraph [ref=e158]: N/A
+                - generic [ref=e160]: Alertmanager
+              - generic [ref=e161]:
+                - generic [ref=e162]:
+                  - heading "Query Gecikmesi (p99)" [level=3] [ref=e163]
+                  - img [ref=e164]
+                - paragraph [ref=e168]: N/A
+                - generic [ref=e170]: Grafana sorguları
+            - generic [ref=e171]: "Veri kaynakları: Prometheus Federation · Loki API · Tempo API."
+          - generic [ref=e172]:
+            - generic [ref=e174]:
+              - heading "Gözlem Metriği Özeti" [level=2] [ref=e176]
+              - paragraph [ref=e177]: Prometheus, Grafana ve Loki üzerinden gelen temel KPI değerleri.
+            - generic [ref=e180]:
+              - generic [ref=e181]:
+                - generic [ref=e182]:
+                  - generic [ref=e183]:
+                    - paragraph [ref=e184]: Kyverno Alert Response
+                    - paragraph [ref=e185]: 02:14
+                  - img [ref=e187]
+                - generic [ref=e189]:
+                  - paragraph [ref=e190]: Ortalama müdahale süresi · son 7 gün
+                  - generic [ref=e191]:
+                    - img [ref=e192]
+                    - generic [ref=e195]: 12%
+                    - generic [ref=e196]: son 24 saat
+              - generic [ref=e197]:
+                - generic [ref=e198]:
+                  - generic [ref=e199]:
+                    - paragraph [ref=e200]: Grafana Dashboard SLA
+                    - paragraph [ref=e201]: 99.7%
+                  - img [ref=e203]
+                - generic [ref=e206]:
+                  - paragraph [ref=e207]: FinBot + AIOps panelleri
+                  - generic [ref=e208]:
+                    - img [ref=e209]
+                    - generic [ref=e212]: 0.6%
+                    - generic [ref=e213]: son 24 saat
+              - generic [ref=e214]:
+                - generic [ref=e215]:
+                  - generic [ref=e216]:
+                    - paragraph [ref=e217]: Log İşleme Hızı
+                    - paragraph [ref=e218]: 8.4K/s
+                  - img [ref=e220]
+                - generic [ref=e226]:
+                  - paragraph [ref=e227]: Loki + Kyverno admission kayıtları
+                  - generic [ref=e228]:
+                    - img [ref=e229]
+                    - generic [ref=e232]: 4.5%
+                    - generic [ref=e233]: son 24 saat
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - generic [ref=e237]:
+                - heading "Stack Özeti" [level=2] [ref=e239]
+                - paragraph [ref=e240]: Observability MCP, Kyverno stabilizasyon verilerini otomatik olarak işler ve alarm zincirlerini senkron tutar.
+              - generic [ref=e243]:
+                - generic [ref=e244]:
+                  - generic [ref=e246]: Aktif
+                  - heading "Grafana Dashboards" [level=3] [ref=e247]
+                  - paragraph [ref=e248]: Jarvis KPI, FinBot Forecast, Kyverno CRD panelleri
+                  - generic [ref=e250]:
+                    - img [ref=e252]
+                    - generic [ref=e255]:
+                      - term [ref=e256]: Senkronizasyon
+                      - definition [ref=e257]: 24 pano senkron
+                - generic [ref=e258]:
+                  - generic [ref=e260]: Aktif
+                  - heading "Loki Log Pipelines" [level=3] [ref=e261]
+                  - paragraph [ref=e262]: Kyverno admission, ArgoCD sync, MCP sorguları
+                  - generic [ref=e264]:
+                    - img [ref=e266]
+                    - generic [ref=e272]:
+                      - term [ref=e273]: İşleme Hızı
+                      - definition [ref=e274]: 450 log/s
+                - generic [ref=e275]:
+                  - generic [ref=e277]: Analizde
+                  - heading "Tempo Traces" [level=3] [ref=e278]
+                  - paragraph [ref=e279]: FinBot senaryo zinciri, Redis cache isabetleri
+                  - generic [ref=e281]:
+                    - img [ref=e283]
+                    - generic [ref=e286]:
+                      - term [ref=e287]: Örnekleme
+                      - definition [ref=e288]: "%92 trace coverage"
+              - generic [ref=e289]: Dev ve prod ortamları aynı gözlem katmanını paylaşır.
+            - generic [ref=e290]:
+              - generic [ref=e292]:
+                - heading "İnsident Günlüğü" [level=2] [ref=e294]
+                - paragraph [ref=e295]: ArgoCD, Kyverno ve MCP aksiyonlarından gelen alarm akışı.
+              - generic [ref=e298]:
+                - generic [ref=e299]:
+                  - generic [ref=e300]:
+                    - generic [ref=e301]: OBS-311
+                    - generic [ref=e302]: Tamamlandı
+                  - heading "ArgoCD repo DNS gecikmesi" [level=3] [ref=e303]
+                  - paragraph [ref=e304]: Repo server port-forward ile manuel sync tamamlandı.
+                  - generic [ref=e306]:
+                    - img [ref=e308]
+                    - generic [ref=e311]:
+                      - term [ref=e312]: Yanıt Süresi
+                      - definition [ref=e313]: 4m 32s
+                  - generic [ref=e314]:
+                    - generic [ref=e315]: ArgoCD
+                    - generic [ref=e316]: Kyverno
+                - generic [ref=e317]:
+                  - generic [ref=e318]:
+                    - generic [ref=e319]: OBS-307
+                    - generic [ref=e320]: Kapatıldı
+                  - heading "Kyverno helm test pod başarısız" [level=3] [ref=e321]
+                  - paragraph [ref=e322]: Helm test hook devre dışı bırakıldı, values.yaml güncellendi.
+                  - generic [ref=e324]:
+                    - img [ref=e326]
+                    - generic [ref=e329]:
+                      - term [ref=e330]: Yanıt Süresi
+                      - definition [ref=e331]: Permanent fix
+                  - generic [ref=e332]:
+                    - generic [ref=e333]: Kyverno
+                    - generic [ref=e334]: Helm
+                - generic [ref=e335]:
+                  - generic [ref=e336]:
+                    - generic [ref=e337]: OBS-298
+                    - generic [ref=e338]: İZleniyor
+                  - heading "Prometheus scrape uyarısı" [level=3] [ref=e339]
+                  - paragraph [ref=e340]: GKE node scaling sonrası scrape interval yeniden ayarlandı.
+                  - generic [ref=e342]:
+                    - img [ref=e344]
+                    - generic [ref=e347]:
+                      - term [ref=e348]: Yanıt Süresi
+                      - definition [ref=e349]: 1m 12s
+                  - generic [ref=e350]:
+                    - generic [ref=e351]: Prometheus
+                    - generic [ref=e352]: GKE
+              - generic [ref=e353]: Alarm kapanışları Jarvis otomasyon zinciri tarafından doğrulanır.
+          - generic [ref=e354]:
+            - generic [ref=e356]:
+              - heading "Operasyonel Öne Çıkanlar" [level=2] [ref=e358]
+              - paragraph [ref=e359]: Self-healing ve pipeline izleme başlıklarında öne çıkan notlar.
+            - generic [ref=e362]:
+              - generic [ref=e363]:
+                - generic [ref=e364]:
+                  - img [ref=e365]
+                  - heading "Health Check Otomasyonu" [level=3] [ref=e367]
+                - paragraph [ref=e368]: MCP health endpoint’leri Prometheus alertmanager ile entegre; başarısızlıklar FinBot backlog’una otomatik düşüyor.
+              - generic [ref=e369]:
+                - generic [ref=e370]:
+                  - img [ref=e371]
+                  - heading "ArgoCD Pipeline İzleme" [level=3] [ref=e374]
+                - paragraph [ref=e375]: "Manual `argocd app sync security` adımları trace edilerek drift raporuna ekleniyor."
+              - generic [ref=e376]:
+                - generic [ref=e377]:
+                  - img [ref=e378]
+                  - heading "Redis Cache Sağlığı" [level=3] [ref=e381]
+                - paragraph [ref=e382]: Cache hit oranı %94; FinBot, MuBot ve Observability MCP sorguları için latency 110 ms ortalama.
+        - generic [ref=e383]: Observability telemetri verileri 15 saniyelik scrape interval’iyle yenilenir
+    - contentinfo [ref=e384]:
+      - generic [ref=e385]:
+        - generic [ref=e386]:
+          - paragraph [ref=e387]: Dese Web Platform · EA Plan Infrastructure
+          - paragraph [ref=e388]: v6.8.1 · Kyverno Stabilizasyonu & MCP Faz 1 Revizyonu · ©2025
+        - generic [ref=e389]:
+          - generic [ref=e390]: Kyverno · ArgoCD · Prometheus · Grafana
+          - generic [ref=e391]: Google Cloud · GKE · Redis · PostgreSQL
+  - region "Notifications alt+T"
+  - alert [ref=e392]
+```

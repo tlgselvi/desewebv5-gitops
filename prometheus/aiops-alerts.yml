@@ -118,3 +118,130 @@ groups:
           description: "Disk space on {{ $labels.device }} is below 10%"
           runbook_url: "https://docs.cpt-digital.com/runbook/disk-space"
 
+      # Redis cache hit rate falling below healthy threshold
+      - alert: RedisCacheHitRateLow
+        expr: (sum(rate(redis_keyspace_hits_total[10m])) / (sum(rate(redis_keyspace_hits_total[10m])) + sum(rate(redis_keyspace_misses_total[10m])))) < 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Redis cache hit rate below 85%"
+          description: "Cache hit ratio degraded to {{ printf \"%.2f\" ($value * 100) }}% over the last 10 minutes. This may increase API latency and load on backend services."
+          troubleshooting: "Refer to docs/OPERATIONS_GUIDE.md › Troubleshooting › Redis Cache Stale / Yanlış Veri"
+
+      # Promise.allSettled rejection ratio elevated for MCP dashboard
+      - alert: McpPromiseRejectionRateHigh
+        expr: (sum(increase(mcp_dashboard_promises_settled_total{outcome="rejected"}[5m])) / sum(increase(mcp_dashboard_promises_settled_total[5m]))) > 0.2
+        for: 5m
+        labels:
+          severity: critical
+          component: mcp
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High rate of rejected promises in MCP Dashboard."
+          description: "Over {{ printf \"%.2f\" ($value * 100) }}% of internal asynchronous operations (Promise.allSettled) in the mcp-dashboard service are failing. This suggests a downstream service is unavailable or the cache is stale, impacting dashboard data."
+          runbook_url: "docs/OPERATIONS_GUIDE.md#promise-rejection-analysis"
+
+      # MCP API latency p99 breaching 1.5s
+      - alert: McpApiLatencyP99High
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job="mcp-app", route=~"/api/v1/mcp/dashboard/.*"}[5m])) by (le, route)) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "MCP API p99 latency above 1.5s"
+          description: "99th percentile latency for MCP dashboard routes exceeded 1500ms (current {{ printf \"%.2f\" $value }}s). User experience may be degraded."
+          troubleshooting: "Refer to docs/OPERATIONS_GUIDE.md › Troubleshooting › Prometheus Timeout"
+
+      # No active WebSocket connections detected
+      - alert: NoWebSocketConnections
+        expr: sum(mcp_websocket_active_connections{job="mcp-app"}) by (job) == 0
+        for: 15m
+        labels:
+          severity: warning
+          component: websocket
+        annotations:
+          summary: "No active WebSocket connections detected for 15 minutes."
+          description: "The MCP application is reporting zero active WebSocket connections across all modules for the last 15 minutes. This could indicate a server-side issue or that no clients are connecting."
+          runbook_url: "docs/OPERATIONS_GUIDE.md#websocket-connection-issues"
+
+      # WebSocket context updates missing for finbot module
+      - alert: NoWebSocketEventsPublished
+        expr: rate(mcp_websocket_events_published_total{job="mcp-app", module="finbot", eventType="context_update"}[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          component: websocket
+        annotations:
+          summary: "No WebSocket context updates published for finbot module."
+          description: "The 'finbot' module has not published any 'context_update' events via WebSocket for the last 10 minutes. This might indicate a problem with the data source or the publishing mechanism for this specific module."
+          runbook_url: "docs/OPERATIONS_GUIDE.md#websocket-event-publishing-failure"
+
+      # Kyverno policy failures detected
+      - alert: KyvernoPolicyFailures
+        expr: sum by (policy) (increase(kyverno_policy_results_total{result="fail"}[5m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: compliance
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Kyverno policy violations detected"
+          description: "{{ $value }} Kyverno policy evaluation(s) failed in the last 5 minutes for policy {{ $labels.policy }}."
+          troubleshooting: "Refer to docs/OPERATIONS_GUIDE.md › Troubleshooting › Kyverno Policy Block"
+
+      # ArgoCD applications out of sync with GitOps desired state
+      - alert: ArgoCDOutOfSync
+        expr: count by (name, project) (argocd_app_info{sync_status="OutOfSync"}) > 0
+        for: 10m
+        labels:
+          severity: warning
+          component: gitops
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "ArgoCD application drift detected"
+          description: "ArgoCD application {{ $labels.name }} (project {{ $labels.project }}) is OutOfSync with Git desired state."
+          troubleshooting: "Refer to docs/OPERATIONS_GUIDE.md › Troubleshooting › ArgoCD Sync Drift"
+
+      # --- Redis Alarms ---
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis instance is down"
+          description: "Redis instance {{ $labels.instance }} is not reachable for more than 2 minutes."
+          runbook_url: "docs/OPERATIONS_GUIDE.md#redis-cache-stale--yanlış-veri"
+
+      - alert: RedisHighMemoryUsage
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis memory usage is above 90%"
+          description: "Redis instance {{ $labels.instance }} memory usage is at {{ printf \"%.2f\" ($value * 100) }}% for more than 5 minutes. Eviction may occur."
+          runbook_url: "docs/OPERATIONS_GUIDE.md#redis-cache-stale--yanlış-veri"
+
+      - alert: RedisLowCacheHitRatio
+        expr: |
+          (
+            sum(rate(redis_keyspace_hits_total[15m])) /
+            (sum(rate(redis_keyspace_hits_total[15m])) + sum(rate(redis_keyspace_misses_total[15m])))
+          ) < 0.80
+        for: 15m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis cache hit ratio is below 80%"
+          description: "The cache hit ratio has dropped to {{ printf \"%.2f\" ($value * 100) }}% over the last 15 minutes. This can lead to increased latency and database load."
+          runbook_url: "docs/OPERATIONS_GUIDE.md#redis-cache-stale--yanlış-veri"

@@ -3,6 +3,11 @@ import { Server as HTTPServer } from "http";
 import { logger } from "@/utils/logger.js";
 import jwt from "jsonwebtoken";
 import { config } from "@/config/index.js";
+import { 
+  decrementWebSocketActiveConnections,
+  incrementWebSocketActiveConnections,
+  recordWebSocketEventPublished,
+} from '@/services/monitoring/metrics.js';
 
 type MCPModule = "finbot" | "mubot" | "dese" | "observability";
 
@@ -176,6 +181,7 @@ export function initializeMCPWebSocket(
     ws.isAuthenticated = false;
 
     server.clients.set(clientId, ws);
+    incrementWebSocketActiveConnections(module);
 
     logger.info("MCP WebSocket client connected", {
       module,
@@ -323,6 +329,7 @@ export function initializeMCPWebSocket(
       });
 
       server.clients.delete(clientId);
+      decrementWebSocketActiveConnections(module);
 
       logger.info("MCP WebSocket client disconnected", {
         module,
@@ -374,6 +381,7 @@ export async function pushContextUpdate(
   };
 
   broadcastToTopic(server, fullTopic, message);
+  recordWebSocketEventPublished(module, 'context_update');
 
   logger.debug("MCP WebSocket: Context update pushed", {
     module,
@@ -408,6 +416,7 @@ export async function pushEvent(
   };
 
   broadcastToTopic(server, fullTopic, message);
+  recordWebSocketEventPublished(module, 'event');
 
   logger.debug("MCP WebSocket: Event pushed", {
     module,
@@ -438,4 +447,3 @@ export function getWebSocketStats(module: MCPModule): {
     ),
   };
 }
-

@@ -2,7 +2,7 @@
 # Docker Image Build ve Google Artifact Registry Push Scripti
 # Dese EA Plan v6.8.0 - Cloud Migration Faz 5
 # Tarih: 2025-01-27
-# Kullanım: chmod +x scripts/gcp-build-push-images.sh && ./scripts/gcp-build-push-images.sh
+# Kullanım: chmod +x scripts/gcp-build-push-images.sh && ./scripts/gcp-build-push-images.sh "v6.8.2"
 
 set -e
 
@@ -10,7 +10,7 @@ set -e
 PROJECT_ID="ea-plan-seo-project"
 REGION="europe-west3"
 REPOSITORY="dese-ea-plan-images"
-VERSION="v6.8.0"
+VERSION=${1:-"v6.8.2"} # Parametreden al, yoksa varsayılanı kullan
 REGISTRY="${REGION}-docker.pkg.dev"
 FULL_REGISTRY="${REGISTRY}/${PROJECT_ID}/${REPOSITORY}"
 
@@ -185,7 +185,7 @@ fi
 echo ""
 echo "✅ Tüm image'lar başarıyla build edildi ve push edildi!"
 echo ""
-echo "📋 Push Edilen Image'lar:"
+echo "📋 Push Edilen Image'lar (v${VERSION}):"
 echo "  - ${FULL_REGISTRY}/dese-api:${VERSION}"
 echo "  - ${FULL_REGISTRY}/dese-api:latest"
 echo "  - ${FULL_REGISTRY}/dese-frontend:${VERSION}"
@@ -202,4 +202,3 @@ echo ""
 echo "2. Deployment YAML'larında image URL'lerini güncelleyin:"
 echo "   image: ${FULL_REGISTRY}/dese-api:${VERSION}"
 echo ""
-

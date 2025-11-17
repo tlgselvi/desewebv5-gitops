@@ -1,0 +1,144 @@
+{
+  "uid": "websocket-observability",
+  "title": "WebSocket Observability",
+  "tags": ["mcp", "websocket"],
+  "timezone": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "style": "dark",
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "gauge",
+      "title": "Active WebSocket Connections",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (module) (mcp_websocket_active_connections{module=~\"$module\"})",
+          "interval": "",
+          "legendFormat": "{{module}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "connections",
+          "max": 50,
+          "min": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "noData": {
+                  "text": "No Data"
+                },
+                "null": {
+                  "text": "No Value"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Events Published Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (module, eventType) (rate(mcp_websocket_events_published_total{module=~\"$module\"}[5m]))",
+          "interval": "",
+          "legendFormat": "{{module}} • {{eventType}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "noData": {
+                  "text": "No Data"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["max", "mean", "last"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "module",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "Prometheus"
+        },
+        "definition": "label_values(mcp_websocket_active_connections, module)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": ".*"
+        }
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  }
+}

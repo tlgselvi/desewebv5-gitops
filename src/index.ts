@@ -1,16 +1,15 @@
 import express, {
+  type Application,
   type Request,
   type Response,
   type NextFunction,
 } from "express";
-import type { Application } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import { createServer, type IncomingMessage, type ServerResponse } from "http";
-import { createProxyMiddleware } from "http-proxy-middleware";
-import type { Options as ProxyOptions } from "http-proxy-middleware";
+import { createServer } from "http";
+import next from "next";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 import {
@@ -31,14 +30,20 @@ import { gracefulShutdown } from "@/utils/gracefulShutdown.js";
 import {
   initializeWebSocketGateway,
   close as closeWebSocketGateway,
-} from "@/ws/gateway.js";
+} from "@/websocket/gateway.js";
 import {
   startFinBotConsumer,
   stopFinBotConsumer,
 } from "@/bus/streams/finbot-consumer.js";
 import { auditMiddleware } from "@/middleware/audit.js";
 
-// Create Express app
+const dev = config.nodeEnv !== "production";
+const nextApp = next({ dev, dir: "./frontend" });
+const nextHandler = nextApp.getRequestHandler();
+
+// Create Express app after Next.js is ready
+await nextApp.prepare();
+
 const app: Application = express();
 
 app.use(
@@ -123,18 +128,20 @@ app.use(
   }),
 );
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: config.security.rateLimitWindowMs,
-  max: config.security.rateLimitMaxRequests,
-  message: {
-    error: "Too many requests from this IP, please try again later.",
-    retryAfter: Math.ceil(config.security.rateLimitWindowMs / 1000),
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
+// Rate limiting - disabled in test environment or when DISABLE_RATE_LIMIT is set
+if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true") {
+  const limiter = rateLimit({
+    windowMs: config.security.rateLimitWindowMs,
+    max: config.security.rateLimitMaxRequests,
+    message: {
+      error: "Too many requests from this IP, please try again later.",
+      retryAfter: Math.ceil(config.security.rateLimitWindowMs / 1000),
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(limiter);
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
@@ -171,83 +178,21 @@ app.get("/health", async (req, res) => {
 // API routes
 setupRoutes(app);
 
-const MCP_UI_TARGET = process.env.MCP_UI_TARGET ?? "http://127.0.0.1:3100";
-
-type HttpProxyOptions = ProxyOptions<IncomingMessage, ServerResponse>;
-type ProxyErrorHandler = (
-  error: Error,
-  req: IncomingMessage,
-  res: ServerResponse,
-  target?: string,
-) => void;
-
-const proxyErrorHandler: ProxyErrorHandler = (error, req, res, target) => {
-  const originalUrl =
-    (req as Request).originalUrl ?? req.url ?? "unknown";
-
-  logger.error("MCP UI proxy error", {
-    error: error.message,
-    stack: error.stack,
-    route: originalUrl,
-    target: target ?? MCP_UI_TARGET,
-  });
-
-  if (!res.headersSent) {
-    res.writeHead(502, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-      error: "proxy_error",
-      message: "Failed to load MCP UI content",
-        route: originalUrl,
-      timestamp: new Date().toISOString(),
-      }),
-    );
-  }
-};
-
-const createProxy = (overrides: Partial<HttpProxyOptions> = {}) =>
-  createProxyMiddleware<IncomingMessage, ServerResponse>({
-    target: MCP_UI_TARGET,
-    changeOrigin: true,
-    xfwd: true,
-    autoRewrite: true,
-    ...overrides,
-    onError: proxyErrorHandler,
-  } as unknown as HttpProxyOptions & { onError: ProxyErrorHandler });
-
-app.use(
-  ["/mcp", "/_next", "/favicon.ico", "/icon"],
-  createProxy(),
-);
-
-app.use(
-  ["/finbot", "/aiops", "/observability"],
-  createProxy({
-    pathRewrite: (path) => `/mcp${path}`,
-  }),
-);
-
 // Swagger documentation
-if (config.nodeEnv !== "production") {
+if (!dev) {
   setupSwagger(app);
 }
 
-// 404 handler (must be before error handler)
-app.use((req, res, next) => {
-  // Only handle 404 if no response was sent
-  if (!res.headersSent) {
-    res.status(404).json({
-      error: "Not Found",
-      message: `Route ${req.originalUrl} not found`,
-      timestamp: new Date().toISOString(),
-    });
-  } else {
-    next();
-  }
+// All other requests that were not handled by the API routes should be passed to Next.js.
+// This must be placed after all API routes and before the final error handler.
+// Express 5 doesn't support app.all("*") with wildcard, so we use app.use as a catch-all.
+// app.use without a path matches all routes and all HTTP methods.
+app.use((req: Request, res: Response) => {
+  return nextHandler(req, res);
 });
 
 // Error handling middleware (must be last)
-// Note: Express error handlers require 4 parameters (err, req, res, next)
+// Note: Express error handlers require 4 parameters
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   // Ensure JSON response is sent
   if (!res.headersSent) {

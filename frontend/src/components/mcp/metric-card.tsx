@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp, Minus, type LucideIcon } from "lucide-react";
 

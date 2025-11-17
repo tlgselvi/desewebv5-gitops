@@ -15,7 +15,7 @@
 
 ## 2. Planlanan Temalar & Hikâyeler
 
-### 2.1. Alerting & Monitoring İyileştirmeleri
+### 2.1. Alerting & Monitoring İyileştirmeleri _(Tamamlandı)_
 - **Story:** Prometheus Alertmanager kurallarının gözden geçirilmesi  
   - Kyverno, ArgoCD ve Redis cache için kritik eşiklerin tanımlanması  
   - Alert payload’larının `OPERATIONS_GUIDE` ile hizalanması  
@@ -23,13 +23,14 @@
   - MCP panel metriklerini “Drill-down” panolarına bağlama  
   - Playwright E2E sonuçlarının Prometheus metriklerine eklenmesi
 
-### 2.2. WebSocket Observability
+### 2.2. WebSocket Observability _(Tamamlandı)_
 - **Story:** MCP WebSocket yayınları için telemetry  
-  - Health check & metrics data push event’lerinin izlenmesi  
-  - Tempo traces ile WebSocket latency ölçümü  
+  - Health check & metrics data push event’lerinin izlenmesi _(Tamamlandı)_
+  - Tempo traces ile WebSocket latency ölçümü _(Tamamlandı)_
+  - Grafana `websocket-observability` dashboard’u ile aktif bağlantı ve event akışının görselleştirilmesi _(Tamamlandı)_
 - **Story:** Real-time UI feedback  
-  - MCP panellerinde WebSocket fallback görselleştirmesi  
-  - Redis TTL değişikliklerinde notification
+  - MCP panellerinde WebSocket fallback görselleştirmesi _(Tamamlandı)_
+  - Redis TTL değişikliklerinde notification _(Tamamlandı)_
 
 ### 2.3. GitOps & Dokümantasyon
 - **Story:** `docs/OPERATIONS_GUIDE.md` güncellemesi → Alerting & WebSocket bölümleri  
@@ -38,11 +39,19 @@
 
 ### 2.4. Test & Dayanıklılık
 - **Story:** Playwright testi genişletme  
-  - WebSocket event akışı doğrulama  
-  - Alert tetikleme senaryolarında UI feedback testi
+  - WebSocket event akışı doğrulama
+  - Alert tetikleme senaryolarında UI feedback testi  
+  - WebSocket metriklerinin (`mcp_websocket_active_connections`, `mcp_websocket_events_published_total`) Grafana API üzerinden doğrulandığı E2E testi ekleme _(Tamamlandı)_
+  - Geliştirici deneyimini iyileştir: WebSocket E2E testi için mock server ekle _(Tamamlandı)_
 - **Story:** Load / soak testleri  
   - Redis TTL ayar değişikliklerinin performansa etkisi  
   - Prometheus sorgu süresi (timeout) regresyon testi
+
+### 2.5. Teknik Hazırlık (Yeni)
+- **Bağımlılık Güncellemeleri:** `cheerio@^1.1.2`, `http-proxy-middleware@^3.0.5`, `puppeteer@^24.30.0`, `stripe@^19.3.1`, `testcontainers@^11.8.1`, `@types/node@^24.10.1`, `@typescript-eslint/*@^8.46.4`, `typescript-eslint@^8.46.4`. `pnpm@10.x` major sürümü güvenlik ve monorepo davranışı açısından ayrıca doğrulanacak.
+- **Geliştirici Scripti:** Güvenli güncellemeler için `scripts/prep-deps-patch.ps1` altında `pnpm update <paket>` çağrılarını zincirleyen otomasyon taslağı çıkarılacak; değişiklikler `pnpm install` ile doğrulanacak.
+- **Refactoring Odakları:** MCP sunucularında (FinBot, MuBot, Observability) tekrar eden rate limit, cache (Redis) ve WebSocket bildirim akışları ortak yardımcı fonksiyonlara taşınacak; `asyncHandler` + `logger` kullanımındaki yinelenen bloklar sadeleştirilecek.
+- **Gözden Geçirme:** Refactoring sonrası riskli alanlar (JWT/RBAC guard’ları, Redis TTL, Prometheus entegrasyonu) için hedeflenen smoke test listesi hazırlanacak; değişiklikler `docs/OPERATIONS_GUIDE.md` ile hizalanacak.
 
 ---
 

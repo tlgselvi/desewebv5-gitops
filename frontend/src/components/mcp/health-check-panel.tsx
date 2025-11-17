@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { ShieldAlert, ShieldCheck, ShieldQuestion } from "lucide-react";
 import {

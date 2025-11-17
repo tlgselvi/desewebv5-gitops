@@ -1,0 +1,240 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e9]:
+            - link "Dese EA Plan v6.8.1" [ref=e10] [cursor=pointer]:
+              - /url: /
+              - text: Dese EA Plan
+              - generic [ref=e11]: v6.8.1
+            - paragraph [ref=e12]: Kyverno stabilizasyonu · MCP Faz 1 revizyonu
+        - generic [ref=e13]:
+          - button "Yeni Görev Kaydı" [ref=e14]
+          - button "Tema modunu değiştir" [ref=e15]:
+            - img [ref=e16]
+            - generic [ref=e22]: Tema modunu değiştir
+          - button "Menüyü aç" [ref=e23]:
+            - img [ref=e24]
+      - generic [ref=e26]:
+        - link "Genel Bakış" [ref=e27] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e28]: Genel Bakış
+        - link "AIOps" [ref=e29] [cursor=pointer]:
+          - /url: /mcp/aiops
+          - generic [ref=e30]: AIOps
+        - link "FinBot kritik" [ref=e31] [cursor=pointer]:
+          - /url: /mcp/finbot
+          - generic [ref=e32]: FinBot
+          - generic [ref=e33]: kritik
+        - link "Observability" [ref=e34] [cursor=pointer]:
+          - /url: /mcp/observability
+          - generic [ref=e35]: Observability
+        - link "Oturum" [ref=e36] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=e37]: Oturum
+    - main [ref=e38]:
+      - region "FinBot MCP · Finans Operasyonları" [ref=e40]:
+        - generic [ref=e41]:
+          - heading "FinBot MCP · Finans Operasyonları" [level=1] [ref=e42]
+          - paragraph [ref=e43]: Gelir projeksiyonları, bütçe planları ve risk simülasyonları tek akışta
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - generic [ref=e48]:
+                - text: FinBot MCP · Finans Operasyonları
+                - heading "Finansal Planlama ve Senaryo Kontrolü" [level=2] [ref=e50]
+                - paragraph [ref=e51]: Gelir projeksiyonları, bütçe planlama ve risk simülasyonlarını tek panoda konsolide ediyoruz. Kyverno stabilizasyonu sonrası FinBot’un veri akışı Redis cache üzerinden 5 saniyede güncelleniyor.
+              - generic [ref=e53]:
+                - button "Yeni Finans Senaryosu" [ref=e54]:
+                  - img [ref=e55]
+                  - text: Yeni Finans Senaryosu
+                - button "Akış Grafiğini Aç" [ref=e58]:
+                  - img [ref=e59]
+                  - text: Akış Grafiğini Aç
+            - generic [ref=e65]:
+              - generic [ref=e66]: Forecast API · 12 ms
+              - generic [ref=e67]: Kyverno imza doğrulaması bekleniyor
+              - generic [ref=e68]: Redis cache aktif
+              - generic [ref=e69]: Finans raporu · v6.8.1
+          - generic [ref=e70]:
+            - generic [ref=e72]:
+              - generic [ref=e73]:
+                - img [ref=e75]
+                - heading "Sistem Sağlığı" [level=2] [ref=e77]
+              - paragraph [ref=e78]: FinBot ve bağlı servislerin son sağlık kontrol özetleri.
+            - paragraph [ref=e82]: "API isteği başarısız: 401 Unauthorized"
+            - generic [ref=e83]: "Veri kaynağı: FinBot health endpoint, Redis cache heartbeat, Forecast worker telemetrisi."
+          - generic [ref=e84]:
+            - generic [ref=e86]:
+              - generic [ref=e87]:
+                - img [ref=e89]
+                - heading "Sistemsel İzleme" [level=2] [ref=e92]
+              - paragraph [ref=e93]: Altyapı ve uygulama metriklerinin anlık durumu.
+            - paragraph [ref=e97]: "API isteği başarısız: 401 Unauthorized"
+            - generic [ref=e98]: "Veri kaynakları: Prometheus · Tempo · Redis · Kyverno olay günlükleri."
+          - generic [ref=e99]:
+            - generic [ref=e101]:
+              - heading "Kritik Finansal Göstergeler" [level=2] [ref=e103]
+              - paragraph [ref=e104]: FinBot Forecast Engine’den gelen son 30 günlük performans metrikleri.
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - generic [ref=e109]:
+                  - generic [ref=e110]:
+                    - paragraph [ref=e111]: Gelir Tahmin Doğruluğu
+                    - paragraph [ref=e112]: 96.4%
+                  - img [ref=e114]
+                - generic [ref=e117]:
+                  - paragraph [ref=e118]: FinBot Forecast Engine · Son 30 gün
+                  - generic [ref=e119]:
+                    - img [ref=e120]
+                    - generic [ref=e123]: 2.4%
+                    - generic [ref=e124]: son 24 saat
+              - generic [ref=e125]:
+                - generic [ref=e126]:
+                  - generic [ref=e127]:
+                    - paragraph [ref=e128]: Aylık Yinelenen Gelir
+                    - paragraph [ref=e129]: $382K
+                  - img [ref=e131]
+                - generic [ref=e136]:
+                  - paragraph [ref=e137]: SmartPool + SaaS birleşik MRR
+                  - generic [ref=e138]:
+                    - img [ref=e139]
+                    - generic [ref=e142]: 3.1%
+                    - generic [ref=e143]: son 24 saat
+              - generic [ref=e144]:
+                - generic [ref=e145]:
+                  - generic [ref=e146]:
+                    - paragraph [ref=e147]: Operasyonel Giderler
+                    - paragraph [ref=e148]: $142K
+                  - img [ref=e150]
+                - generic [ref=e153]:
+                  - paragraph [ref=e154]: MuBot gider matrisi · Kyverno onaylı
+                  - generic [ref=e155]:
+                    - img [ref=e156]
+                    - generic [ref=e159]: 1.8%
+                    - generic [ref=e160]: son 24 saat
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - generic [ref=e164]:
+                - heading "Öncelikli Veri Akışları" [level=2] [ref=e166]
+                - paragraph [ref=e167]: FinBot senaryo motoru, Kyverno politikaları ile birlikte işletme gelir/gider akışlarını izler.
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic [ref=e173]: Aktif
+                  - heading "Gelir Akışı" [level=3] [ref=e174]
+                  - paragraph [ref=e175]: FinBot, SaaS ve SmartPool gelirlerini tekleştirip 90 günlük tahmin üretir.
+                  - generic [ref=e177]:
+                    - img [ref=e179]
+                    - generic [ref=e183]:
+                      - term [ref=e184]: Sorumlu
+                      - definition [ref=e185]: Scenario Engine
+                - generic [ref=e186]:
+                  - generic [ref=e188]: İZleniyor
+                  - heading "Operasyonel Giderler" [level=3] [ref=e189]
+                  - paragraph [ref=e190]: Enerji + bakım giderlerini Redis cache üstünden 5 dk’da bir güncelliyor.
+                  - generic [ref=e192]:
+                    - img [ref=e194]
+                    - generic [ref=e198]:
+                      - term [ref=e199]: Sorumlu
+                      - definition [ref=e200]: MuBot
+                - generic [ref=e201]:
+                  - generic [ref=e203]: Analizde
+                  - heading "Risk Havuzu" [level=3] [ref=e204]
+                  - paragraph [ref=e205]: Kyverno policy ihlalleri ve finansal risk skorlarını aynı grafikte bağlıyor.
+                  - generic [ref=e207]:
+                    - img [ref=e209]
+                    - generic [ref=e213]:
+                      - term [ref=e214]: Sorumlu
+                      - definition [ref=e215]: FinBot Risk Matrix
+              - generic [ref=e216]: "Veri kaynakları: Scenario Engine, MuBot, Risk Matrix"
+            - generic [ref=e217]:
+              - generic [ref=e219]:
+                - heading "Senaryo Kuyruğu" [level=2] [ref=e221]
+                - paragraph [ref=e222]: Redis üzerinden saniyelik olarak güncellenen FinBot senaryo görevleri.
+              - generic [ref=e225]:
+                - generic [ref=e226]:
+                  - generic [ref=e227]:
+                    - generic [ref=e228]: FIN-204
+                    - generic [ref=e229]: Aktif
+                  - heading "Kur duyarlılığı · USD/TRY" [level=3] [ref=e230]
+                  - generic [ref=e231]:
+                    - generic [ref=e232]:
+                      - img [ref=e234]
+                      - generic [ref=e237]:
+                        - term [ref=e238]: Zaman Penceresi
+                        - definition [ref=e239]: Son 14 gün
+                    - generic [ref=e240]:
+                      - img [ref=e242]
+                      - generic [ref=e245]:
+                        - term [ref=e246]: Etkisi
+                        - definition [ref=e247]: +4.2% gelir varyansı
+                - generic [ref=e248]:
+                  - generic [ref=e249]:
+                    - generic [ref=e250]: FIN-198
+                    - generic [ref=e251]: Hazırlanıyor
+                  - heading "SmartPool abonelik modeli" [level=3] [ref=e252]
+                  - generic [ref=e253]:
+                    - generic [ref=e254]:
+                      - img [ref=e256]
+                      - generic [ref=e259]:
+                        - term [ref=e260]: Zaman Penceresi
+                        - definition [ref=e261]: Q1 2026
+                    - generic [ref=e262]:
+                      - img [ref=e264]
+                      - generic [ref=e267]:
+                        - term [ref=e268]: Etkisi
+                        - definition [ref=e269]: "-2.1% churn"
+                - generic [ref=e270]:
+                  - generic [ref=e271]:
+                    - generic [ref=e272]: FIN-192
+                    - generic [ref=e273]: Tamamlandı
+                  - heading "Grafana tüketim trendleri" [level=3] [ref=e274]
+                  - generic [ref=e275]:
+                    - generic [ref=e276]:
+                      - img [ref=e278]
+                      - generic [ref=e281]:
+                        - term [ref=e282]: Zaman Penceresi
+                        - definition [ref=e283]: Son 30 gün
+                    - generic [ref=e284]:
+                      - img [ref=e286]
+                      - generic [ref=e289]:
+                        - term [ref=e290]: Etkisi
+                        - definition [ref=e291]: +1.6% maliyet tasarrufu
+              - generic [ref=e292]: Kyverno imzalı job’lar tamamlandığında otomatik olarak backlog’dan düşer.
+          - generic [ref=e293]:
+            - generic [ref=e295]:
+              - heading "Operasyonel Gözlemler" [level=2] [ref=e297]
+              - paragraph [ref=e298]: FinBot senaryolarının uyum ve gözlem başlıkları.
+            - generic [ref=e301]:
+              - generic [ref=e302]:
+                - generic [ref=e303]:
+                  - img [ref=e304]
+                  - heading "Kyverno Uyum Takibi" [level=3] [ref=e308]
+                - paragraph [ref=e309]: İmzalı container gereksinimi FinBot batch job’larında %100 uygulanıyor; son 24 saatte 0 ihlal.
+              - generic [ref=e310]:
+                - generic [ref=e311]:
+                  - img [ref=e312]
+                  - heading "Bütçe Senkronizasyonu" [level=3] [ref=e315]
+                - paragraph [ref=e316]: MuBot gider matrisi ile FinBot bütçe planları Redis üzerinden 3 dk’da bir reconcile ediliyor.
+              - generic [ref=e317]:
+                - generic [ref=e318]:
+                  - img [ref=e319]
+                  - heading "Senaryo Gözlemcisi" [level=3] [ref=e321]
+                - paragraph [ref=e322]: Observability MCP’den gelen Grafana panelleri FinBot senaryolarının doğrulama adımına otomatik ekleniyor.
+        - generic [ref=e323]: FinBot verileri Redis cache üzerinden her 5 saniyede güncellenir
+    - contentinfo [ref=e324]:
+      - generic [ref=e325]:
+        - generic [ref=e326]:
+          - paragraph [ref=e327]: Dese Web Platform · EA Plan Infrastructure
+          - paragraph [ref=e328]: v6.8.1 · Kyverno Stabilizasyonu & MCP Faz 1 Revizyonu · ©2025
+        - generic [ref=e329]:
+          - generic [ref=e330]: Kyverno · ArgoCD · Prometheus · Grafana
+          - generic [ref=e331]: Google Cloud · GKE · Redis · PostgreSQL
+  - region "Notifications alt+T"
+  - alert [ref=e332]
+```

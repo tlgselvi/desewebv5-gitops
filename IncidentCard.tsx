@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { Clock, GitBranch, Layers } from 'lucide-react';
 import { StatusBadge, StatusBadgeProps } from '@/components/ui/StatusBadge';

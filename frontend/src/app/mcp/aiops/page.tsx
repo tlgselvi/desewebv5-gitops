@@ -1,3 +1,5 @@
+"use client";
+
 import McpLayout from "@/components/layout/McpLayout";
 import { McpSection } from "@/components/mcp/mcp-section";
 import { HealthCheckPanel } from "@/components/mcp/health-check-panel";

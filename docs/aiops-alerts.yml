@@ -1,0 +1,52 @@
+groups:
+- name: mcp-aiops-alerts
+  rules:
+  # --- Mevcut Kurallar (Örnek) ---
+  - alert: KubePodCrashLooping
+    expr: rate(kube_pod_container_status_restarts_total{job="kube-state-metrics", namespace="mcp-prod"}[15m]) * 60 * 5 > 0
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash-looping."
+      description: "The container {{ $labels.container }} in pod {{ $labels.pod }} has restarted multiple times in the last 15 minutes. This indicates a persistent startup or runtime error."
+      runbook_url: "docs/OPERATIONS_GUIDE.md#pod-crash-looping"
+
+  # --- YENİ EKLENEN KURALLAR (v6.9.0) ---
+
+  - alert: RedisCacheHitRateTooLow
+    # Cache isabet oranının son 15 dakika ortalamasının %85'in altına düşmesi durumunda uyar.
+    expr: (sum(rate(redis_keyspace_hits_total{job="mcp-redis"}[15m])) by (job) / (sum(rate(redis_keyspace_hits_total{job="mcp-redis"}[15m])) by (job) + sum(rate(redis_keyspace_misses_total{job="mcp-redis"}[15m])) by (job))) * 100 < 85
+    for: 15m
+    labels:
+      severity: warning
+      tier: cache
+    annotations:
+      summary: "Redis cache hit rate is below 85%."
+      description: "The cache hit rate for the MCP Redis instance has dropped to {{ $value | printf \"%.2f\" }}% over the last 15 minutes. This can lead to increased latency and database load."
+      runbook_url: "docs/OPERATIONS_GUIDE.md#redis-cache-performance"
+
+  - alert: HighApiLatencyP99
+    # MCP API gateway'inin p99 gecikmesinin son 10 dakikada 1500ms'yi aşması durumunda uyar.
+    expr: histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job="mcp-gateway"}[10m])) by (le)) > 1.5
+    for: 5m
+    labels:
+      severity: critical
+      tier: api
+    annotations:
+      summary: "High P99 API latency detected on MCP Gateway."
+      description: "The 99th percentile latency for the MCP API Gateway has exceeded 1500ms, reaching {{ $value | printf \"%.2f\" }}s. Users are likely experiencing significant slowdowns."
+      runbook_url: "docs/OPERATIONS_GUIDE.md#api-latency-troubleshooting"
+
+  - alert: HighPromiseRejectionRate
+    # MCP dashboard servisindeki 'Promise.allSettled' operasyonlarında hata oranının %10'u geçmesi durumunda uyar.
+    # Bu metrik, 'mcp_promise_settled_total' adlı bir Counter ile (status='fulfilled'|'rejected' label'ları ile) izlenmelidir.
+    expr: (sum(rate(mcp_promise_settled_total{job="mcp-dashboard", status="rejected"}[5m])) by (job) / sum(rate(mcp_promise_settled_total{job="mcp-dashboard"}[5m])) by (job)) * 100 > 10
+    for: 5m
+    labels:
+      severity: warning
+      tier: application
+    annotations:
+      summary: "High rate of rejected promises in MCP Dashboard service."
+      description: "Over {{ $value | printf \"%.2f\" }}% of internal asynchronous operations (Promise.allSettled) in the mcp-dashboard service are failing. This suggests a downstream service is unavailable or failing, impacting dashboard data."
+      runbook_url: "docs/OPERATIONS_GUIDE.md#promise-rejection-analysis"

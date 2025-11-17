@@ -1,0 +1,230 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e9]:
+            - link "Dese EA Plan v6.8.1" [ref=e10] [cursor=pointer]:
+              - /url: /
+              - text: Dese EA Plan
+              - generic [ref=e11]: v6.8.1
+            - paragraph [ref=e12]: Kyverno stabilizasyonu · MCP Faz 1 revizyonu
+        - generic [ref=e13]:
+          - button "Yeni Görev Kaydı" [ref=e14]
+          - button "Tema modunu değiştir" [ref=e15]:
+            - img [ref=e16]
+            - generic [ref=e22]: Tema modunu değiştir
+          - button "Menüyü aç" [ref=e23]:
+            - img [ref=e24]
+      - generic [ref=e26]:
+        - link "Genel Bakış" [ref=e27] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e28]: Genel Bakış
+        - link "AIOps" [ref=e29] [cursor=pointer]:
+          - /url: /mcp/aiops
+          - generic [ref=e30]: AIOps
+        - link "FinBot kritik" [ref=e31] [cursor=pointer]:
+          - /url: /mcp/finbot
+          - generic [ref=e32]: FinBot
+          - generic [ref=e33]: kritik
+        - link "Observability" [ref=e34] [cursor=pointer]:
+          - /url: /mcp/observability
+          - generic [ref=e35]: Observability
+        - link "Oturum" [ref=e36] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=e37]: Oturum
+    - main [ref=e38]:
+      - region "MuBot MCP · Finansal Mutabakat ve Veri İşleme" [ref=e40]:
+        - generic [ref=e41]:
+          - heading "MuBot MCP · Finansal Mutabakat ve Veri İşleme" [level=1] [ref=e42]
+          - paragraph [ref=e43]: Gelir-gider mutabakatını, veri ingestion süreçlerini ve ledger otomasyonunu tek panelde takip edin
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - generic [ref=e48]:
+                - text: MuBot MCP · Ingestion & Reconciliation
+                - heading "Finansal Ingestion Kontrol Merkezi" [level=2] [ref=e50]
+                - paragraph [ref=e51]: Gelir ve gider akışlarını gerçek zamanlı izleyin, reconciliation job’larını yönetin ve MuBot ingestion pipeline’larının sağlığını kontrol edin.
+              - generic [ref=e53]:
+                - button "Yeni Mutabakat Akışı" [ref=e54]:
+                  - img [ref=e55]
+                  - text: Yeni Mutabakat Akışı
+                - button "Ledger Loglarını Aç" [ref=e58]:
+                  - img [ref=e59]
+                  - text: Ledger Loglarını Aç
+            - generic [ref=e64]:
+              - generic [ref=e65]: Redis stream · 3s TTL
+              - generic [ref=e66]: PostgreSQL replication gecikmesi · 180 ms
+              - generic [ref=e67]: Automation queue · 12 job
+              - generic [ref=e68]: KDV raporu · v2.4.0
+          - generic [ref=e69]:
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - img [ref=e74]
+                - heading "Ingestion Servis Sağlığı" [level=2] [ref=e76]
+              - paragraph [ref=e77]: MuBot ve bağlı veri kaynaklarının anlık durumu.
+            - generic [ref=e80]:
+              - generic [ref=e82]:
+                - generic [ref=e83]:
+                  - heading "MuBot API" [level=3] [ref=e84]
+                  - paragraph [ref=e85]: "Son kontrol: 2025-11-17T07:58:10.599Z"
+                - generic [ref=e86]:
+                  - img [ref=e87]
+                  - text: Bilinmiyor
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - heading "PostgreSQL DB" [level=3] [ref=e93]
+                  - paragraph [ref=e94]: "Son kontrol: 2025-11-17T07:58:10.599Z"
+                - generic [ref=e95]:
+                  - img [ref=e96]
+                  - text: Bilinmiyor
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - heading "Data Ingestion Worker" [level=3] [ref=e102]
+                  - paragraph [ref=e103]: "Son kontrol: 2025-11-17T07:58:10.600Z"
+                - generic [ref=e104]:
+                  - img [ref=e105]
+                  - text: Bilinmiyor
+              - generic [ref=e109]:
+                - generic [ref=e110]:
+                  - heading "Reconciliation Job" [level=3] [ref=e111]
+                  - paragraph [ref=e112]: "Son kontrol: 2025-11-17T07:58:10.601Z"
+                - generic [ref=e113]:
+                  - img [ref=e114]
+                  - text: Bilinmiyor
+            - generic [ref=e117]: "Veri kaynağı: MuBot health endpoint, PostgreSQL connection pool, Redis stream."
+          - generic [ref=e118]:
+            - generic [ref=e120]:
+              - generic [ref=e121]:
+                - img [ref=e123]
+                - heading "Veri İşleme Metrikleri" [level=2] [ref=e126]
+              - paragraph [ref=e127]: Muhasebe ve veri işleme hatlarının anlık performansı.
+            - generic [ref=e130]:
+              - generic [ref=e131]:
+                - generic [ref=e132]:
+                  - heading "İşlenen Kayıt" [level=3] [ref=e133]
+                  - img [ref=e134]
+                - paragraph [ref=e139]: N/A
+                - generic [ref=e141]: Son 1 saat
+              - generic [ref=e142]:
+                - generic [ref=e143]:
+                  - heading "DB Yazma Gecikmesi" [level=3] [ref=e144]
+                  - img [ref=e145]
+                - paragraph [ref=e150]: N/A
+                - generic [ref=e152]: p95
+              - generic [ref=e153]:
+                - generic [ref=e154]:
+                  - heading "Reconciliation Oranı" [level=3] [ref=e155]
+                  - img [ref=e156]
+                - paragraph [ref=e162]: N/A
+                - generic [ref=e164]: Son 24 saat
+              - generic [ref=e165]:
+                - generic [ref=e166]:
+                  - heading "Veri Kalite Skoru" [level=3] [ref=e167]
+                  - img [ref=e168]
+                - paragraph [ref=e173]: N/A
+                - generic [ref=e175]: Ortalama
+            - generic [ref=e176]: "Veri kaynakları: MuBot telemetrisi · PostgreSQL istatistikleri."
+          - generic [ref=e177]:
+            - generic [ref=e179]:
+              - heading "Ingestion Akışları" [level=2] [ref=e181]
+              - paragraph [ref=e182]: Redis stream, Kyverno automation ve FinBot senkronizasyonundan gelen veri akışı özetleri.
+            - generic [ref=e185]:
+              - generic [ref=e186]:
+                - generic [ref=e188]: Aktif
+                - heading "Gelir Mutabakatı" [level=3] [ref=e189]
+                - paragraph [ref=e190]: FinBot gelir kalemleri, MuBot ledger eşleştirmesi ile 5 saniyede reconcile edilir.
+                - generic [ref=e192]:
+                  - img [ref=e194]
+                  - generic [ref=e199]:
+                    - term [ref=e200]: Sorumlu
+                    - definition [ref=e201]: FinBot Orchestrator
+              - generic [ref=e202]:
+                - generic [ref=e204]: İZleniyor
+                - heading "Gider Otomasyonu" [level=3] [ref=e205]
+                - paragraph [ref=e206]: Enerji ve bakım giderleri Redis stream üzerinden MuBot muhasebe tablosuna yazılır.
+                - generic [ref=e208]:
+                  - img [ref=e210]
+                  - generic [ref=e215]:
+                    - term [ref=e216]: Sorumlu
+                    - definition [ref=e217]: Kyverno Automation
+              - generic [ref=e218]:
+                - generic [ref=e220]: Analizde
+                - heading "SmartPool Sensör Akışı" [level=3] [ref=e221]
+                - paragraph [ref=e222]: IoT sensör verileri MuBot ingestion worker tarafından temizlenip PostgreSQL’e aktarılır.
+                - generic [ref=e224]:
+                  - img [ref=e226]
+                  - generic [ref=e231]:
+                    - term [ref=e232]: Sorumlu
+                    - definition [ref=e233]: SmartPool Connector
+            - generic [ref=e234]: Tüm akışlar Kyverno imzası ve MuBot doğrulama katmanı üzerinden geçirilir.
+          - generic [ref=e235]:
+            - generic [ref=e237]:
+              - heading "Mutabakat Kuyruğu" [level=2] [ref=e239]
+              - paragraph [ref=e240]: MuBot mutabakat job’larının güncel durumları.
+            - generic [ref=e243]:
+              - generic [ref=e244]:
+                - generic [ref=e245]:
+                  - generic [ref=e246]: MUB-417
+                  - generic [ref=e247]: Tamamlandı
+                - heading "Aylık Gelir-Gider Mutabakatı" [level=3] [ref=e248]
+                - generic [ref=e249]:
+                  - generic [ref=e250]:
+                    - img [ref=e252]
+                    - generic [ref=e256]:
+                      - term [ref=e257]: Sıklık
+                      - definition [ref=e258]: Her gece 01:00
+                  - generic [ref=e259]:
+                    - img [ref=e261]
+                    - generic [ref=e265]:
+                      - term [ref=e266]: Etkisi
+                      - definition [ref=e267]: +0.4% gelir doğruluğu
+              - generic [ref=e268]:
+                - generic [ref=e269]:
+                  - generic [ref=e270]: MUB-409
+                  - generic [ref=e271]: Aktif
+                - heading "Vergi Beyanı Ön Kontrol" [level=3] [ref=e272]
+                - generic [ref=e273]:
+                  - generic [ref=e274]:
+                    - img [ref=e276]
+                    - generic [ref=e280]:
+                      - term [ref=e281]: Sıklık
+                      - definition [ref=e282]: Saatlik
+                  - generic [ref=e283]:
+                    - img [ref=e285]
+                    - generic [ref=e289]:
+                      - term [ref=e290]: Etkisi
+                      - definition [ref=e291]: PostgreSQL view güncellendi
+              - generic [ref=e292]:
+                - generic [ref=e293]:
+                  - generic [ref=e294]: MUB-398
+                  - generic [ref=e295]: Hazırlanıyor
+                - heading "Alacak-verecek Denkleştirme" [level=3] [ref=e296]
+                - generic [ref=e297]:
+                  - generic [ref=e298]:
+                    - img [ref=e300]
+                    - generic [ref=e304]:
+                      - term [ref=e305]: Sıklık
+                      - definition [ref=e306]: Günlük
+                  - generic [ref=e307]:
+                    - img [ref=e309]
+                    - generic [ref=e313]:
+                      - term [ref=e314]: Etkisi
+                      - definition [ref=e315]: FinBot ledger import bekleniyor
+            - generic [ref=e316]: Mutabakatlar FinBot ledger importları tamamlandığında otomatik olarak kapanır.
+        - generic [ref=e317]: MuBot ingestion hattı Redis stream’i ve PostgreSQL connection pool’u ile 3 saniyelik gecikme hedefini korur
+    - contentinfo [ref=e318]:
+      - generic [ref=e319]:
+        - generic [ref=e320]:
+          - paragraph [ref=e321]: Dese Web Platform · EA Plan Infrastructure
+          - paragraph [ref=e322]: v6.8.1 · Kyverno Stabilizasyonu & MCP Faz 1 Revizyonu · ©2025
+        - generic [ref=e323]:
+          - generic [ref=e324]: Kyverno · ArgoCD · Prometheus · Grafana
+          - generic [ref=e325]: Google Cloud · GKE · Redis · PostgreSQL
+  - region "Notifications alt+T"
+  - alert [ref=e326]
+```

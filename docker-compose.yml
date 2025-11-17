@@ -1,117 +1,131 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  # Main application
+  db:
+    image: postgres:15
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      DISABLE_RATE_LIMIT: "true"
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://dese:dese123@postgres:5432/dese_ea_plan_v5
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
-    networks:
-      - dese-network
     restart: unless-stopped
 
-  # PostgreSQL database
-  postgres:
-    image: postgres:15-alpine
+  finbot:
+    build: .
+    command: pnpm mcp:finbot
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:5555/finbot/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     environment:
-      - POSTGRES_DB=dese_ea_plan_v5
-      - POSTGRES_USER=dese
-      - POSTGRES_PASSWORD=dese123
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - BACKEND_URL=http://app:3000
     ports:
-      - "5432:5432"
-    networks:
-      - dese-network
-    restart: unless-stopped
+      - "5555:5555"
+    depends_on:
+      - app
 
-  # Redis cache
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - dese-network
-    restart: unless-stopped
-
-  # Prometheus monitoring
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    networks:
-      - dese-network
-    restart: unless-stopped
-
-  # Grafana dashboard
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3001:3000"
+  mubot:
+    build: .
+    command: pnpm mcp:mubot
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:5556/mubot/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-    networks:
-      - dese-network
-    restart: unless-stopped
-
-  # Loki logging
-  loki:
-    image: grafana/loki:latest
+      - BACKEND_URL=http://app:3000
     ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/loki.yml:/etc/loki/local-config.yaml
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - dese-network
-    restart: unless-stopped
+      - "5556:5556"
+    depends_on:
+      - app
 
-  # Promtail log collection
-  promtail:
-    image: grafana/promtail:latest
-    volumes:
-      - ./monitoring/promtail.yml:/etc/promtail/config.yml
-      - ./logs:/var/log/app
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - dese-network
-    restart: unless-stopped
+  dese:
+    build: .
+    command: pnpm mcp:dese
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:5557/dese/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    environment:
+      - BACKEND_URL=http://app:3000
+    ports:
+      - "5557:5557"
+    depends_on:
+      - app
+
+  observability:
+    build: .
+    command: pnpm mcp:observability
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:5558/observability/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    environment:
+      - BACKEND_URL=http://app:3000
+      - GRAFANA_API_TOKEN=${GRAFANA_API_TOKEN}
+    ports:
+      - "5558:5558"
+    depends_on:
+      - app
 
 volumes:
   postgres_data:
   redis_data:
-  prometheus_data:
-  grafana_data:
-  loki_data:
-
-networks:
-  dese-network:
-    driver: bridge

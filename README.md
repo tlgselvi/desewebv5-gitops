@@ -1,6 +1,6 @@
-# Dese EA Plan v6.8.1
+# Dese EA Plan v6.8.2
 
-> **Durum:** Sistem üretimde ve bakım modunda. Güncel operasyon süreci için `docs/OPERATIONS_GUIDE.md` dokümanını takip edin.
+> **Durum:** Sistem üretimde ve bakım modunda. v6.8.2 ile WebSocket gözlemlenebilirliği eklendi. Güncel operasyon süreci için `docs/OPERATIONS_GUIDE.md` dokümanını takip edin.
 
 Dese EA Plan, FinBot (finans), MuBot (muhasebe) ve AIOps/Observability modüllerini bir araya getiren kurumsal planlama platformudur. v6.8.1 sürümüyle tüm MCP katmanı gerçek veri kaynaklarına bağlıdır ve Redis + Prometheus ile izlenmektedir.
 
@@ -47,6 +47,23 @@ pnpm build
 ```
 
 Docker tabanlı çalıştırma veya Kubernetes dağıtımı için `docs/OPERATIONS_GUIDE.md` ve `gitops-workflow.md` referans alın.
+
+---
+
+## 🐳 Docker ile Yerel Geliştirme
+
+```bash
+cp env.example .env           # Gerekli gizli anahtarları ve şifreleri doldurun
+docker compose up --build     # Uygulama + PostgreSQL + Redis servislerini başlatır
+```
+
+Servisleri durdurmak ve volume'ları kaldırmak için:
+
+```bash
+docker compose down -v
+```
+
+> Not: İlk çalıştırmada `postgres_data` ve `redis_data` volume'ları otomatik oluşturulur. Uygulama konteyneri `db` ve `redis` servislerinin sağlıklı olmasını bekleyerek başlar.
 
 ---
 

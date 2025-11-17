@@ -1,6 +1,6 @@
 # 📚 Dese EA Plan – Master Document
 
-**Version:** 6.8.1  
+**Version:** 6.8.2  
 **Last Updated:** 2025-11-12  
 **Delivery Mode:** Maintenance (production live, no active sprint)
 
@@ -48,11 +48,31 @@
 
 ---
 
+## 🧭 Geliştirme & Görev Yönetim Akışı
+
+- **Makro Görev Dosyası Yaklaşımı:** Tüm geliştirme adımları tek bir "görev manifestosu" (örn. kullanıcıdan gelen makro dosya) üzerinden çalışılır. Manifest, hedefleri, adım adım komutları ve başarı kriterlerini içerir; böylece odağımız hiç dağılmadan ilerleriz.
+- **AI + İnsan Ekip Çalışması:** Kullanıcı (ürün sahibi) üst seviye ihtiyaçları ve doğrulama komutlarını tanımlar; AI asistan (geliştirici) her adımda plan çıkarır, TODO durumunu günceller ve ilerlemeyi raporlar.
+- **Adım Adım İcra:** Her görev, uygulanmadan önce TODO listesine eklenir, `in_progress` durumuna çekilir ve tamamlandığında `completed` olarak işaretlenir. Bu sayede hem insan hem de AI aynı görünürlüğe sahip olur.
+- **Doğrulama ve Kapanış:** Görev tamamlandığında, test çıktıları, lint sonuçları, dokümantasyon güncellemeleri ve gerekli komutlar kullanıcıya özetlenir. Kullanıcı son onayı verip komutları çalıştırdıktan sonra görev resmi olarak kapanır.
+- **İzlenebilirlik:** Tüm bu akış `PROJECT_MASTER_DOC.md`, `docs/SPRINT_PLAN_v6.9.0.md` ve ilgili sürüm notlarında kayıt altına alınarak gelecekteki sprint/makro görevler için referans oluşturur.
+
+---
+
 ## 🔄 Operational Notes
 
 - Stay in maintenance cadence: apply hotfixes only, record changes in release notes, keep `PROJECT_MASTER_DOC.md` as the single source for live status.
 - Monitor Redis hit rate, MCP dashboard latency, and alert noise; the Prometheus ruleset is the authoritative checklist for incident readiness.
 - For deployment actions use `ops/DEPLOYMENT_CHECKLIST.md` and `gitops-workflow.md`; align with the Kubernetes manifests already promoted via ArgoCD.
+
+---
+
+## 🧭 Geliştirme & Görev Yönetim Akışı
+
+- **Makro Görev Dosyası Yaklaşımı:** Tüm geliştirme adımları tek bir "görev manifestosu" (örn. kullanıcıdan gelen makro dosya) üzerinden çalışılır. Manifest, hedefleri, adım adım komutları ve başarı kriterlerini içerir; böylece odağımız hiç dağılmadan ilerleriz.
+- **AI + İnsan Ekip Çalışması:** Kullanıcı (ürün sahibi) üst seviye ihtiyaçları ve doğrulama komutlarını tanımlar; AI asistan (geliştirici) her adımda plan çıkarır, TODO durumunu günceller ve ilerlemeyi raporlar.
+- **Adım Adım İcra:** Her görev, uygulanmadan önce TODO listesine eklenir, `in_progress` durumuna çekilir ve tamamlandığında `completed` olarak işaretlenir. Bu sayede hem insan hem de AI aynı görünürlüğe sahip olur.
+- **Doğrulama ve Kapanış:** Görev tamamlandığında, test çıktıları, lint sonuçları, dokümantasyon güncellemeleri ve gerekli komutlar kullanıcıya özetlenir. Kullanıcı son onayı verip komutları çalıştırdıktan sonra görev resmi olarak kapanır.
+- **İzlenebilirlik:** Tüm bu akış `PROJECT_MASTER_DOC.md`, `docs/SPRINT_PLAN_v6.9.0.md` ve ilgili sürüm notlarında kayıt altına alınarak gelecekteki sprint/makro görevler için referans oluşturur.
 
 ---
 
@@ -66,4 +86,3 @@
 ---
 
 This document is the authoritative snapshot of the project. All other summaries are archived; keep this file up to date when production state changes.
-

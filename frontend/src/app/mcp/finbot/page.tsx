@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ModuleName = "mubot" | "finbot" | "aiops" | "observability";
 
@@ -104,6 +104,8 @@ const SCENARIO_QUEUE = [
   },
 ] as const;
 
+const IS_NON_PRODUCTION = process.env.NODE_ENV !== "production";
+
 export default function FinBotPage() {
   const [dashboardData, setDashboardData] = useState<McpDashboardDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -118,6 +120,27 @@ export default function FinBotPage() {
     }),
     [],
   );
+
+  const handlePublishTestEvent = useCallback(async () => {
+    if (!IS_NON_PRODUCTION) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/devtools/websocket/finbot/publish-test-event", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        console.warn("Test WebSocket event publish failed", {
+          status: response.status,
+          statusText: response.statusText,
+        });
+      }
+    } catch (publishError) {
+      console.warn("Test WebSocket event publish encountered an error", publishError);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -171,6 +194,17 @@ export default function FinBotPage() {
                 <GitBranch className="h-4 w-4" />
                 Akış Grafiğini Aç
               </Button>
+              {IS_NON_PRODUCTION ? (
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  data-testid="publish-test-event-button"
+                  onClick={handlePublishTestEvent}
+                >
+                  <Clock className="h-4 w-4" />
+                  Test WebSocket Event
+                </Button>
+              ) : null}
             </div>
           }
         >
@@ -290,7 +324,7 @@ export default function FinBotPage() {
           </div>
         </McpSection>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-2">
           <McpSection
             title="Öncelikli Veri Akışları"
             description="FinBot senaryo motoru, Kyverno politikaları ile birlikte işletme gelir/gider akışlarını izler."
@@ -390,4 +424,3 @@ export default function FinBotPage() {
     </McpLayout>
   );
 }
-

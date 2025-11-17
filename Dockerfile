@@ -1,48 +1,60 @@
-# Multi-stage build for Dese EA Plan v6.8.0
+# Stage 1: Base image with pnpm
 FROM node:20.19-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
 RUN apk add --no-cache libc6-compat
+RUN corepack enable pnpm
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json ./
-# Copy lockfile if exists, otherwise install without it
-COPY pnpm-lock.yaml* ./
-RUN corepack enable pnpm && \
-    if [ -f pnpm-lock.yaml ]; then \
-        pnpm i --no-frozen-lockfile || pnpm install; \
-    else \
-        pnpm install; \
-    fi
+# Stage 2: Install backend dependencies
+FROM base AS backend-deps
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --no-frozen-lockfile --prod=false
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Stage 3: Install frontend dependencies
+FROM base AS frontend-deps
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile --prod=false
+
+# Stage 4: Build backend
+FROM base AS backend-builder
 COPY . .
+COPY --from=backend-deps /app/node_modules ./node_modules
+RUN pnpm build:backend
 
-    # Build the application (skip TypeScript errors for now, will fix in next iteration)
-    # Note: TypeScript errors are blocking build. Using tsx for runtime execution instead.
-    # TODO: Fix TypeScript errors and re-enable build step
-    # RUN corepack enable pnpm && pnpm build
-    RUN echo "Build step skipped - using TypeScript runtime (tsx)"
+# Stage 5: Build frontend
+FROM base AS frontend-builder
+WORKDIR /app
+# Copy frontend source
+COPY frontend ./frontend
+# Copy frontend dependencies
+COPY --from=frontend-deps /app/frontend/node_modules ./frontend/node_modules
+# Build frontend
+WORKDIR /app/frontend
+RUN pnpm build
 
-# Production image, copy all the files and run the app
-FROM base AS runner
+# Stage 6: Final production image
+FROM node:20.19-alpine AS runner
+RUN corepack enable pnpm
 WORKDIR /app
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 dese
 
-    # Copy source files (using TypeScript runtime instead of compiled JS)
-    COPY --from=builder /app/src ./src
-    COPY --from=builder /app/package.json ./package.json
-    COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Copy production dependencies
+COPY package.json pnpm-lock.yaml* ./
+COPY --from=backend-deps /app/node_modules ./node_modules
+
+# Copy compiled backend
+COPY --from=backend-builder --chown=dese:nodejs /app/dist ./dist
+# Copy source files for MCP servers (needed for tsx execution)
+COPY --from=backend-builder --chown=dese:nodejs /app/src ./src
+# Copy tsconfig.json for path alias resolution
+COPY --from=backend-builder --chown=dese:nodejs /app/tsconfig.json ./tsconfig.json
+
+# Copy built frontend
+COPY --from=frontend-builder /app/frontend/.next ./frontend/.next
+COPY --from=frontend-builder /app/frontend/public ./frontend/public
 
 # Create necessary directories
 RUN mkdir -p logs uploads
@@ -51,9 +63,7 @@ RUN chown -R dese:nodejs logs uploads
 # Switch to non-root user
 USER dese
 
-# Expose port
-# Expose ports (Backend API + MCP Servers)
-EXPOSE 3001 5555 5556 5557 5558
+EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -61,9 +71,7 @@ ENV PORT=3000
 
 # Health check for backend API
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
-# Use tsx for runtime TypeScript execution (temporary until build errors are fixed)
-# Use node_modules/.bin/tsx directly (pnpm exec doesn't work in CMD array format)
-CMD ["node_modules/.bin/tsx", "src/index.ts"]
+CMD ["pnpm", "start"]

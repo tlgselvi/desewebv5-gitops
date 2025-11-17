@@ -1,0 +1,281 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e9]:
+            - link "Dese EA Plan v6.8.1" [ref=e10] [cursor=pointer]:
+              - /url: /
+              - text: Dese EA Plan
+              - generic [ref=e11]: v6.8.1
+            - paragraph [ref=e12]: Kyverno stabilizasyonu · MCP Faz 1 revizyonu
+        - generic [ref=e13]:
+          - button "Yeni Görev Kaydı" [ref=e14]
+          - button "Tema modunu değiştir" [ref=e15]:
+            - img [ref=e16]
+            - generic [ref=e22]: Tema modunu değiştir
+          - button "Menüyü aç" [ref=e23]:
+            - img [ref=e24]
+      - generic [ref=e26]:
+        - link "Genel Bakış" [ref=e27] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e28]: Genel Bakış
+        - link "AIOps" [ref=e29] [cursor=pointer]:
+          - /url: /mcp/aiops
+          - generic [ref=e30]: AIOps
+        - link "FinBot kritik" [ref=e31] [cursor=pointer]:
+          - /url: /mcp/finbot
+          - generic [ref=e32]: FinBot
+          - generic [ref=e33]: kritik
+        - link "Observability" [ref=e34] [cursor=pointer]:
+          - /url: /mcp/observability
+          - generic [ref=e35]: Observability
+        - link "Oturum" [ref=e36] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=e37]: Oturum
+    - main [ref=e38]:
+      - region "Jarvis AIOps MCP · Operasyon Kontrol Merkezi" [ref=e40]:
+        - generic [ref=e41]:
+          - heading "Jarvis AIOps MCP · Operasyon Kontrol Merkezi" [level=1] [ref=e42]
+          - paragraph [ref=e43]: Kyverno politikaları, ArgoCD senkronizasyonu ve Prometheus alarm zincirini tek panelde topla
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - generic [ref=e48]:
+                - text: Kyverno Stabilizasyonu · v6.8.1
+                - heading "Jarvis AIOps Kontrol Merkezi" [level=2] [ref=e50]
+                - paragraph [ref=e51]: Kyverno politikaları, ArgoCD senkronizasyonu ve Prometheus alarm zincirini tek ekranda takip edin. İşletim sürprizlerini azaltmak için drift ve otomasyon sinyallerini gerçek zamanlı olarak yönetin.
+              - generic [ref=e53]:
+                - button "Drift Analizini Aç" [ref=e54]:
+                  - img [ref=e55]
+                  - text: Drift Analizini Aç
+                - button "Son Otomasyon Raporu" [ref=e58]:
+                  - img [ref=e59]
+                  - text: Son Otomasyon Raporu
+            - generic [ref=e64]:
+              - generic [ref=e65]: Kyverno senkron
+              - generic [ref=e66]: ArgoCD manuel sync bekliyor
+              - generic [ref=e67]: Redis cache aktif
+              - generic [ref=e68]: MCP Faz 1 revizyonu
+          - generic [ref=e69]:
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - img [ref=e74]
+                - heading "Sistem Sağlığı" [level=2] [ref=e76]
+              - paragraph [ref=e77]: AIOps ve bağlı servislerin son sağlık kontrol özetleri.
+            - generic [ref=e80]:
+              - generic [ref=e82]:
+                - generic [ref=e83]:
+                  - heading "AIOps API" [level=3] [ref=e84]
+                  - paragraph [ref=e85]: "Son kontrol: 2025-11-17T07:58:10.596Z"
+                - generic [ref=e86]:
+                  - img [ref=e87]
+                  - text: Bilinmiyor
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - heading "Correlation Engine" [level=3] [ref=e93]
+                  - paragraph [ref=e94]: "Son kontrol: 2025-11-17T07:58:10.596Z"
+                - generic [ref=e95]:
+                  - img [ref=e96]
+                  - text: Bilinmiyor
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - heading "Anomaly Detector" [level=3] [ref=e102]
+                  - paragraph [ref=e103]: "Son kontrol: 2025-11-17T07:58:10.597Z"
+                - generic [ref=e104]:
+                  - img [ref=e105]
+                  - text: Bilinmiyor
+              - generic [ref=e109]:
+                - generic [ref=e110]:
+                  - heading "Telemetry Ingestion" [level=3] [ref=e111]
+                  - paragraph [ref=e112]: "Son kontrol: 2025-11-17T07:58:10.597Z"
+                - generic [ref=e113]:
+                  - img [ref=e114]
+                  - text: Bilinmiyor
+            - generic [ref=e117]: "Veri kaynağı: AIOps health endpoint, Anomaly Detector telemetrisi."
+          - generic [ref=e118]:
+            - generic [ref=e120]:
+              - generic [ref=e121]:
+                - img [ref=e123]
+                - heading "Sistemsel İzleme" [level=2] [ref=e126]
+              - paragraph [ref=e127]: Altyapı ve AIOps metriklerinin anlık durumu.
+            - generic [ref=e130]:
+              - generic [ref=e131]:
+                - generic [ref=e132]:
+                  - heading "ML Model CPU" [level=3] [ref=e133]
+                  - img [ref=e134]
+                - paragraph [ref=e138]: N/A
+                - generic [ref=e140]: Son 1 saat
+              - generic [ref=e141]:
+                - generic [ref=e142]:
+                  - heading "ML Model Bellek" [level=3] [ref=e143]
+                  - img [ref=e144]
+                - paragraph [ref=e147]: N/A
+                - generic [ref=e149]: Düne göre
+              - generic [ref=e150]:
+                - generic [ref=e151]:
+                  - heading "Tespit Edilen Anomali" [level=3] [ref=e152]
+                  - img [ref=e153]
+                - paragraph [ref=e156]: N/A
+                - generic [ref=e158]: Bugün
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - heading "Ingestion Gecikmesi" [level=3] [ref=e161]
+                  - img [ref=e162]
+                - paragraph [ref=e168]: N/A
+                - generic [ref=e170]: Son 15 dakika
+            - generic [ref=e171]: "Veri kaynakları: Prometheus · Tempo · Jarvis AIOps olay günlükleri."
+          - generic [ref=e172]:
+            - generic [ref=e174]:
+              - heading "Drift ve Otomasyon Durumu" [level=2] [ref=e176]
+              - paragraph [ref=e177]: Jarvis otomasyon zinciri ve Kyverno policy enforcement akışında tespit edilen son durum.
+            - generic [ref=e180]:
+              - generic [ref=e181]:
+                - generic [ref=e182]:
+                  - generic [ref=e183]:
+                    - generic [ref=e184]:
+                      - paragraph [ref=e185]: AIOps Drift Monitor
+                      - generic [ref=e186]:
+                        - img [ref=e187]
+                        - generic [ref=e189]:
+                          - heading "Kyverno &amp; Prometheus senkron sapması" [level=2] [ref=e190]
+                          - generic [ref=e192]: Drift tespit edildi
+                    - button "Drift verisini yenile" [ref=e193]:
+                      - img [ref=e194]
+                  - generic [ref=e199]:
+                    - generic [ref=e200]:
+                      - paragraph [ref=e201]: Gerçeklenen gecikme
+                      - paragraph [ref=e202]: 0.000s
+                    - generic [ref=e203]:
+                      - paragraph [ref=e204]: Tahmin edilen
+                      - paragraph [ref=e205]: 1.000s
+                    - generic [ref=e206]:
+                      - paragraph [ref=e207]: Drift oranı
+                      - paragraph [ref=e208]: 0.00%
+                  - generic [ref=e209]:
+                    - generic [ref=e210]: "Son yenileme: 10:58:10 AM"
+                    - generic [ref=e211]: Otomatik yenileme 60s
+                - generic [ref=e212]:
+                  - generic [ref=e213]:
+                    - generic [ref=e214]:
+                      - generic [ref=e215]:
+                        - paragraph [ref=e216]: Prometheus drift alarmı
+                        - paragraph [ref=e217]: 1 kritik
+                      - img [ref=e219]
+                    - generic [ref=e226]:
+                      - paragraph [ref=e227]: Kyverno enforce edilen policy sapması
+                      - generic [ref=e228]:
+                        - img [ref=e229]
+                        - generic [ref=e232]: 12%
+                        - generic [ref=e233]: son 24 saat
+                  - generic [ref=e234]:
+                    - generic [ref=e235]:
+                      - generic [ref=e236]:
+                        - paragraph [ref=e237]: Auto-remediation başarı oranı
+                        - paragraph [ref=e238]: 92%
+                      - img [ref=e240]
+                    - generic [ref=e243]:
+                      - paragraph [ref=e244]: Jarvis otomasyon zinciri son 24 saat
+                      - generic [ref=e245]:
+                        - img [ref=e246]
+                        - generic [ref=e249]: 8%
+                        - generic [ref=e250]: son 24 saat
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - generic [ref=e253]:
+                    - generic [ref=e254]:
+                      - paragraph [ref=e255]: ArgoCD uygulama senkronizasyonu
+                      - paragraph [ref=e256]: Manual
+                    - img [ref=e258]
+                  - generic [ref=e261]:
+                    - paragraph [ref=e262]: Security app sync'i manuel tetiklendi
+                    - generic [ref=e263]:
+                      - img [ref=e264]
+                      - generic [ref=e267]: 5%
+                      - generic [ref=e268]: son 24 saat
+                - generic [ref=e269]:
+                  - generic [ref=e270]:
+                    - generic [ref=e271]:
+                      - paragraph [ref=e272]: Prometheus metrik okuma süresi
+                      - paragraph [ref=e273]: 640ms
+                    - img [ref=e275]
+                  - paragraph [ref=e279]: Kyverno CRD parse süresi · cached
+          - generic [ref=e280]:
+            - generic [ref=e282]:
+              - heading "Alarm Analizi ve Zaman Çizelgesi" [level=2] [ref=e284]
+              - paragraph [ref=e285]: Drift insights ve Jarvis replay timeline bileşenleri güncel verilerle besleniyor.
+            - generic [ref=e288]:
+              - generic [ref=e289]:
+                - generic [ref=e290]:
+                  - generic [ref=e291]:
+                    - img [ref=e293]
+                    - generic [ref=e305]:
+                      - heading "AIOps Insights" [level=2] [ref=e306]
+                      - paragraph [ref=e307]: Operatör geri bildirimleri ve anomali değerlendirmeleri
+                  - button "Insights verisini yenile" [ref=e309]:
+                    - img [ref=e310]
+                - generic [ref=e316]: Henüz geri bildirim bulunmuyor.
+              - generic [ref=e317]:
+                - generic [ref=e318]:
+                  - generic [ref=e319]:
+                    - img [ref=e321]
+                    - generic [ref=e324]:
+                      - heading "Auto-Remediation Replay" [level=2] [ref=e325]
+                      - paragraph [ref=e326]: Jarvis otomasyon zincirinden geriye dönük eylemler
+                  - button "Auto-remediation kayıtlarını yenile" [ref=e328]:
+                    - img [ref=e329]
+                - generic [ref=e335]: Henüz otomatik düzeltme kaydı bulunmuyor.
+          - generic [ref=e336]:
+            - generic [ref=e338]:
+              - heading "Canlı Alarm Panosu" [level=2] [ref=e340]
+              - paragraph [ref=e341]: Prometheus, Kyverno ve ArgoCD kaynaklı uyarılar tek akış altında takip ediliyor.
+            - generic [ref=e346]:
+              - generic [ref=e347]:
+                - generic [ref=e348]:
+                  - img [ref=e350]
+                  - generic [ref=e352]:
+                    - heading "Uyarı Yönetimi" [level=2] [ref=e353]
+                    - paragraph [ref=e354]: Kyverno, ArgoCD ve Prometheus kaynaklı olayları izleyin.
+                - button "Uyarıları yenile" [ref=e355]:
+                  - img [ref=e356]
+              - generic [ref=e361]:
+                - generic [ref=e362]:
+                  - img [ref=e363]
+                  - generic [ref=e366]: Severity
+                  - combobox "Severity" [ref=e367]:
+                    - option "Tümü" [selected]
+                    - option "Critical"
+                    - option "High"
+                    - option "Medium"
+                    - option "Low"
+                - generic [ref=e368]:
+                  - img [ref=e369]
+                  - generic [ref=e372]: Status
+                  - combobox "Status" [ref=e373]:
+                    - option "Tümü" [selected]
+                    - option "Açık"
+                    - option "Çözüldü"
+              - generic [ref=e374]: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+              - generic [ref=e375]:
+                - generic [ref=e376]:
+                  - generic [ref=e377]:
+                    - heading "Aktif Uyarılar" [level=3] [ref=e378]
+                    - paragraph [ref=e379]: 0 kayıt listeleniyor
+                  - generic [ref=e380]: Otomatik yenileme 30s
+                - generic [ref=e382]: Filtre kriterlerine uyan uyarı bulunamadı.
+        - generic [ref=e383]: Jarvis otomasyon zinciri alarm verilerini 60 saniyede bir yeniden işler
+    - contentinfo [ref=e384]:
+      - generic [ref=e385]:
+        - generic [ref=e386]:
+          - paragraph [ref=e387]: Dese Web Platform · EA Plan Infrastructure
+          - paragraph [ref=e388]: v6.8.1 · Kyverno Stabilizasyonu & MCP Faz 1 Revizyonu · ©2025
+        - generic [ref=e389]:
+          - generic [ref=e390]: Kyverno · ArgoCD · Prometheus · Grafana
+          - generic [ref=e391]: Google Cloud · GKE · Redis · PostgreSQL
+  - region "Notifications alt+T"
+  - alert [ref=e392]
+```

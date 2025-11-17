@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { setupAuthInterceptor } from './helpers/auth';
 
 test.describe('MuBot MCP Dashboard', () => {
   test('renders live health and metric data without errors', async ({ page }) => {
+    // Set up authentication interceptor
+    await setupAuthInterceptor(page);
+
     await Promise.all([
       page.waitForResponse(
         (response) =>
