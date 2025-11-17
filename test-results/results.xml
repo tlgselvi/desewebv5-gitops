@@ -1,0 +1,946 @@
+<testsuites id="" name="" tests="25" failures="25" skipped="0" errors="0" time="235.644895">
+<testsuite name="mcp-aiops.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="chromium" tests="1" failures="1" skipped="0" time="37.77" errors="0">
+<testcase name="AIOps MCP Dashboard › renders live health and metric data without errors" classname="mcp-aiops.spec.ts" time="37.77">
+<failure message="mcp-aiops.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [chromium] › mcp-aiops.spec.ts:5:3 › AIOps MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/aiops
+    Call log:
+      - navigating to "http://localhost:3000/mcp/aiops", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/aiops'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-aiops.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-finbot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="chromium" tests="1" failures="1" skipped="0" time="37.601" errors="0">
+<testcase name="FinBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-finbot.spec.ts" time="37.601">
+<failure message="mcp-finbot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [chromium] › mcp-finbot.spec.ts:5:3 › FinBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/finbot
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/finbot'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-finbot.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-mubot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="chromium" tests="1" failures="1" skipped="0" time="37.515" errors="0">
+<testcase name="MuBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-mubot.spec.ts" time="37.515">
+<failure message="mcp-mubot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [chromium] › mcp-mubot.spec.ts:5:3 › MuBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/mubot
+    Call log:
+      - navigating to "http://localhost:3000/mcp/mubot", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/mubot'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-mubot.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="chromium" tests="1" failures="1" skipped="0" time="37.974" errors="0">
+<testcase name="Observability MCP Dashboard › renders live health and metric data without errors" classname="mcp-observability.spec.ts" time="37.974">
+<failure message="mcp-observability.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [chromium] › mcp-observability.spec.ts:5:3 › Observability MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/observability
+    Call log:
+      - navigating to "http://localhost:3000/mcp/observability", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/observability'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-observability.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="websocket-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="chromium" tests="1" failures="1" skipped="0" time="37.933" errors="0">
+<testcase name="WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing" classname="websocket-observability.spec.ts" time="37.933">
+<failure message="websocket-observability.spec.ts:170:3 should correctly update WebSocket metrics on connection and event publishing" type="FAILURE">
+<![CDATA[  [chromium] › websocket-observability.spec.ts:170:3 › WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing › Open WebSocket connection by navigating to FinBot MCP 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/finbot
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      189 |       "Open WebSocket connection by navigating to FinBot MCP",
+      190 |       async () => {
+    > 191 |         await page.goto("/mcp/finbot");
+          |                    ^
+      192 |         await expect(
+      193 |           page.getByRole("heading", { name: "FinBot MCP · Finans Operasyonları" }),
+      194 |         ).toBeVisible();
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:191:20
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:188:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-chromium\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-aiops.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="firefox" tests="1" failures="1" skipped="0" time="30.337" errors="0">
+<testcase name="AIOps MCP Dashboard › renders live health and metric data without errors" classname="mcp-aiops.spec.ts" time="30.337">
+<failure message="mcp-aiops.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [firefox] › mcp-aiops.spec.ts:5:3 › AIOps MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-aiops.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-finbot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="firefox" tests="1" failures="1" skipped="0" time="30.189" errors="0">
+<testcase name="FinBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-finbot.spec.ts" time="30.189">
+<failure message="mcp-finbot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [firefox] › mcp-finbot.spec.ts:5:3 › FinBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-finbot.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-mubot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="firefox" tests="1" failures="1" skipped="0" time="30.193" errors="0">
+<testcase name="MuBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-mubot.spec.ts" time="30.193">
+<failure message="mcp-mubot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [firefox] › mcp-mubot.spec.ts:5:3 › MuBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-mubot.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="firefox" tests="1" failures="1" skipped="0" time="30.239" errors="0">
+<testcase name="Observability MCP Dashboard › renders live health and metric data without errors" classname="mcp-observability.spec.ts" time="30.239">
+<failure message="mcp-observability.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [firefox] › mcp-observability.spec.ts:5:3 › Observability MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-observability.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="websocket-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="firefox" tests="1" failures="1" skipped="0" time="30.246" errors="0">
+<testcase name="WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing" classname="websocket-observability.spec.ts" time="30.246">
+<failure message="websocket-observability.spec.ts:170:3 should correctly update WebSocket metrics on connection and event publishing" type="FAILURE">
+<![CDATA[  [firefox] › websocket-observability.spec.ts:170:3 › WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing › Open WebSocket connection by navigating to FinBot MCP 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      189 |       "Open WebSocket connection by navigating to FinBot MCP",
+      190 |       async () => {
+    > 191 |         await page.goto("/mcp/finbot");
+          |                    ^
+      192 |         await expect(
+      193 |           page.getByRole("heading", { name: "FinBot MCP · Finans Operasyonları" }),
+      194 |         ).toBeVisible();
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:191:20
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:188:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-firefox\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-firefox\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-firefox\test-failed-1.png]]
+
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-firefox\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-aiops.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="webkit" tests="1" failures="1" skipped="0" time="30.406" errors="0">
+<testcase name="AIOps MCP Dashboard › renders live health and metric data without errors" classname="mcp-aiops.spec.ts" time="30.406">
+<failure message="mcp-aiops.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [webkit] › mcp-aiops.spec.ts:5:3 › AIOps MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-aiops.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-webkit\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-finbot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="webkit" tests="1" failures="1" skipped="0" time="30.441" errors="0">
+<testcase name="FinBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-finbot.spec.ts" time="30.441">
+<failure message="mcp-finbot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [webkit] › mcp-finbot.spec.ts:5:3 › FinBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-finbot.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-webkit\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-mubot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="webkit" tests="1" failures="1" skipped="0" time="30.324" errors="0">
+<testcase name="MuBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-mubot.spec.ts" time="30.324">
+<failure message="mcp-mubot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [webkit] › mcp-mubot.spec.ts:5:3 › MuBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-mubot.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-webkit\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="webkit" tests="1" failures="1" skipped="0" time="30.289" errors="0">
+<testcase name="Observability MCP Dashboard › renders live health and metric data without errors" classname="mcp-observability.spec.ts" time="30.289">
+<failure message="mcp-observability.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [webkit] › mcp-observability.spec.ts:5:3 › Observability MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-observability.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-webkit\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="websocket-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="webkit" tests="1" failures="1" skipped="0" time="30.267" errors="0">
+<testcase name="WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing" classname="websocket-observability.spec.ts" time="30.267">
+<failure message="websocket-observability.spec.ts:170:3 should correctly update WebSocket metrics on connection and event publishing" type="FAILURE">
+<![CDATA[  [webkit] › websocket-observability.spec.ts:170:3 › WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing › Open WebSocket connection by navigating to FinBot MCP 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      189 |       "Open WebSocket connection by navigating to FinBot MCP",
+      190 |       async () => {
+    > 191 |         await page.goto("/mcp/finbot");
+          |                    ^
+      192 |         await expect(
+      193 |           page.getByRole("heading", { name: "FinBot MCP · Finans Operasyonları" }),
+      194 |         ).toBeVisible();
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:191:20
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:188:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-webkit\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-webkit\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-webkit\test-failed-1.png]]
+
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-webkit\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-aiops.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Chrome" tests="1" failures="1" skipped="0" time="34.261" errors="0">
+<testcase name="AIOps MCP Dashboard › renders live health and metric data without errors" classname="mcp-aiops.spec.ts" time="34.261">
+<failure message="mcp-aiops.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › mcp-aiops.spec.ts:5:3 › AIOps MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/aiops
+    Call log:
+      - navigating to "http://localhost:3000/mcp/aiops", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/aiops'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-aiops.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-finbot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Chrome" tests="1" failures="1" skipped="0" time="34.44" errors="0">
+<testcase name="FinBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-finbot.spec.ts" time="34.44">
+<failure message="mcp-finbot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › mcp-finbot.spec.ts:5:3 › FinBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/finbot
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/finbot'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-finbot.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-mubot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Chrome" tests="1" failures="1" skipped="0" time="34.443" errors="0">
+<testcase name="MuBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-mubot.spec.ts" time="34.443">
+<failure message="mcp-mubot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › mcp-mubot.spec.ts:5:3 › MuBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/mubot
+    Call log:
+      - navigating to "http://localhost:3000/mcp/mubot", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/mubot'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-mubot.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Chrome" tests="1" failures="1" skipped="0" time="34.107" errors="0">
+<testcase name="Observability MCP Dashboard › renders live health and metric data without errors" classname="mcp-observability.spec.ts" time="34.107">
+<failure message="mcp-observability.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › mcp-observability.spec.ts:5:3 › Observability MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/observability
+    Call log:
+      - navigating to "http://localhost:3000/mcp/observability", waiting until "load"
+
+
+      16 |           response.ok(),
+      17 |       ),
+    > 18 |       page.goto('/mcp/observability'),
+         |            ^
+      19 |     ]);
+      20 |
+      21 |     await expect(
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-observability.spec.ts:18:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="websocket-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Chrome" tests="1" failures="1" skipped="0" time="34.334" errors="0">
+<testcase name="WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing" classname="websocket-observability.spec.ts" time="34.334">
+<failure message="websocket-observability.spec.ts:170:3 should correctly update WebSocket metrics on connection and event publishing" type="FAILURE">
+<![CDATA[  [Mobile Chrome] › websocket-observability.spec.ts:170:3 › WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing › Open WebSocket connection by navigating to FinBot MCP 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: net::ERR_CONNECTION_RESET at http://localhost:3000/mcp/finbot
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      189 |       "Open WebSocket connection by navigating to FinBot MCP",
+      190 |       async () => {
+    > 191 |         await page.goto("/mcp/finbot");
+          |                    ^
+      192 |         await expect(
+      193 |           page.getByRole("heading", { name: "FinBot MCP · Finans Operasyonları" }),
+      194 |         ).toBeVisible();
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:191:20
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:188:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Chrome\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Chrome\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Chrome\test-failed-1.png]]
+
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Chrome\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-aiops.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Safari" tests="1" failures="1" skipped="0" time="30.287" errors="0">
+<testcase name="AIOps MCP Dashboard › renders live health and metric data without errors" classname="mcp-aiops.spec.ts" time="30.287">
+<failure message="mcp-aiops.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Safari] › mcp-aiops.spec.ts:5:3 › AIOps MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-aiops.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-aiops-AIOps-MCP-Dashbo-e2a8a--metric-data-without-errors-Mobile-Safari\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-finbot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Safari" tests="1" failures="1" skipped="0" time="30.182" errors="0">
+<testcase name="FinBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-finbot.spec.ts" time="30.182">
+<failure message="mcp-finbot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Safari] › mcp-finbot.spec.ts:5:3 › FinBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-finbot.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-finbot-FinBot-MCP-Dash-186dc--metric-data-without-errors-Mobile-Safari\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-mubot.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Safari" tests="1" failures="1" skipped="0" time="30.212" errors="0">
+<testcase name="MuBot MCP Dashboard › renders live health and metric data without errors" classname="mcp-mubot.spec.ts" time="30.212">
+<failure message="mcp-mubot.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Safari] › mcp-mubot.spec.ts:5:3 › MuBot MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-mubot.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-mubot-MuBot-MCP-Dashbo-9d24d--metric-data-without-errors-Mobile-Safari\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="mcp-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Safari" tests="1" failures="1" skipped="0" time="30.261" errors="0">
+<testcase name="Observability MCP Dashboard › renders live health and metric data without errors" classname="mcp-observability.spec.ts" time="30.261">
+<failure message="mcp-observability.spec.ts:5:3 renders live health and metric data without errors" type="FAILURE">
+<![CDATA[  [Mobile Safari] › mcp-observability.spec.ts:5:3 › Observability MCP Dashboard › renders live health and metric data without errors 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 30000ms exceeded.
+
+       8 |
+       9 |     await Promise.all([
+    > 10 |       page.waitForResponse(
+         |            ^
+      11 |         (response) =>
+      12 |           response
+      13 |             .url()
+        at C:\desesonpro\desewebv5\tests\e2e\mcp-observability.spec.ts:10:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|mcp-observability-Observab-34a2b--metric-data-without-errors-Mobile-Safari\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="websocket-observability.spec.ts" timestamp="2025-11-17T11:55:44.002Z" hostname="Mobile Safari" tests="1" failures="1" skipped="0" time="30.245" errors="0">
+<testcase name="WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing" classname="websocket-observability.spec.ts" time="30.245">
+<failure message="websocket-observability.spec.ts:170:3 should correctly update WebSocket metrics on connection and event publishing" type="FAILURE">
+<![CDATA[  [Mobile Safari] › websocket-observability.spec.ts:170:3 › WebSocket Observability E2E Test › should correctly update WebSocket metrics on connection and event publishing › Open WebSocket connection by navigating to FinBot MCP 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:3000/mcp/finbot", waiting until "load"
+
+
+      189 |       "Open WebSocket connection by navigating to FinBot MCP",
+      190 |       async () => {
+    > 191 |         await page.goto("/mcp/finbot");
+          |                    ^
+      192 |         await expect(
+      193 |           page.getByRole("heading", { name: "FinBot MCP · Finans Operasyonları" }),
+      194 |         ).toBeVisible();
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:191:20
+        at C:\desesonpro\desewebv5\tests\e2e\websocket-observability.spec.ts:188:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Safari\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Safari\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Safari\test-failed-1.png]]
+
+[[ATTACHMENT|websocket-observability-We-7d405-ection-and-event-publishing-Mobile-Safari\video.webm]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

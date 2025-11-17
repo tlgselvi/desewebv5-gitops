@@ -27,6 +27,7 @@ import { Card } from "@/components/ui/card";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { authenticatedGet } from "@/lib/api";
 
 type ModuleName = "mubot" | "finbot" | "aiops" | "observability";
 
@@ -149,21 +150,16 @@ export default function ObservabilityPage() {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch("/api/v1/mcp/dashboard/observability", {
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`API isteği başarısız: ${response.status} ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as McpDashboardDto;
+        const data = await authenticatedGet<McpDashboardDto>("/api/v1/mcp/dashboard/observability");
         setDashboardData(data);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Veri yüklenirken bir hata oluştu.";
-        setError(message);
+        // Handle specific auth error for better user feedback
+        if (message.includes("401") || message.includes("token not found") || message.includes("Session expired")) {
+          setError("Yetkilendirme hatası. Lütfen tekrar giriş yapın.");
+        } else {
+          setError(message);
+        }
         console.error("Observability dashboard fetch error:", err);
       } finally {
         setIsLoading(false);

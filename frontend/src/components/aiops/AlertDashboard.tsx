@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getToken } from "@/lib/auth";
+import { authenticatedGet, authenticatedPost } from "@/lib/api";
 
 interface Alert {
   id: string;
@@ -48,8 +49,9 @@ export default function AlertDashboard() {
       }
       params.append("limit", "50");
 
-      const res = await fetch(`/api/v1/aiops/anomalies/alerts?${params}`);
-      const result = await res.json();
+      const result = await authenticatedGet<{ success: boolean; alerts?: Alert[]; error?: string }>(
+        `/api/v1/aiops/anomalies/alerts?${params}`,
+      );
 
       if (result.success && result.alerts) {
         const filteredAlerts = (result.alerts as Alert[]).filter((alert) => {
@@ -74,8 +76,9 @@ export default function AlertDashboard() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/v1/aiops/anomalies/alerts/stats?timeRange=24h");
-      const result = await res.json();
+      const result = await authenticatedGet<{ success: boolean; stats?: AlertStats }>(
+        "/api/v1/aiops/anomalies/alerts/stats?timeRange=24h",
+      );
 
       if (result.success && result.stats) {
         setStats(result.stats);
@@ -87,28 +90,23 @@ export default function AlertDashboard() {
 
   const resolveAlert = async (alertId: string) => {
     try {
-      const res = await fetch(`/api/v1/aiops/anomalies/alerts/${alertId}/resolve`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          resolvedBy: (() => {
-            try {
-              const token = getToken();
-              if (token) {
-                const decoded = JSON.parse(atob(token.split(".")[1]));
-                return decoded.email || decoded.id || "user";
-              }
-              return "user";
-            } catch {
-              return "user";
-            }
-          })(),
-        }),
-      });
+      const resolvedBy = (() => {
+        try {
+          const token = getToken();
+          if (token) {
+            const decoded = JSON.parse(atob(token.split(".")[1]));
+            return decoded.email || decoded.id || "user";
+          }
+          return "user";
+        } catch {
+          return "user";
+        }
+      })();
 
-      const result = await res.json();
+      const result = await authenticatedPost<{ success: boolean; error?: string }>(
+        `/api/v1/aiops/anomalies/alerts/${alertId}/resolve`,
+        { resolvedBy },
+      );
 
       if (result.success) {
         await fetchAlerts();

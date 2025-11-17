@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
+import { authenticatedGet } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type ModuleName = "mubot" | "finbot" | "aiops" | "observability";
@@ -113,20 +114,17 @@ export default function MuBotPage() {
       try {
         setIsLoading(true);
         setError(null);
-        // Not: Bu path, Next.js'in proxy ayarına göre backend'e yönlendirilir.
-        const response = await fetch("/api/v1/mcp/dashboard/mubot", {
-          headers: {
-            Accept: "application/json",
-          },
-        });
-        if (!response.ok) {
-          throw new Error(`API isteği başarısız: ${response.status} ${response.statusText}`);
-        }
-        const data = (await response.json()) as McpDashboardDto;
+
+        const data = await authenticatedGet<McpDashboardDto>("/api/v1/mcp/dashboard/mubot");
         setDashboardData(data);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Veri yüklenirken bir hata oluştu.";
-        setError(message);
+        // Handle specific auth error for better user feedback
+        if (message.includes("401") || message.includes("token not found") || message.includes("Session expired")) {
+          setError("Yetkilendirme hatası. Lütfen tekrar giriş yapın.");
+        } else {
+          setError(message);
+        }
         console.error("MuBot dashboard fetch error:", err);
       } finally {
         setIsLoading(false);
