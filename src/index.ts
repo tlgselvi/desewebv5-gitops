@@ -155,26 +155,6 @@ if (config.monitoring.prometheus) {
   app.use(prometheusMiddleware);
 }
 
-// Health check endpoint
-app.get("/health", async (req, res) => {
-  const dbStatus = await checkDatabaseConnection();
-  const healthStatus = {
-    status: dbStatus ? "healthy" : "unhealthy",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
-    environment: config.nodeEnv,
-    database: dbStatus ? "connected" : "disconnected",
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-    },
-  };
-
-  res.status(dbStatus ? 200 : 503).json(healthStatus);
-});
-
 // API routes
 setupRoutes(app);
 
@@ -188,7 +168,12 @@ if (!dev) {
 // Express 5 doesn't support app.all("*") with wildcard, so we use app.use as a catch-all.
 // app.use without a path matches all routes and all HTTP methods.
 app.use((req: Request, res: Response) => {
-  return nextHandler(req, res);
+  // Only pass to Next.js if response hasn't been sent yet
+  if (!res.headersSent) {
+    return nextHandler(req, res);
+  }
+  // If headers already sent, do nothing (response is already being handled)
+  return;
 });
 
 // Error handling middleware (must be last)

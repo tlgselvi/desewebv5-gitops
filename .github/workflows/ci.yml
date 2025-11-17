@@ -1,10 +1,13 @@
-name: JARVIS Weekly Maintenance
+name: Main CI Pipeline
 
 on:
-  schedule:
-    # Run every Monday at 2:00 AM UTC (weekly)
-    - cron: '0 2 * * 1'
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
   workflow_dispatch: # Allow manual trigger
+  schedule:
+    - cron: '0 2 * * 1' # Run weekly maintenance
 
 jobs:
   jarvis-efficiency:
@@ -60,10 +63,11 @@ jobs:
             ls -la reports/ >> $GITHUB_STEP_SUMMARY
           fi
 
-  mcp-health-check:
-    name: MCP Server Health Check
+  e2e-tests:
+    name: E2E Tests (Docker)
     runs-on: ubuntu-latest
-    
+    # This job can run in parallel with jarvis-efficiency
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,32 +83,57 @@ jobs:
         with:
           version: 8.15.0
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Start MCP Servers (Background)
+      - name: Start services with Docker Compose
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-jwt-secret-for-ci' }}
+          DISABLE_RATE_LIMIT: 'true'
         run: |
-          pnpm mcp:all &
-          sleep 10
-
-      - name: Health Check - FinBot MCP
+          docker compose up --build -d
+      
+      - name: Wait for services to be healthy
         run: |
-          curl -f http://localhost:5555/finbot/health || exit 1
+          echo "Waiting for services to become healthy..."
+          timeout 300s bash -c 'until docker compose ps | grep -E "(app|db|redis|finbot|mubot|dese|observability)" | grep -q healthy; do echo -n "."; sleep 5; done'
+          echo ""
+          echo "All services are healthy!"
+          docker compose ps
+      
+      - name: Run E2E Tests
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-jwt-secret-for-ci' }}
+        run: pnpm test:auto
+      
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_number }}
+          path: playwright-report/
+          retention-days: 7
 
-      - name: Health Check - MuBot MCP
-        run: |
-          curl -f http://localhost:5556/mubot/health || exit 1
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.run_number }}
+          path: test-results/
+          retention-days: 7
 
-      - name: Health Check - DESE MCP
+      - name: Generate Test Summary
+        if: always()
         run: |
-          curl -f http://localhost:5557/dese/health || exit 1
-
-      - name: Health Check - Observability MCP
-        run: |
-          curl -f http://localhost:5558/observability/health || exit 1
+          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d "playwright-report" ]; then
+            echo "### Test Report Generated" >> $GITHUB_STEP_SUMMARY
+            echo "Check the uploaded artifacts for detailed test results." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Cleanup
         if: always()
         run: |
-          pkill -f "mcp.*server" || true
-
+          docker compose down -v --remove-orphans
