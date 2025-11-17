@@ -67,3 +67,8 @@ secrets/
 # Next.js build output
 frontend/.next/
 frontend/pnpm-lock.yaml
+
+# Playwright test reports and state
+test-results/
+playwright-report/
+tests/setup/storageState.json
