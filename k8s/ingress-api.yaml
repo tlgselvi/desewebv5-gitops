@@ -4,7 +4,6 @@ metadata:
   name: dese-api-ingress
   namespace: default
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
@@ -13,7 +12,29 @@ spec:
   - host: api.poolfab.com.tr
     http:
       paths:
-      - path: /
+      # Backend API routes - most specific paths first
+      - path: /api/v1
+        pathType: Prefix
+        backend:
+          service:
+            name: dese-api-service
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: dese-api-service
+            port:
+              number: 80
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: dese-api-service
+            port:
+              number: 80
+      - path: /metrics
         pathType: Prefix
         backend:
           service:

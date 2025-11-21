@@ -7,6 +7,20 @@ import { asyncHandler, createError } from "@/middleware/errorHandler.js";
 
 const authRouter: Router = Router();
 
+/**
+ * Handle GET requests to /login endpoint
+ * Returns 405 Method Not Allowed with Allow header
+ */
+authRouter.get("/login", (req: Request, res: Response): void => {
+  res.status(405).setHeader("Allow", "POST").json({
+    success: false,
+    error: "method_not_allowed",
+    message: "GET method is not allowed for this endpoint. Use POST method.",
+    allowedMethods: ["POST"],
+    endpoint: "/api/v1/auth/login",
+  });
+});
+
 authRouter.post("/login", (req: Request, res: Response): void => {
   const { username = "admin@poolfab.com.tr" } = req.body ?? {};
 
