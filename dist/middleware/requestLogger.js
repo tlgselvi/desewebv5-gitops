@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 export const requestLogger = (req, res, next) => {
     // Generate unique request ID
     req.requestId = Math.random().toString(36).substring(2, 15);

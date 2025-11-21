@@ -1,7 +1,7 @@
-import { redis } from "../../services/storage/redisClient.js";
-import { logger } from "../../utils/logger.js";
-import { TelemetryAgent } from "../../services/aiops/telemetryAgent.js";
-import { config } from "../../config/index.js";
+import { redis } from "@/services/storage/redisClient.js";
+import { logger } from "@/utils/logger.js";
+import { TelemetryAgent } from "@/services/aiops/telemetryAgent.js";
+import { config } from "@/config/index.js";
 /**
  * FinBot Event Consumer
  * Consumes events from Redis Stream and processes business logic

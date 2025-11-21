@@ -1,8 +1,8 @@
-import { config } from "../../config/index.js";
-import { createError } from "../../middleware/errorHandler.js";
-import { queryInstant } from "../monitoring/prometheusClient.js";
-import { redis } from "../storage/redisClient.js";
-import { logger } from "../../utils/logger.js";
+import { config } from "@/config/index.js";
+import { createError } from "@/middleware/errorHandler.js";
+import { queryInstant } from "@/services/monitoring/prometheusClient.js";
+import { redis } from "@/services/storage/redisClient.js";
+import { logger } from "@/utils/logger.js";
 const DEFAULT_TIMEOUT_MS = config.mcpDashboard.prometheus.timeoutMs ?? 5000;
 const FALLBACK_STATUS = "Bilinmiyor";
 const FALLBACK_VALUE = "N/A";

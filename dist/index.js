@@ -1,24 +1,41 @@
 import express from "express";
 import cors from "cors";
+import cookieSession from "cookie-session";
+import passport from "passport";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { createServer } from "http";
-import { createProxyMiddleware } from "http-proxy-middleware";
-import { config } from "./config/index.js";
-import { logger } from "./utils/logger.js";
-import { checkDatabaseConnection, closeDatabaseConnection, } from "./db/index.js";
-import { errorHandler } from "./middleware/errorHandler.js";
-import { requestLogger } from "./middleware/requestLogger.js";
-import { prometheusMiddleware } from "./middleware/prometheus.js";
-import { sanitizeInput, cspHeaders, requestSizeLimiter, } from "./middleware/security.js";
-import { setupRoutes } from "./routes/index.js";
-import { setupSwagger } from "./utils/swagger.js";
-import { gracefulShutdown } from "./utils/gracefulShutdown.js";
-import { initializeWebSocketGateway, close as closeWebSocketGateway, } from "./ws/gateway.js";
-import { startFinBotConsumer, stopFinBotConsumer, } from "./bus/streams/finbot-consumer.js";
-import { auditMiddleware } from "./middleware/audit.js";
-// Create Express app
+import next from "next";
+import { config } from "@/config/index.js";
+import { logger } from "@/utils/logger.js";
+import { checkDatabaseConnection, closeDatabaseConnection, } from "@/db/index.js";
+import { errorHandler } from "@/middleware/errorHandler.js";
+import { requestLogger } from "@/middleware/requestLogger.js";
+import { prometheusMiddleware } from "@/middleware/prometheus.js";
+import { sanitizeInput, cspHeaders, requestSizeLimiter, } from "@/middleware/security.js";
+import { setupRoutes } from "@/routes/index.js";
+import { setupSwagger } from "@/utils/swagger.js";
+import { gracefulShutdown } from "@/utils/gracefulShutdown.js";
+import { initializeWebSocketGateway, close as closeWebSocketGateway, } from "@/websocket/gateway.js";
+import { startFinBotConsumer, stopFinBotConsumer, } from "@/bus/streams/finbot-consumer.js";
+import { auditMiddleware } from "@/middleware/audit.js";
+// Passport stratejisini yükle (sadece import etmek yeterli)
+import "@/services/passport.js";
+const dev = config.nodeEnv !== "production";
+// Hybrid Mode: Skip Next.js if SKIP_NEXT is set (frontend runs separately)
+const skipNext = process.env.SKIP_NEXT === "true";
+let nextApp = null;
+let nextHandler = null;
+if (!skipNext) {
+    nextApp = next({ dev, dir: "./frontend" });
+    nextHandler = nextApp.getRequestHandler();
+    // Create Express app after Next.js is ready
+    await nextApp.prepare();
+}
+else {
+    logger.info("Next.js skipped (Hybrid Mode - frontend runs separately)");
+}
 const app = express();
 app.use(helmet({
     contentSecurityPolicy: {
@@ -73,6 +90,18 @@ app.use(cors({
         "X-Master-Control-CLI",
     ],
 }));
+// Session and Passport Middleware
+// IMPORTANT: These must come after CORS and before routes
+app.use(cookieSession({
+    name: "dese-session",
+    keys: [config.security.cookieKey],
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: config.nodeEnv === "production", // Only send cookie over HTTPS in production
+    sameSite: "lax", // CSRF protection
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 // Compression middleware with optimization
 app.use(compression({
     level: 6, // Compression level (0-9, 6 is a good balance)
@@ -86,18 +115,32 @@ app.use(compression({
         return compression.filter(req, res);
     },
 }));
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: config.security.rateLimitWindowMs,
-    max: config.security.rateLimitMaxRequests,
-    message: {
-        error: "Too many requests from this IP, please try again later.",
-        retryAfter: Math.ceil(config.security.rateLimitWindowMs / 1000),
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-app.use(limiter);
+// Rate limiting - disabled in test environment or when DISABLE_RATE_LIMIT is set
+if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true") {
+    const limiter = rateLimit({
+        windowMs: config.security.rateLimitWindowMs,
+        max: config.security.rateLimitMaxRequests,
+        message: {
+            error: "Too many requests from this IP, please try again later.",
+            retryAfter: Math.ceil(config.security.rateLimitWindowMs / 1000),
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+    app.use(limiter);
+}
+// Session ve Passport Middleware
+// ÖNEMLİ: Bu middleware'ler CORS'tan sonra ve rotalardan önce gelmelidir.
+app.use(cookieSession({
+    name: "dese-session",
+    keys: [config.security.cookieKey],
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: config.nodeEnv === "production", // Only send cookie over HTTPS in production
+    sameSite: "lax", // CSRF protection
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -107,76 +150,44 @@ app.use(requestLogger);
 if (config.monitoring.prometheus) {
     app.use(prometheusMiddleware);
 }
-// Health check endpoint
-app.get("/health", async (req, res) => {
-    const dbStatus = await checkDatabaseConnection();
-    const healthStatus = {
-        status: dbStatus ? "healthy" : "unhealthy",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        version: process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
-        environment: config.nodeEnv,
-        database: dbStatus ? "connected" : "disconnected",
-        memory: {
-            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
-        },
-    };
-    res.status(dbStatus ? 200 : 503).json(healthStatus);
-});
 // API routes
 setupRoutes(app);
-const MCP_UI_TARGET = process.env.MCP_UI_TARGET ?? "http://127.0.0.1:3100";
-const proxyErrorHandler = (error, req, res, target) => {
-    const originalUrl = req.originalUrl ?? req.url ?? "unknown";
-    logger.error("MCP UI proxy error", {
-        error: error.message,
-        stack: error.stack,
-        route: originalUrl,
-        target: target ?? MCP_UI_TARGET,
-    });
-    if (!res.headersSent) {
-        res.writeHead(502, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-            error: "proxy_error",
-            message: "Failed to load MCP UI content",
-            route: originalUrl,
-            timestamp: new Date().toISOString(),
-        }));
-    }
-};
-const createProxy = (overrides = {}) => createProxyMiddleware({
-    target: MCP_UI_TARGET,
-    changeOrigin: true,
-    xfwd: true,
-    autoRewrite: true,
-    ...overrides,
-    onError: proxyErrorHandler,
-});
-app.use(["/mcp", "/_next", "/favicon.ico", "/icon"], createProxy());
-app.use(["/finbot", "/aiops", "/observability"], createProxy({
-    pathRewrite: (path) => `/mcp${path}`,
-}));
 // Swagger documentation
-if (config.nodeEnv !== "production") {
+if (!dev) {
     setupSwagger(app);
 }
-// 404 handler (must be before error handler)
-app.use((req, res, next) => {
-    // Only handle 404 if no response was sent
-    if (!res.headersSent) {
-        res.status(404).json({
-            error: "Not Found",
-            message: `Route ${req.originalUrl} not found`,
-            timestamp: new Date().toISOString(),
-        });
-    }
-    else {
-        next();
-    }
-});
+// All other requests that were not handled by the API routes should be passed to Next.js.
+// This must be placed after all API routes and before the final error handler.
+// Express 5 doesn't support app.all("*") with wildcard, so we use app.use as a catch-all.
+// app.use without a path matches all routes and all HTTP methods.
+if (!skipNext && nextHandler) {
+    app.use((req, res) => {
+        // Only pass to Next.js if response hasn't been sent yet
+        if (!res.headersSent) {
+            return nextHandler(req, res);
+        }
+        // If headers already sent, do nothing (response is already being handled)
+        return;
+    });
+}
+else {
+    // In Hybrid Mode, only handle API routes - ignore frontend routes
+    app.use((req, res) => {
+        // Only return 404 for API routes that don't exist
+        // Frontend routes (like /login, /dashboard, etc.) should be ignored
+        if (req.path.startsWith("/api/") && !res.headersSent) {
+            return res.status(404).json({
+                error: "Not Found",
+                message: "API endpoint not found. Frontend runs separately on port 3001.",
+                path: req.path,
+            });
+        }
+        // For non-API routes, do nothing (they're handled by frontend)
+        // This prevents backend from interfering with frontend routes
+    });
+}
 // Error handling middleware (must be last)
-// Note: Express error handlers require 4 parameters (err, req, res, next)
+// Note: Express error handlers require 4 parameters
 app.use((err, req, res, next) => {
     // Ensure JSON response is sent
     if (!res.headersSent) {

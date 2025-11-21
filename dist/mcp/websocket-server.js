@@ -1,7 +1,8 @@
-import { WebSocketServer, WebSocket } from "../ws";
-import { logger } from "../utils/logger.js";
+import { WebSocketServer, WebSocket } from "ws";
+import { logger } from "@/utils/logger.js";
 import jwt from "jsonwebtoken";
-import { config } from "../config/index.js";
+import { config } from "@/config/index.js";
+import { decrementWebSocketActiveConnections, incrementWebSocketActiveConnections, recordWebSocketEventPublished, } from '@/services/monitoring/metrics.js';
 const mcpServers = new Map();
 const allowedMessageModules = new Set([
     "finbot",
@@ -108,6 +109,7 @@ export function initializeMCPWebSocket(module, httpServer, port) {
         ws.mcpModule = module;
         ws.isAuthenticated = false;
         server.clients.set(clientId, ws);
+        incrementWebSocketActiveConnections(module);
         logger.info("MCP WebSocket client connected", {
             module,
             clientId,
@@ -240,6 +242,7 @@ export function initializeMCPWebSocket(module, httpServer, port) {
                 server.topicSubscriptions.get(topic)?.delete(clientId);
             });
             server.clients.delete(clientId);
+            decrementWebSocketActiveConnections(module);
             logger.info("MCP WebSocket client disconnected", {
                 module,
                 clientId,
@@ -280,6 +283,7 @@ export async function pushContextUpdate(module, topic, context) {
         },
     };
     broadcastToTopic(server, fullTopic, message);
+    recordWebSocketEventPublished(module, 'context_update');
     logger.debug("MCP WebSocket: Context update pushed", {
         module,
         topic,
@@ -306,6 +310,7 @@ export async function pushEvent(module, topic, event) {
         },
     };
     broadcastToTopic(server, fullTopic, message);
+    recordWebSocketEventPublished(module, 'event');
     logger.debug("MCP WebSocket: Event pushed", {
         module,
         topic,

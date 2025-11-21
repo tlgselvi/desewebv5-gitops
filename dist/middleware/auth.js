@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import { config } from "../config/index.js";
-import { logger } from "../utils/logger.js";
-import { CustomError } from "./errorHandler.js";
+import { config } from "@/config/index.js";
+import { logger } from "@/utils/logger.js";
+import { CustomError } from "@/middleware/errorHandler.js";
 /**
  * JWT Authentication Middleware
  * Validates JWT token from Authorization header
@@ -36,6 +36,7 @@ export const authenticate = (req, res, next) => {
                 userId: decoded.id,
                 email: decoded.email,
                 role: decoded.role,
+                permissions: decoded.permissions || [],
             });
             next();
         }
@@ -88,6 +89,8 @@ export const authorize = (requiredRolesOrPermissions) => {
                     userRole: role,
                     userPermissions: permissions,
                     required: requiredRolesOrPermissions,
+                    hasRoleAccess: requiredRolesOrPermissions.includes(role),
+                    hasPermissionAccess: requiredRolesOrPermissions.some((perm) => permissions.includes(perm)),
                     path: req.path,
                     method: req.method,
                 });

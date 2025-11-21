@@ -1,4 +1,4 @@
-import { WebSocketServer } from "../ws";
+import { WebSocketServer } from "ws";
 import { Server as HTTPServer } from "http";
 type MCPModule = "finbot" | "mubot" | "dese" | "observability";
 /**

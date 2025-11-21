@@ -5,54 +5,61 @@ import { logger } from "@/utils/logger.js";
 import { db, users } from "@/db/index.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
-import jwt from "jsonwebtoken";
 
 /**
  * Passport Google OAuth Strategy
  * Handles Google OAuth authentication and user creation/retrieval
  */
 
-// Extend Express User type for Passport
+// Define user type for Passport
+interface PassportUser {
+  id: string;
+  email: string;
+  role: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+// Extend Express.User type for Passport
 declare global {
   namespace Express {
-    interface User {
-      id: string;
-      email: string;
-      role: string;
-      firstName: string | null;
-      lastName: string | null;
-    }
+    interface User extends PassportUser {}
   }
 }
 
 // Serialize user to session (store only user ID)
-passport.serializeUser((user: Express.User, done) => {
+passport.serializeUser((user: PassportUser, done) => {
   done(null, user.id);
 });
 
 // Deserialize user from session (retrieve full user object)
-passport.deserializeUser(async (id: string, done) => {
+passport.deserializeUser(async (id: unknown, done) => {
   try {
+    if (typeof id !== "string") {
+      return done(new Error("Invalid user ID"), null);
+    }
+
     const userList = await db.select().from(users).where(eq(users.id, id)).limit(1);
     
-    if (userList.length === 0) {
+    if (userList.length === 0 || !userList[0]) {
       return done(new Error("User not found"), null);
     }
 
     const user = userList[0];
-    done(null, {
+    const passportUser: PassportUser = {
       id: user.id,
       email: user.email,
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
-    });
+    };
+    done(null, passportUser);
   } catch (error) {
     logger.error("Error deserializing user", {
       error: error instanceof Error ? error.message : String(error),
       userId: id,
     });
-    done(error, null);
+    done(error instanceof Error ? error : new Error(String(error)), null);
   }
 });
 
@@ -68,7 +75,7 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         // Extract user info from Google profile
-        const { id: googleId, displayName, emails, photos } = profile;
+        const { id: googleId, displayName, emails } = profile;
         const email = emails?.[0]?.value;
 
         if (!email) {
@@ -117,6 +124,9 @@ passport.use(
         } else {
           // User exists, update last login
           const existingUser = existingUsers[0];
+          if (!existingUser) {
+            throw new Error("User not found in database");
+          }
           userId = existingUser.id;
           userRole = existingUser.role;
           firstName = existingUser.firstName;
@@ -145,7 +155,7 @@ passport.use(
       } catch (error) {
         logger.error("Error in Google OAuth strategy", {
           error: error instanceof Error ? error.message : String(error),
-          email: emails?.[0]?.value,
+          email: profile.emails?.[0]?.value,
         });
         return done(error, undefined);
       }

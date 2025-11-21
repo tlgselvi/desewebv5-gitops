@@ -1,5 +1,5 @@
-import { logger } from "../../utils/logger.js";
-import { redis } from "../storage/redisClient.js";
+import { logger } from "@/utils/logger.js";
+import { redis } from "@/services/storage/redisClient.js";
 import { randomUUID } from "crypto";
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const isSeverity = (value) => value === "low" || value === "medium" || value === "high" || value === "critical";

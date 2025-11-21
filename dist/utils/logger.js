@@ -1,6 +1,6 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import { config } from '../config/index.js';
+import { config } from '@/config/index.js';
 // Custom log format
 const logFormat = winston.format.combine(winston.format.timestamp({
     format: 'YYYY-MM-DD HH:mm:ss.SSS',

@@ -1,6 +1,6 @@
 import { ZodError } from 'zod';
-import { logger } from '../utils/logger.js';
-import { config } from '../config/index.js';
+import { logger } from '@/utils/logger.js';
+import { config } from '@/config/index.js';
 export class CustomError extends Error {
     statusCode;
     isOperational;

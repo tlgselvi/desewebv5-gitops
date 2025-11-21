@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { masterControl } from "../services/masterControl.js";
-import { asyncHandler } from "../middleware/errorHandler.js";
-import { authenticate, authorize } from "../middleware/auth.js";
-import { logger } from "../utils/logger.js";
+import { masterControl } from "@/services/masterControl.js";
+import { asyncHandler } from "@/middleware/errorHandler.js";
+import { authenticate, authorize } from "@/middleware/auth.js";
+import { logger } from "@/utils/logger.js";
 const router = Router();
 // Master Control routes require admin authentication
 router.use(authenticate);

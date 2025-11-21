@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db, seoProjects, users } from '../db/index.js';
-import { and, eq } from 'drizzle-orm';
-import { asyncHandler } from '../middleware/errorHandler.js';
-import { logger } from '../utils/logger.js';
+import { db, seoProjects, users } from '@/db/index.js';
+import { eq } from 'drizzle-orm';
+import { asyncHandler } from '@/middleware/errorHandler.js';
+import { logger } from '@/utils/logger.js';
+import { authenticate } from '@/middleware/auth.js';
+import { seoService } from '@/services/seoService.js';
 const router = Router();
 // Validation schemas
 const ProjectsListQuerySchema = z.object({
@@ -14,14 +16,13 @@ const ProjectIdParamsSchema = z.object({
     id: z.string().uuid(),
 });
 const CreateProjectSchema = z.object({
-    name: z.string().min(1).max(255),
+    name: z.string().min(1, 'Project name is required').max(255, 'Project name must be less than 255 characters'),
     description: z.string().optional(),
-    domain: z.string().url(),
+    domain: z.string().url('Domain must be a valid URL'),
     targetRegion: z.string().default('Türkiye'),
-    primaryKeywords: z.array(z.string()).min(1),
-    targetDomainAuthority: z.number().min(0).max(100).default(50),
-    targetCtrIncrease: z.number().min(0).max(100).default(25),
-    ownerId: z.string().uuid(),
+    primaryKeywords: z.array(z.string()).min(1, 'At least one keyword is required').optional().default([]),
+    targetDomainAuthority: z.number().min(0).max(100).default(50).optional(),
+    targetCtrIncrease: z.number().min(0).max(100).default(25).optional(),
 });
 const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true });
 /**
@@ -56,43 +57,17 @@ const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true }
  *                   items:
  *                     $ref: '#/components/schemas/SeoProject'
  */
-router.get('/', asyncHandler(async (req, res) => {
-    const { ownerId, status } = ProjectsListQuerySchema.parse(req.query);
-    const conditions = [];
-    if (ownerId) {
-        conditions.push(eq(seoProjects.ownerId, ownerId));
+router.get('/', authenticate, asyncHandler(async (req, res) => {
+    // Ensure user is authenticated
+    if (!req.user?.id) {
+        return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'Authentication required to list projects',
+        });
     }
-    if (status) {
-        conditions.push(eq(seoProjects.status, status));
-    }
-    const baseQuery = db
-        .select({
-        id: seoProjects.id,
-        name: seoProjects.name,
-        description: seoProjects.description,
-        domain: seoProjects.domain,
-        targetRegion: seoProjects.targetRegion,
-        primaryKeywords: seoProjects.primaryKeywords,
-        targetDomainAuthority: seoProjects.targetDomainAuthority,
-        targetCtrIncrease: seoProjects.targetCtrIncrease,
-        status: seoProjects.status,
-        createdAt: seoProjects.createdAt,
-        updatedAt: seoProjects.updatedAt,
-        owner: {
-            id: users.id,
-            email: users.email,
-            firstName: users.firstName,
-            lastName: users.lastName,
-        },
-    })
-        .from(seoProjects)
-        .leftJoin(users, eq(seoProjects.ownerId, users.id));
-    const whereClause = conditions.length === 1
-        ? conditions[0]
-        : conditions.length > 1
-            ? and(...conditions)
-            : undefined;
-    const projects = await (whereClause ? baseQuery.where(whereClause) : baseQuery);
+    // Get user's projects using service
+    const projects = await seoService.getUserProjects(req.user.id);
+    logger.debug('Projects retrieved for user', { userId: req.user.id, count: projects.length });
     return res.json({ projects });
 }));
 /**
@@ -210,37 +185,32 @@ router.get('/:id', asyncHandler(async (req, res) => {
  *       404:
  *         description: Owner not found
  */
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
+    // Ensure user is authenticated
+    if (!req.user?.id) {
+        return res.status(401).json({
+            error: 'Unauthorized',
+            message: 'Authentication required to create a project',
+        });
+    }
     const validatedData = CreateProjectSchema.parse(req.body);
     // Verify owner exists
     const owner = await db
         .select()
         .from(users)
-        .where(eq(users.id, validatedData.ownerId))
+        .where(eq(users.id, req.user.id))
         .limit(1);
     if (owner.length === 0) {
+        logger.warn('Project creation attempted with non-existent user', { userId: req.user.id });
         return res.status(404).json({
             error: 'Owner not found',
-            message: `User with ID ${validatedData.ownerId} not found`,
+            message: `User with ID ${req.user.id} not found`,
         });
     }
-    const createdProjects = await db
-        .insert(seoProjects)
-        .values(validatedData)
-        .returning();
-    const [project] = createdProjects;
-    if (!project) {
-        logger.error('Project creation returned empty result', { ownerId: validatedData.ownerId });
-        return res.status(500).json({
-            error: 'creation_failed',
-            message: 'Project could not be created',
-        });
-    }
-    logger.info('Project created', {
-        projectId: project.id,
-        name: project.name,
-        domain: project.domain,
-        ownerId: validatedData.ownerId,
+    // Use service to create project
+    const project = await seoService.createProject({
+        ...validatedData,
+        ownerId: req.user.id,
     });
     return res.status(201).json(project);
 }));

@@ -1,10 +1,8 @@
-import type { Application } from "express";
 /**
- * Observability MCP Server
- * Port: 5558
- * Endpoint: /observability
- * Purpose: Model Context Protocol server for Observability module
+ * POST /observability/query
+ * MCP query endpoint for Observability context
+ * Requires authentication
  */
-declare const app: Application;
+declare const app: import("express").Application;
 export default app;
 //# sourceMappingURL=observability-server.d.ts.map

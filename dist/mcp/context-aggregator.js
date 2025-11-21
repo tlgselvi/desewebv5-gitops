@@ -1,5 +1,5 @@
-import { logger } from "../utils/logger.js";
-import { redis } from "../services/storage/redisClient.js";
+import { logger } from "@/utils/logger.js";
+import { redis } from "@/services/storage/redisClient.js";
 // Module priorities (higher = more important)
 const MODULE_PRIORITIES = {
     finbot: 4,

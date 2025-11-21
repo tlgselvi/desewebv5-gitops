@@ -1,10 +1,10 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { db, contentTemplates, generatedContent, seoProjects } from '../db/index.js';
+import { db, contentTemplates, generatedContent, seoProjects } from '@/db/index.js';
 import { and, eq } from 'drizzle-orm';
-import { contentLogger } from '../utils/logger.js';
-import { recordContentGeneration } from '../middleware/prometheus.js';
-import { config } from '../config/index.js';
+import { contentLogger } from '@/utils/logger.js';
+import { recordContentGeneration } from '@/middleware/prometheus.js';
+import { config } from '@/config/index.js';
 // Validation schemas
 const ContentGenerationRequestSchema = z.object({
     projectId: z.string().uuid(),

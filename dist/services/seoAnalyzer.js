@@ -2,10 +2,10 @@ import lighthouse from 'lighthouse';
 import puppeteer from 'puppeteer';
 import { URL } from 'url';
 import { z } from 'zod';
-import { db, seoMetrics, seoProjects } from '../db/index.js';
+import { db, seoMetrics, seoProjects } from '@/db/index.js';
 import { eq } from 'drizzle-orm';
-import { seoLogger } from '../utils/logger.js';
-import { recordSeoAnalysis } from '../middleware/prometheus.js';
+import { seoLogger } from '@/utils/logger.js';
+import { recordSeoAnalysis } from '@/middleware/prometheus.js';
 // Validation schemas
 const SeoAnalysisRequestSchema = z.object({
     projectId: z.string().uuid(),

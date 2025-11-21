@@ -1,5 +1,5 @@
-import { config } from "../../config/index.js";
-import { logger } from "../../utils/logger.js";
+import { config } from "@/config/index.js";
+import { logger } from "@/utils/logger.js";
 const DEFAULT_TIMEOUT_MS = 5000;
 const getTimeout = () => {
     return config.mcpDashboard.prometheus.timeoutMs ?? DEFAULT_TIMEOUT_MS;

@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { metricsHandler, recordUserAction } from '../middleware/prometheus.js';
-import { logger } from '../utils/logger.js';
+import { metricsHandler, recordUserAction } from '@/middleware/prometheus.js';
+import { logger } from '@/utils/logger.js';
 const router = Router();
 // GET metrics endpoint for Prometheus scraping
 router.get('/', metricsHandler);

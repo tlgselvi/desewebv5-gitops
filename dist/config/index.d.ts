@@ -28,6 +28,7 @@ declare const configSchema: z.ZodObject<{
         bcryptRounds: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         rateLimitWindowMs: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
         rateLimitMaxRequests: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
+        cookieKey: z.ZodDefault<z.ZodString>;
     }, z.core.$strip>;
     apis: z.ZodObject<{
         openai: z.ZodObject<{
@@ -37,6 +38,11 @@ declare const configSchema: z.ZodObject<{
             searchConsoleApiKey: z.ZodOptional<z.ZodString>;
             businessApiKey: z.ZodOptional<z.ZodString>;
             mapsApiKey: z.ZodOptional<z.ZodString>;
+            oauth: z.ZodOptional<z.ZodObject<{
+                clientId: z.ZodOptional<z.ZodString>;
+                clientSecret: z.ZodOptional<z.ZodString>;
+                callbackUrl: z.ZodDefault<z.ZodString>;
+            }, z.core.$strip>>;
         }, z.core.$strip>;
         ahrefs: z.ZodObject<{
             apiKey: z.ZodOptional<z.ZodString>;
@@ -221,6 +227,7 @@ declare const config: {
         bcryptRounds: number;
         rateLimitWindowMs: number;
         rateLimitMaxRequests: number;
+        cookieKey: string;
     };
     apis: {
         openai: {
@@ -230,6 +237,11 @@ declare const config: {
             searchConsoleApiKey?: string | undefined;
             businessApiKey?: string | undefined;
             mapsApiKey?: string | undefined;
+            oauth?: {
+                callbackUrl: string;
+                clientId?: string | undefined;
+                clientSecret?: string | undefined;
+            } | undefined;
         };
         ahrefs: {
             apiKey?: string | undefined;

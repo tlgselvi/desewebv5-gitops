@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { checkDatabaseConnection } from '../db/index.js';
-import { redis } from '../services/storage/redisClient.js';
-import { logger } from '../utils/logger.js';
+import { checkDatabaseConnection } from '@/db/index.js';
+import { redis } from '@/services/storage/redisClient.js';
+import { logger } from '@/utils/logger.js';
 const router = Router();
 /**
  * @swagger

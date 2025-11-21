@@ -50,10 +50,15 @@ export function TableHead({ className, ...props }: HTMLAttributes<HTMLTableCellE
   );
 }
 
-export function TableCell({ className, ...props }: HTMLAttributes<HTMLTableCellElement>) {
+export function TableCell({ 
+  className, 
+  colSpan,
+  ...props 
+}: HTMLAttributes<HTMLTableCellElement> & { colSpan?: number }) {
   return (
     <td
       className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+      colSpan={colSpan}
       {...props}
     />
   );

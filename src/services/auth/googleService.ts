@@ -179,6 +179,9 @@ export const googleService = {
       } else {
         // User exists, return existing user
         const existingUser = existingUsers[0];
+        if (!existingUser) {
+          throw new Error("User not found in database");
+        }
         userId = existingUser.id;
         userRole = existingUser.role;
         firstName = existingUser.firstName;
@@ -196,16 +199,16 @@ export const googleService = {
       }
 
       // Generate JWT token
-      const token = jwt.sign(
-        {
-          id: userId,
-          email,
-          role: userRole,
-          permissions: userRole === "admin" ? ["admin", "mcp.dashboard.read"] : [],
-        },
-        config.security.jwtSecret,
-        { expiresIn: config.security.jwtExpiresIn },
-      );
+      const jwtPayload = {
+        id: userId,
+        email,
+        role: userRole,
+        permissions: userRole === "admin" ? ["admin", "mcp.dashboard.read"] : [],
+      };
+      const jwtOptions: jwt.SignOptions = {
+        expiresIn: config.security.jwtExpiresIn as string,
+      };
+      const token = jwt.sign(jwtPayload, config.security.jwtSecret, jwtOptions);
 
       return {
         user: {

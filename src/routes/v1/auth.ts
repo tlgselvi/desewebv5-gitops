@@ -113,16 +113,16 @@ authRouter.get(
       }
 
       // Generate JWT token for frontend (maintain compatibility with existing frontend)
-      const token = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          permissions: user.role === "admin" ? ["admin", "mcp.dashboard.read"] : [],
-        },
-        config.security.jwtSecret,
-        { expiresIn: config.security.jwtExpiresIn },
-      );
+      const jwtPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        permissions: user.role === "admin" ? ["admin", "mcp.dashboard.read"] : [],
+      };
+      const jwtOptions = {
+        expiresIn: config.security.jwtExpiresIn as string,
+      };
+      const token = jwt.sign(jwtPayload, config.security.jwtSecret, jwtOptions);
 
       logger.info("Google OAuth login successful", {
         email: user.email,
