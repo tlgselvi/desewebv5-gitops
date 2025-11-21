@@ -63,15 +63,16 @@ passport.deserializeUser(async (id: unknown, done) => {
   }
 });
 
-// Google OAuth Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: config.apis.google.oauth?.clientId || "",
-      clientSecret: config.apis.google.oauth?.clientSecret || "",
-      callbackURL: config.apis.google.oauth?.callbackUrl || "",
-      scope: ["profile", "email"],
-    },
+// Google OAuth Strategy (only if credentials are configured)
+if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: config.apis.google.oauth.clientId,
+        clientSecret: config.apis.google.oauth.clientSecret,
+        callbackURL: config.apis.google.oauth.callbackUrl || "",
+        scope: ["profile", "email"],
+      },
     async (accessToken, refreshToken, profile, done) => {
       try {
         // Extract user info from Google profile
@@ -160,8 +161,12 @@ passport.use(
         return done(error, undefined);
       }
     },
-  ),
-);
+    ),
+  );
+  logger.info("Google OAuth strategy configured");
+} else {
+  logger.warn("Google OAuth credentials not configured. Google OAuth login will be disabled.");
+}
 
 // Passport is already configured, no need to export
 // Import this file to initialize Passport strategies
