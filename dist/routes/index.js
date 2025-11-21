@@ -9,8 +9,8 @@ import { autoRemediationRoutes } from './autoRemediation.js';
 import { jwksRoutes } from './jwks.js';
 import { mcpDashboardRoutes } from './mcpDashboard.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
-import { config } from '@/config/index.js';
-import { v1Router } from '@/routes/v1/index.js';
+import { config } from '../config/index.js';
+import { v1Router } from './v1/index.js';
 export function setupRoutes(app) {
     const apiPrefix = `/api/${config.apiVersion}`;
     // Health check routes (most specific, no prefix)

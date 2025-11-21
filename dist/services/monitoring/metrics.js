@@ -1,5 +1,5 @@
 import client from "prom-client";
-import { register } from "@/middleware/prometheus.js";
+import { register } from "../../middleware/prometheus.js";
 const METRIC_ALREADY_EXISTS = "A metric with the name";
 const registerMetric = (metric) => {
     try {

@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, users } from "@/db/index.js";
+import { db, users } from "../../db/index.js";
 import { eq } from "drizzle-orm";
-import { asyncHandler } from "@/middleware/errorHandler.js";
-import { logger } from "@/utils/logger.js";
+import { asyncHandler } from "../../middleware/errorHandler.js";
+import { logger } from "../../utils/logger.js";
 const adminRouter = Router();
 /**
  * GET /admin/users
@@ -46,6 +46,15 @@ const updateRoleSchema = z.object({
  */
 adminRouter.patch("/users/:id/role", asyncHandler(async (req, res) => {
     const { id } = req.params;
+    // Validate id parameter
+    if (!id || typeof id !== "string") {
+        res.status(400).json({
+            success: false,
+            error: "invalid_id",
+            message: "Invalid user ID",
+        });
+        return;
+    }
     const adminId = req.user?.id;
     // Validate request body
     const validationResult = updateRoleSchema.safeParse(req.body);
@@ -54,7 +63,7 @@ adminRouter.patch("/users/:id/role", asyncHandler(async (req, res) => {
             success: false,
             error: "validation_error",
             message: "Invalid request body",
-            details: validationResult.error.errors,
+            details: validationResult.error.issues,
         });
         return;
     }
@@ -65,7 +74,7 @@ adminRouter.patch("/users/:id/role", asyncHandler(async (req, res) => {
         .from(users)
         .where(eq(users.id, id))
         .limit(1);
-    if (existingUsers.length === 0) {
+    if (existingUsers.length === 0 || !existingUsers[0]) {
         res.status(404).json({
             success: false,
             error: "user_not_found",

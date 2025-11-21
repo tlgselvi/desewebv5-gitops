@@ -5,7 +5,7 @@ metadata:
   labels:
     app: dese-frontend
     tier: frontend
-    version: v6.8.1
+    version: v6.8.2
 spec:
   replicas: 1
   selector:
@@ -16,11 +16,11 @@ spec:
       labels:
         app: dese-frontend
         tier: frontend
-        version: v6.8.1
+        version: v6.8.2
     spec:
       containers:
         - name: dese-frontend
-          image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-frontend:v6.8.1
+          image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-frontend:v6.8.2
           imagePullPolicy: Always
           ports:
             - containerPort: 3000

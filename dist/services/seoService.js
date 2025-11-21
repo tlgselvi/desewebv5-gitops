@@ -1,6 +1,6 @@
-import { db, seoProjects } from '@/db/index.js';
+import { db, seoProjects } from '../db/index.js';
 import { eq, desc } from 'drizzle-orm';
-import { logger } from '@/utils/logger.js';
+import { logger } from '../utils/logger.js';
 /**
  * SEO Service
  * Handles business logic for SEO projects

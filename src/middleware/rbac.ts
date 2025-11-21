@@ -1,4 +1,4 @@
-import type { Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { logger } from "@/utils/logger.js";
 import { CustomError } from "@/middleware/errorHandler.js";
 import type { RequestWithUser } from "@/middleware/auth.js";
@@ -12,21 +12,22 @@ import type { RequestWithUser } from "@/middleware/auth.js";
  */
 export const requireRole = (allowedRoles: string[]) => {
   return (
-    req: RequestWithUser,
+    req: Request,
     res: Response,
     next: NextFunction,
   ): void => {
     try {
-      if (!req.user) {
+      const reqWithUser = req as RequestWithUser;
+      if (!reqWithUser.user) {
         throw new CustomError("User not authenticated", 401);
       }
 
-      const { role } = req.user;
+      const { role } = reqWithUser.user;
 
       // Check if user has one of the allowed roles
       if (!allowedRoles.includes(role)) {
         logger.warn("Role-based authorization failed", {
-          userId: req.user.id,
+          userId: reqWithUser.user.id,
           userRole: role,
           allowedRoles,
           path: req.path,
@@ -40,7 +41,7 @@ export const requireRole = (allowedRoles: string[]) => {
       }
 
       logger.debug("Role-based authorization successful", {
-        userId: req.user.id,
+        userId: reqWithUser.user.id,
         role,
         allowedRoles,
       });

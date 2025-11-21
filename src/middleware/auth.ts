@@ -6,8 +6,9 @@ import { CustomError } from "@/middleware/errorHandler.js";
 
 /**
  * Extended Request interface with user information
+ * Uses Omit to override Express's built-in user property (from Passport.js)
  */
-export interface RequestWithUser extends Request {
+export interface RequestWithUser extends Omit<Request, 'user'> {
   user?: {
     id: string;
     email: string;
@@ -21,11 +22,14 @@ export interface RequestWithUser extends Request {
  * Validates JWT token from Authorization header
  */
 export const authenticate = (
-  req: RequestWithUser,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): void => {
   try {
+    // Cast to RequestWithUser for type safety
+    const reqWithUser = req as RequestWithUser;
+
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
 
@@ -57,7 +61,7 @@ export const authenticate = (
       };
 
       // Attach user info to request
-      req.user = {
+      reqWithUser.user = {
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,
@@ -105,16 +109,17 @@ export const authenticate = (
  */
 export const authorize = (requiredRolesOrPermissions: string[]) => {
   return (
-    req: RequestWithUser,
+    req: Request,
     res: Response,
     next: NextFunction,
   ): void => {
     try {
-      if (!req.user) {
+      const reqWithUser = req as RequestWithUser;
+      if (!reqWithUser.user) {
         throw new CustomError("User not authenticated", 401);
       }
 
-      const { role, permissions = [] } = req.user;
+      const { role, permissions = [] } = reqWithUser.user;
 
       // Check if user has required role or permission
       const hasAccess =
@@ -123,7 +128,7 @@ export const authorize = (requiredRolesOrPermissions: string[]) => {
 
       if (!hasAccess) {
         logger.warn("Authorization failed", {
-          userId: req.user.id,
+          userId: reqWithUser.user.id,
           userRole: role,
           userPermissions: permissions,
           required: requiredRolesOrPermissions,
@@ -140,7 +145,7 @@ export const authorize = (requiredRolesOrPermissions: string[]) => {
       }
 
       logger.debug("Authorization successful", {
-        userId: req.user.id,
+        userId: reqWithUser.user.id,
         role,
         required: requiredRolesOrPermissions,
       });
@@ -167,11 +172,12 @@ export const authorize = (requiredRolesOrPermissions: string[]) => {
  * Useful for endpoints that work with or without authentication
  */
 export const optionalAuth = (
-  req: RequestWithUser,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): void => {
   try {
+    const reqWithUser = req as RequestWithUser;
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -193,7 +199,7 @@ export const optionalAuth = (
         permissions?: string[];
       };
 
-      req.user = {
+      reqWithUser.user = {
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,

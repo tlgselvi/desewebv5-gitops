@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { contentGenerator } from '@/services/contentGenerator.js';
-import { asyncHandler } from '@/middleware/errorHandler.js';
-import { contentLogger } from '@/utils/logger.js';
+import { contentGenerator } from '../services/contentGenerator.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { contentLogger } from '../utils/logger.js';
 const router = Router();
 // Validation schemas
 const ContentGenerationSchema = z.object({

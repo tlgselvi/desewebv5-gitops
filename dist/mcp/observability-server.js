@@ -1,10 +1,10 @@
-import { asyncHandler } from "@/middleware/errorHandler.js";
-import { authenticate } from "@/middleware/auth.js";
-import { config } from "@/config/index.js";
-import { createMcpServer } from "@/lib/mcp-server.js";
-import { logger } from "@/utils/logger.js";
-import { redis } from "@/services/storage/redisClient.js";
-import { initializeMCPWebSocket } from "@/mcp/websocket-server.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { authenticate } from "../middleware/auth.js";
+import { config } from "../config/index.js";
+import { createMcpServer } from "../lib/mcp-server.js";
+import { logger } from "../utils/logger.js";
+import { redis } from "../services/storage/redisClient.js";
+import { initializeMCPWebSocket } from "../mcp/websocket-server.js";
 import { getAggregatedContext, selectContextByPriority } from "./context-aggregator.js";
 /**
  * Observability MCP Server

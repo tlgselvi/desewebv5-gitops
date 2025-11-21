@@ -1,4 +1,4 @@
-import type { AnomalyScore, AnomalySeverity } from "@/services/aiops/anomalyDetector.js";
+import type { AnomalyScore, AnomalySeverity } from "../aiops/anomalyDetector.js";
 interface AnomalyAlert {
     id: string;
     metric: string;

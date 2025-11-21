@@ -1,6 +1,6 @@
 import { ZodError } from 'zod';
-import { logger } from '@/utils/logger.js';
-import { config } from '@/config/index.js';
+import { logger } from '../utils/logger.js';
+import { config } from '../config/index.js';
 export class CustomError extends Error {
     statusCode;
     isOperational;
@@ -35,6 +35,7 @@ const toAppError = (error) => {
     return new CustomError('Internal Server Error', 500);
 };
 export const errorHandler = (error, req, res, _next) => {
+    const reqWithUser = req;
     const zodError = error instanceof ZodError ? error : null;
     const appError = zodError ? new CustomError('Validation Error', 400) : toAppError(error);
     let statusCode = appError.statusCode || 500;
@@ -93,7 +94,7 @@ export const errorHandler = (error, req, res, _next) => {
                 params: req.params,
                 query: req.query,
             },
-            user: req.user?.id,
+            user: reqWithUser.user?.id,
         });
     }
     else {
@@ -108,7 +109,7 @@ export const errorHandler = (error, req, res, _next) => {
                 params: req.params,
                 query: req.query,
             },
-            user: req.user?.id,
+            user: reqWithUser.user?.id,
         });
     }
     // Send error response

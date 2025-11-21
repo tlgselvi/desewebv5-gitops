@@ -1,7 +1,7 @@
-import { WebSocketServer, WebSocket } from "ws";
-import { logger } from "@/utils/logger.js";
+import { WebSocketServer, WebSocket } from "../ws";
+import { logger } from "../utils/logger.js";
 import jwt from "jsonwebtoken";
-import { config } from "@/config/index.js";
+import { config } from "../config/index.js";
 let wss = null;
 const clients = new Map();
 const topicSubscriptions = new Map(); // topic -> Set of client IDs

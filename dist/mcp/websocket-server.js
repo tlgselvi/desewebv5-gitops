@@ -1,8 +1,8 @@
-import { WebSocketServer, WebSocket } from "ws";
-import { logger } from "@/utils/logger.js";
+import { WebSocketServer, WebSocket } from "../ws";
+import { logger } from "../utils/logger.js";
 import jwt from "jsonwebtoken";
-import { config } from "@/config/index.js";
-import { decrementWebSocketActiveConnections, incrementWebSocketActiveConnections, recordWebSocketEventPublished, } from '@/services/monitoring/metrics.js';
+import { config } from "../config/index.js";
+import { decrementWebSocketActiveConnections, incrementWebSocketActiveConnections, recordWebSocketEventPublished, } from '../services/monitoring/metrics.js';
 const mcpServers = new Map();
 const allowedMessageModules = new Set([
     "finbot",

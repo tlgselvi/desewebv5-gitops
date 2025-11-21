@@ -1,12 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-export interface RequestWithUser extends Request {
-    user?: {
-        id: string;
-        email: string;
-        role: string;
-    };
+import type { RequestWithUser } from "./auth.js";
+export interface RequestWithLogger extends RequestWithUser {
     requestId?: string;
     startTime?: number;
 }
-export declare const requestLogger: (req: RequestWithUser, res: Response, next: NextFunction) => void;
+export declare const requestLogger: (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=requestLogger.d.ts.map

@@ -1,13 +1,15 @@
 import jwt from "jsonwebtoken";
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
-import { CustomError } from "@/middleware/errorHandler.js";
+import { config } from "../config/index.js";
+import { logger } from "../utils/logger.js";
+import { CustomError } from "./errorHandler.js";
 /**
  * JWT Authentication Middleware
  * Validates JWT token from Authorization header
  */
 export const authenticate = (req, res, next) => {
     try {
+        // Cast to RequestWithUser for type safety
+        const reqWithUser = req;
         // Get token from Authorization header
         const authHeader = req.headers.authorization;
         if (!authHeader) {
@@ -26,7 +28,7 @@ export const authenticate = (req, res, next) => {
         try {
             const decoded = jwt.verify(token, config.security.jwtSecret);
             // Attach user info to request
-            req.user = {
+            reqWithUser.user = {
                 id: decoded.id,
                 email: decoded.email,
                 role: decoded.role,
@@ -76,16 +78,17 @@ export const authenticate = (req, res, next) => {
 export const authorize = (requiredRolesOrPermissions) => {
     return (req, res, next) => {
         try {
-            if (!req.user) {
+            const reqWithUser = req;
+            if (!reqWithUser.user) {
                 throw new CustomError("User not authenticated", 401);
             }
-            const { role, permissions = [] } = req.user;
+            const { role, permissions = [] } = reqWithUser.user;
             // Check if user has required role or permission
             const hasAccess = requiredRolesOrPermissions.includes(role) ||
                 requiredRolesOrPermissions.some((perm) => permissions.includes(perm));
             if (!hasAccess) {
                 logger.warn("Authorization failed", {
-                    userId: req.user.id,
+                    userId: reqWithUser.user.id,
                     userRole: role,
                     userPermissions: permissions,
                     required: requiredRolesOrPermissions,
@@ -97,7 +100,7 @@ export const authorize = (requiredRolesOrPermissions) => {
                 throw new CustomError("Insufficient permissions. Required: " + requiredRolesOrPermissions.join(", "), 403);
             }
             logger.debug("Authorization successful", {
-                userId: req.user.id,
+                userId: reqWithUser.user.id,
                 role,
                 required: requiredRolesOrPermissions,
             });
@@ -125,6 +128,7 @@ export const authorize = (requiredRolesOrPermissions) => {
  */
 export const optionalAuth = (req, res, next) => {
     try {
+        const reqWithUser = req;
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             // No token provided, continue without user
@@ -136,7 +140,7 @@ export const optionalAuth = (req, res, next) => {
         }
         try {
             const decoded = jwt.verify(token, config.security.jwtSecret);
-            req.user = {
+            reqWithUser.user = {
                 id: decoded.id,
                 email: decoded.email,
                 role: decoded.role,

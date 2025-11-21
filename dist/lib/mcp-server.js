@@ -4,8 +4,8 @@ import express from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { createServer } from "http";
-import { logger } from "@/utils/logger.js";
-import { optionalAuth } from "@/middleware/auth.js";
+import { logger } from "../utils/logger.js";
+import { optionalAuth } from "../middleware/auth.js";
 const MCP_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const MCP_RATE_LIMIT_MAX = 100;
 export const createMcpServer = (config) => {

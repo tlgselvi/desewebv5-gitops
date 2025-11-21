@@ -1,6 +1,6 @@
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
-import { db, users } from "@/db/index.js";
+import { config } from "../../config/index.js";
+import { logger } from "../../utils/logger.js";
+import { db, users } from "../../db/index.js";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -162,10 +162,11 @@ export const googleService = {
                 role: userRole,
                 permissions: userRole === "admin" ? ["admin", "mcp.dashboard.read"] : [],
             };
-            const jwtOptions = {
-                expiresIn: config.security.jwtExpiresIn,
-            };
-            const token = jwt.sign(jwtPayload, config.security.jwtSecret, jwtOptions);
+            const expiresInValue = config.security.jwtExpiresIn ?? "24h";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const token = jwt.sign(jwtPayload, config.security.jwtSecret, {
+                expiresIn: expiresInValue,
+            });
             return {
                 user: {
                     id: userId,

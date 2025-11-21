@@ -1,8 +1,8 @@
 import { Router } from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
+import { config } from "../../config/index.js";
+import { logger } from "../../utils/logger.js";
 const authRouter = Router();
 authRouter.post("/login", (req, res) => {
     const { username = "admin@poolfab.com.tr" } = req.body ?? {};
@@ -48,11 +48,12 @@ authRouter.get("/google", (req, res, next) => {
     // Check if Google OAuth is configured
     if (!config.apis.google.oauth?.clientId || !config.apis.google.oauth?.clientSecret) {
         logger.error("Google OAuth not configured");
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: "google_oauth_not_configured",
             message: "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.",
         });
+        return;
     }
     next();
 }, passport.authenticate("google", {
@@ -99,10 +100,11 @@ authRouter.get("/google/callback", passport.authenticate("google", {
             role: user.role,
             permissions: user.role === "admin" ? ["admin", "mcp.dashboard.read"] : [],
         };
-        const jwtOptions = {
-            expiresIn: config.security.jwtExpiresIn,
-        };
-        const token = jwt.sign(jwtPayload, config.security.jwtSecret, jwtOptions);
+        const expiresInValue = config.security.jwtExpiresIn ?? "24h";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const token = jwt.sign(jwtPayload, config.security.jwtSecret, {
+            expiresIn: expiresInValue,
+        });
         logger.info("Google OAuth login successful", {
             email: user.email,
             userId: user.id,

@@ -221,15 +221,16 @@ if (!skipNext && nextHandler) {
   });
 } else {
   // In Hybrid Mode, only handle API routes - ignore frontend routes
-  app.use((req: Request, res: Response) => {
+  app.use((req: Request, res: Response): void => {
     // Only return 404 for API routes that don't exist
     // Frontend routes (like /login, /dashboard, etc.) should be ignored
     if (req.path.startsWith("/api/") && !res.headersSent) {
-      return res.status(404).json({
+      res.status(404).json({
         error: "Not Found",
         message: "API endpoint not found. Frontend runs separately on port 3001.",
         path: req.path,
       });
+      return;
     }
     // For non-API routes, do nothing (they're handled by frontend)
     // This prevents backend from interfering with frontend routes

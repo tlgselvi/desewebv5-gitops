@@ -30,7 +30,7 @@ const CreateProjectSchema = z.object({
   targetCtrIncrease: z.number().min(0).max(100).default(25).optional(),
 });
 
-const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true });
+const UpdateProjectSchema = CreateProjectSchema.partial();
 
 /**
  * @swagger
@@ -64,9 +64,10 @@ const UpdateProjectSchema = CreateProjectSchema.partial().omit({ ownerId: true }
  *                   items:
  *                     $ref: '#/components/schemas/SeoProject'
  */
-router.get('/', authenticate, asyncHandler(async (req: RequestWithUser, res: Response): Promise<Response> => {
+router.get('/', authenticate, asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+  const reqWithUser = req as RequestWithUser;
   // Ensure user is authenticated
-  if (!req.user?.id) {
+  if (!reqWithUser.user?.id) {
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Authentication required to list projects',
@@ -74,9 +75,9 @@ router.get('/', authenticate, asyncHandler(async (req: RequestWithUser, res: Res
   }
 
   // Get user's projects using service
-  const projects = await seoService.getUserProjects(req.user.id);
+  const projects = await seoService.getUserProjects(reqWithUser.user.id);
 
-  logger.debug('Projects retrieved for user', { userId: req.user.id, count: projects.length });
+  logger.debug('Projects retrieved for user', { userId: reqWithUser.user.id, count: projects.length });
 
   return res.json({ projects });
 }));
@@ -200,9 +201,10 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response): Promise<Res
  *       404:
  *         description: Owner not found
  */
-router.post('/', authenticate, asyncHandler(async (req: RequestWithUser, res: Response): Promise<Response> => {
+router.post('/', authenticate, asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+  const reqWithUser = req as RequestWithUser;
   // Ensure user is authenticated
-  if (!req.user?.id) {
+  if (!reqWithUser.user?.id) {
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Authentication required to create a project',
@@ -215,21 +217,27 @@ router.post('/', authenticate, asyncHandler(async (req: RequestWithUser, res: Re
   const owner = await db
     .select()
     .from(users)
-    .where(eq(users.id, req.user.id))
+    .where(eq(users.id, reqWithUser.user.id))
     .limit(1);
 
   if (owner.length === 0) {
-    logger.warn('Project creation attempted with non-existent user', { userId: req.user.id });
+    logger.warn('Project creation attempted with non-existent user', { userId: reqWithUser.user.id });
     return res.status(404).json({
       error: 'Owner not found',
-      message: `User with ID ${req.user.id} not found`,
+      message: `User with ID ${reqWithUser.user.id} not found`,
     });
   }
 
   // Use service to create project
   const project = await seoService.createProject({
-    ...validatedData,
-    ownerId: req.user.id,
+    name: validatedData.name,
+    description: validatedData.description ?? null,
+    domain: validatedData.domain,
+    targetRegion: validatedData.targetRegion ?? 'Türkiye',
+    primaryKeywords: validatedData.primaryKeywords ?? [],
+    targetDomainAuthority: validatedData.targetDomainAuthority ?? 50,
+    targetCtrIncrease: validatedData.targetCtrIncrease ?? 25,
+    ownerId: reqWithUser.user.id,
   });
 
   return res.status(201).json(project);

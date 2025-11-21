@@ -1,5 +1,5 @@
 import { Server as HTTPServer } from "http";
-import { WebSocketServer } from "ws";
+import { WebSocketServer } from "../ws";
 /**
  * Initialize WebSocket gateway
  */

@@ -7,21 +7,21 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import next from "next";
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
-import { checkDatabaseConnection, closeDatabaseConnection, } from "@/db/index.js";
-import { errorHandler } from "@/middleware/errorHandler.js";
-import { requestLogger } from "@/middleware/requestLogger.js";
-import { prometheusMiddleware } from "@/middleware/prometheus.js";
-import { sanitizeInput, cspHeaders, requestSizeLimiter, } from "@/middleware/security.js";
-import { setupRoutes } from "@/routes/index.js";
-import { setupSwagger } from "@/utils/swagger.js";
-import { gracefulShutdown } from "@/utils/gracefulShutdown.js";
-import { initializeWebSocketGateway, close as closeWebSocketGateway, } from "@/websocket/gateway.js";
-import { startFinBotConsumer, stopFinBotConsumer, } from "@/bus/streams/finbot-consumer.js";
-import { auditMiddleware } from "@/middleware/audit.js";
+import { config } from "./config/index.js";
+import { logger } from "./utils/logger.js";
+import { checkDatabaseConnection, closeDatabaseConnection, } from "./db/index.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { requestLogger } from "./middleware/requestLogger.js";
+import { prometheusMiddleware } from "./middleware/prometheus.js";
+import { sanitizeInput, cspHeaders, requestSizeLimiter, } from "./middleware/security.js";
+import { setupRoutes } from "./routes/index.js";
+import { setupSwagger } from "./utils/swagger.js";
+import { gracefulShutdown } from "./utils/gracefulShutdown.js";
+import { initializeWebSocketGateway, close as closeWebSocketGateway, } from "./websocket/gateway.js";
+import { startFinBotConsumer, stopFinBotConsumer, } from "./bus/streams/finbot-consumer.js";
+import { auditMiddleware } from "./middleware/audit.js";
 // Passport stratejisini yükle (sadece import etmek yeterli)
-import "@/services/passport.js";
+import "./services/passport.js";
 const dev = config.nodeEnv !== "production";
 // Hybrid Mode: Skip Next.js if SKIP_NEXT is set (frontend runs separately)
 const skipNext = process.env.SKIP_NEXT === "true";
@@ -176,11 +176,12 @@ else {
         // Only return 404 for API routes that don't exist
         // Frontend routes (like /login, /dashboard, etc.) should be ignored
         if (req.path.startsWith("/api/") && !res.headersSent) {
-            return res.status(404).json({
+            res.status(404).json({
                 error: "Not Found",
                 message: "API endpoint not found. Frontend runs separately on port 3001.",
                 path: req.path,
             });
+            return;
         }
         // For non-API routes, do nothing (they're handled by frontend)
         // This prevents backend from interfering with frontend routes

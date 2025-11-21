@@ -4,8 +4,8 @@ import { readFile, writeFile } from "fs/promises";
 import { exec } from "child_process";
 import { join } from "path";
 import { promisify } from "util";
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
+import { config } from "../config/index.js";
+import { logger } from "../utils/logger.js";
 const execAsync = promisify(exec);
 /**
  * Master Control Service v6.6

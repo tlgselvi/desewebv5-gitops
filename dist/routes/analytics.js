@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db, seoMetrics, generatedContent, seoAlerts } from '@/db/index.js';
+import { db, seoMetrics, generatedContent, seoAlerts } from '../db/index.js';
 import { eq, desc, gte, sql, and } from 'drizzle-orm';
-import { asyncHandler } from '@/middleware/errorHandler.js';
-import { analyticsLogger } from '@/utils/logger.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { analyticsLogger } from '../utils/logger.js';
 const router = Router();
 // Validation schemas
 const AnalyticsQuerySchema = z.object({

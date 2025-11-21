@@ -1,6 +1,6 @@
 import { mean, quantileSeq } from "mathjs";
-import { logger } from "@/utils/logger.js";
-import { AnomalyScorer } from "@/services/aiops/anomalyScorer.js";
+import { logger } from "../../utils/logger.js";
+import { AnomalyScorer } from "../aiops/anomalyScorer.js";
 const severityOrder = {
     low: 1,
     medium: 2,

@@ -205,10 +205,11 @@ export const googleService = {
         role: userRole,
         permissions: userRole === "admin" ? ["admin", "mcp.dashboard.read"] : [],
       };
-      const jwtOptions: jwt.SignOptions = {
-        expiresIn: config.security.jwtExpiresIn as string,
-      };
-      const token = jwt.sign(jwtPayload, config.security.jwtSecret, jwtOptions);
+      const expiresInValue = config.security.jwtExpiresIn ?? "24h";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const token = jwt.sign(jwtPayload, config.security.jwtSecret, {
+        expiresIn: expiresInValue as any,
+      });
 
       return {
         user: {

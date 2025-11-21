@@ -1,8 +1,8 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
-import { db, users } from "@/db/index.js";
+import { config } from "../config/index.js";
+import { logger } from "../utils/logger.js";
+import { db, users } from "../db/index.js";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 // Serialize user to session (store only user ID)

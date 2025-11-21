@@ -1,5 +1,5 @@
-import { logger } from "@/utils/logger.js";
-import { CustomError } from "@/middleware/errorHandler.js";
+import { logger } from "../utils/logger.js";
+import { CustomError } from "./errorHandler.js";
 /**
  * RBAC Role-Based Access Control Middleware
  * Checks if user has one of the allowed roles
@@ -10,14 +10,15 @@ import { CustomError } from "@/middleware/errorHandler.js";
 export const requireRole = (allowedRoles) => {
     return (req, res, next) => {
         try {
-            if (!req.user) {
+            const reqWithUser = req;
+            if (!reqWithUser.user) {
                 throw new CustomError("User not authenticated", 401);
             }
-            const { role } = req.user;
+            const { role } = reqWithUser.user;
             // Check if user has one of the allowed roles
             if (!allowedRoles.includes(role)) {
                 logger.warn("Role-based authorization failed", {
-                    userId: req.user.id,
+                    userId: reqWithUser.user.id,
                     userRole: role,
                     allowedRoles,
                     path: req.path,
@@ -26,7 +27,7 @@ export const requireRole = (allowedRoles) => {
                 throw new CustomError(`Insufficient permissions. Required roles: ${allowedRoles.join(", ")}`, 403);
             }
             logger.debug("Role-based authorization successful", {
-                userId: req.user.id,
+                userId: reqWithUser.user.id,
                 role,
                 allowedRoles,
             });

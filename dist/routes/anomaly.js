@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { logger } from "@/utils/logger.js";
-import { asyncHandler } from "@/middleware/errorHandler.js";
-import { anomalyDetector, } from "@/services/aiops/anomalyDetector.js";
-import { anomalyAlertService } from "@/services/aiops/anomalyAlertService.js";
+import { logger } from "../utils/logger.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { anomalyDetector, } from "../services/aiops/anomalyDetector.js";
+import { anomalyAlertService } from "../services/aiops/anomalyAlertService.js";
 const router = Router();
 const severityEnum = z.enum(["low", "medium", "high", "critical"]);
 const detectAnomalySchema = z.object({

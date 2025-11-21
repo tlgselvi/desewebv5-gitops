@@ -1,24 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '@/utils/logger.js';
+import type { RequestWithUser } from "@/middleware/auth.js";
 
-export interface RequestWithUser extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
+export interface RequestWithLogger extends RequestWithUser {
   requestId?: string;
   startTime?: number;
 }
 
-export const requestLogger = (req: RequestWithUser, res: Response, next: NextFunction): void => {
+export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
+  const reqWithLogger = req as RequestWithLogger;
   // Generate unique request ID
-  req.requestId = Math.random().toString(36).substring(2, 15);
-  req.startTime = Date.now();
+  reqWithLogger.requestId = Math.random().toString(36).substring(2, 15);
+  reqWithLogger.startTime = Date.now();
 
   // Log request
   logger.info('Incoming Request', {
-    requestId: req.requestId,
+    requestId: reqWithLogger.requestId,
     method: req.method,
     url: req.url,
     userAgent: req.get('User-Agent'),
@@ -30,10 +27,10 @@ export const requestLogger = (req: RequestWithUser, res: Response, next: NextFun
   });
 
   res.once('finish', () => {
-    const duration = Date.now() - (req.startTime || Date.now());
+    const duration = Date.now() - (reqWithLogger.startTime || Date.now());
 
     logger.info('Outgoing Response', {
-      requestId: req.requestId,
+      requestId: reqWithLogger.requestId,
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,

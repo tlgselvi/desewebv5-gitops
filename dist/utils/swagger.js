@@ -1,7 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import { config } from "@/config/index.js";
-import { logger } from "@/utils/logger.js";
+import { config } from "../config/index.js";
+import { logger } from "./logger.js";
 const options = {
     definition: {
         openapi: "3.0.0",

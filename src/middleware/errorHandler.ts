@@ -36,11 +36,7 @@ type ErrorResponse = {
   stack?: string;
 };
 
-interface RequestWithUser extends Request {
-  user?: {
-    id?: string;
-  };
-}
+import type { RequestWithUser } from "@/middleware/auth.js";
 
 const hasCodeProperty = (value: unknown): value is { code?: unknown } => {
   return typeof value === 'object' && value !== null && 'code' in value;
@@ -67,10 +63,11 @@ const toAppError = (error: unknown): AppError => {
 
 export const errorHandler = (
   error: unknown,
-  req: RequestWithUser,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void => {
+  const reqWithUser = req as RequestWithUser;
   const zodError = error instanceof ZodError ? error : null;
   const appError = zodError ? new CustomError('Validation Error', 400) : toAppError(error);
 
@@ -126,7 +123,7 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: req.user?.id,
+      user: reqWithUser.user?.id,
     });
   } else {
     logger.warn('Client Error', {
@@ -140,7 +137,7 @@ export const errorHandler = (
         params: req.params,
         query: req.query,
       },
-      user: req.user?.id,
+      user: reqWithUser.user?.id,
     });
   }
 

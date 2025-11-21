@@ -1,4 +1,4 @@
-import { seoProjects } from '@/db/index.js';
+import { seoProjects } from '../db/index.js';
 export type NewProject = {
     name: string;
     description?: string | null;

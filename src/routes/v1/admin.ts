@@ -73,6 +73,17 @@ adminRouter.patch(
   "/users/:id/role",
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
+    
+    // Validate id parameter
+    if (!id || typeof id !== "string") {
+      res.status(400).json({
+        success: false,
+        error: "invalid_id",
+        message: "Invalid user ID",
+      });
+      return;
+    }
+
     const adminId = (req as RequestWithUser).user?.id;
 
     // Validate request body
@@ -82,7 +93,7 @@ adminRouter.patch(
         success: false,
         error: "validation_error",
         message: "Invalid request body",
-        details: validationResult.error.errors,
+        details: validationResult.error.issues,
       });
       return;
     }
@@ -96,7 +107,7 @@ adminRouter.patch(
       .where(eq(users.id, id))
       .limit(1);
 
-    if (existingUsers.length === 0) {
+    if (existingUsers.length === 0 || !existingUsers[0]) {
       res.status(404).json({
         success: false,
         error: "user_not_found",

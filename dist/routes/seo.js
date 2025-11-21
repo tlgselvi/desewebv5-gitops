@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { seoAnalyzer } from '@/services/seoAnalyzer.js';
-import { asyncHandler } from '@/middleware/errorHandler.js';
-import { seoLogger } from '@/utils/logger.js';
+import { seoAnalyzer } from '../services/seoAnalyzer.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { seoLogger } from '../utils/logger.js';
 const router = Router();
 // Validation schemas
 const SeoAnalysisSchema = z.object({

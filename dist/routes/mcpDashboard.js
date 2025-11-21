@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { authenticate, authorize } from "@/middleware/auth.js";
-import { asyncHandler, createError } from "@/middleware/errorHandler.js";
-import { mcpDashboardService, } from "@/services/mcp/mcpDashboardService.js";
-import { logger } from "@/utils/logger.js";
+import { authenticate, authorize } from "../middleware/auth.js";
+import { asyncHandler, createError } from "../middleware/errorHandler.js";
+import { mcpDashboardService, } from "../services/mcp/mcpDashboardService.js";
+import { logger } from "../utils/logger.js";
 const router = Router();
 const MODULE_NAMES = ["mubot", "finbot", "aiops", "observability"];
 const paramsSchema = z.object({

@@ -56,15 +56,16 @@ authRouter.post("/login", (req: Request, res: Response): void => {
  */
 authRouter.get(
   "/google",
-  (req: Request, res: Response, next) => {
+  (req: Request, res: Response, next): void => {
     // Check if Google OAuth is configured
     if (!config.apis.google.oauth?.clientId || !config.apis.google.oauth?.clientSecret) {
       logger.error("Google OAuth not configured");
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         error: "google_oauth_not_configured",
         message: "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.",
       });
+      return;
     }
     next();
   },
@@ -119,10 +120,11 @@ authRouter.get(
         role: user.role,
         permissions: user.role === "admin" ? ["admin", "mcp.dashboard.read"] : [],
       };
-      const jwtOptions = {
-        expiresIn: config.security.jwtExpiresIn as string,
-      };
-      const token = jwt.sign(jwtPayload, config.security.jwtSecret, jwtOptions);
+      const expiresInValue = config.security.jwtExpiresIn ?? "24h";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const token = jwt.sign(jwtPayload, config.security.jwtSecret, {
+        expiresIn: expiresInValue as any,
+      });
 
       logger.info("Google OAuth login successful", {
         email: user.email,

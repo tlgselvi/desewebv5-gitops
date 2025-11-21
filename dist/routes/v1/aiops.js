@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticate } from "@/middleware/auth.js";
-import { logger } from "@/utils/logger.js";
+import { authenticate } from "../../middleware/auth.js";
+import { logger } from "../../utils/logger.js";
 const aiopsRouter = Router();
 const mockAlertsTemplate = [
     {
