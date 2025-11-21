@@ -68,6 +68,7 @@ export const authenticate = (
         userId: decoded.id,
         email: decoded.email,
         role: decoded.role,
+        permissions: decoded.permissions || [],
       });
 
       next();
@@ -126,6 +127,8 @@ export const authorize = (requiredRolesOrPermissions: string[]) => {
           userRole: role,
           userPermissions: permissions,
           required: requiredRolesOrPermissions,
+          hasRoleAccess: requiredRolesOrPermissions.includes(role),
+          hasPermissionAccess: requiredRolesOrPermissions.some((perm) => permissions.includes(perm)),
           path: req.path,
           method: req.method,
         });

@@ -4,6 +4,65 @@
 
 ---
 
+## 🛠️ HYBRID DEV ENVIRONMENT RULES
+
+**CRITICAL:** This project uses a **Hybrid Development Environment**. All development work MUST follow these rules.
+
+### Infrastructure Configuration
+
+- **Database & Redis:** Run inside **Docker Desktop** (Containers: `db-1`, `redis-1`).
+- **Backend API:** Runs **LOCALLY** on Windows Terminal (Port 3000).
+  - **Constraint:** The Docker container `app-1` MUST be STOPPED to free up Port 3000.
+  - **Connection:** Backend connects to Redis/DB via `localhost` (NOT `redis` or `db` hostname).
+- **Frontend UI:** Runs **LOCALLY** on Windows Terminal (Port 3001).
+  - **Constraint:** Forced to port 3001 via `package.json` script: `"next dev -p 3001"`.
+
+### Port Configuration (MANDATORY)
+
+- **Backend:** ALWAYS runs on Port 3000 (local process).
+- **Frontend:** ALWAYS runs on Port 3001 (local process).
+
+### Networking Rules
+
+- Frontend connects to Backend via `NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1` (defined in `.env.local`).
+- Backend connects to Redis via `REDIS_HOST=localhost` (defined in local `.env`).
+- Backend connects to Database via `DB_HOST=localhost` (defined in local `.env`).
+
+### Port Conflict Resolution
+
+If `EADDRINUSE` error occurs:
+
+1. **Kill local Node processes:**
+   ```powershell
+   taskkill /F /IM node.exe
+   ```
+
+2. **Stop Docker `app` container:**
+   ```powershell
+   docker stop app-1
+   # or if using docker-compose
+   docker-compose stop app
+   ```
+
+3. **Verify port is free:**
+   ```powershell
+   netstat -ano | findstr :3000
+   netstat -ano | findstr :3001
+   ```
+
+### Development Workflow
+
+1. Start Docker Desktop.
+2. Start only `db` and `redis` containers:
+   ```powershell
+   docker-compose up db redis -d
+   ```
+3. Ensure `app` container is **STOPPED**.
+4. Run Backend locally: `pnpm dev` (runs on port 3000).
+5. Run Frontend locally: `cd frontend && pnpm dev` (runs on port 3001).
+
+---
+
 ## Temel Uygulamalar
 
 - Path alias kullanımı zorunlu: `@/...`

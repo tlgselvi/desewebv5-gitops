@@ -10,7 +10,7 @@ const configSchema = z.object({
   port: z.coerce.number().default(3001),
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
   apiVersion: z.string().default("v1"),
-  corsOrigin: z.string().default("http://localhost:3000"),
+  corsOrigin: z.string().default("http://localhost:3001"),
 
   // Database Configuration
   database: z.object({
@@ -43,6 +43,11 @@ const configSchema = z.object({
     bcryptRounds: z.coerce.number().default(12),
     rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes
     rateLimitMaxRequests: z.coerce.number().default(100),
+    cookieKey: z
+      .string()
+      .default(
+        "ea-plan-master-control-v6.8.2-cookie-session-secret-key-min-32-chars",
+      ),
   }),
 
   // External APIs
@@ -54,6 +59,11 @@ const configSchema = z.object({
       searchConsoleApiKey: z.string().optional(),
       businessApiKey: z.string().optional(),
       mapsApiKey: z.string().optional(),
+      oauth: z.object({
+        clientId: z.string().optional(),
+        clientSecret: z.string().optional(),
+        callbackUrl: z.string().url().default("http://localhost:3000/api/v1/auth/google/callback"),
+      }).optional(),
     }),
     ahrefs: z.object({
       apiKey: z.string().optional(),
@@ -298,6 +308,7 @@ const rawConfig = {
     bcryptRounds: process.env.BCRYPT_ROUNDS,
     rateLimitWindowMs: process.env.RATE_LIMIT_WINDOW_MS,
     rateLimitMaxRequests: process.env.RATE_LIMIT_MAX_REQUESTS,
+    cookieKey: process.env.COOKIE_KEY,
   },
   apis: {
     openai: {
@@ -307,6 +318,11 @@ const rawConfig = {
       searchConsoleApiKey: process.env.GOOGLE_SEARCH_CONSOLE_API_KEY,
       businessApiKey: process.env.GOOGLE_BUSINESS_API_KEY,
       mapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      oauth: {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/v1/auth/google/callback",
+      },
     },
     ahrefs: {
       apiKey: process.env.AHREFS_API_KEY,

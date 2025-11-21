@@ -3,8 +3,13 @@ import { api } from "../api/client";
 
 export async function login(username: string, password: string) {
   const res = await api.post("/auth/login", { username, password });
-  localStorage.setItem("token", res.data.access_token);
-  return decodeJwt(res.data.access_token);
+  // Backend returns { success: true, token: string, user: {...} }
+  const token = res.data.token || res.data.access_token;
+  if (!token) {
+    throw new Error("No token received from server");
+  }
+  localStorage.setItem("token", token);
+  return decodeJwt(token);
 }
 
 export function logout() {

@@ -1,6 +1,6 @@
-# System Architecture Dump - Dese EA Plan v6.8.1
+# System Architecture Dump - Dese EA Plan v6.8.2
 
-**Generated:** 2025-11-21  
+**Generated:** 2025-01-27  
 **Purpose:** Deep technical reference for accurate code generation and architecture alignment
 
 ---
@@ -778,11 +778,62 @@ interface RequestWithUser extends Request {
 
 ## 8. 🚀 Deployment & Infrastructure
 
-### Docker
+### Hybrid Development Environment (Current Stable Configuration)
+
+**CRITICAL:** The project uses a **Hybrid Development Environment** where some services run in Docker and others run locally.
+
+#### Infrastructure Components
+
+- **Database & Redis:** Run inside **Docker Desktop**
+  - Container names: `db-1` (PostgreSQL 15, port 5432), `redis-1` (Redis 7-alpine, port 6379)
+  - Accessible from host via `localhost:5432` and `localhost:6379`
+  
+- **Backend API:** Runs **LOCALLY** on Windows Terminal
+  - Port: **3000** (mandatory)
+  - **Constraint:** Docker container `app-1` MUST be STOPPED to free up Port 3000
+  - Connection: Uses `localhost` for DB/Redis connections (NOT `db` or `redis` hostnames)
+  
+- **Frontend UI:** Runs **LOCALLY** on Windows Terminal
+  - Port: **3001** (mandatory, forced via `package.json` script)
+  - Connection: Connects to Backend via `NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1`
+
+#### Development Workflow
+
+1. Start Docker Desktop
+2. Start only database and Redis containers:
+   ```powershell
+   docker-compose up db redis -d
+   ```
+3. **Ensure `app` container is STOPPED:**
+   ```powershell
+   docker stop app-1
+   # or
+   docker-compose stop app
+   ```
+4. Run Backend locally:
+   ```powershell
+   pnpm dev
+   # Runs on http://localhost:3000
+   ```
+5. Run Frontend locally:
+   ```powershell
+   cd frontend
+   pnpm dev
+   # Runs on http://localhost:3001
+   ```
+
+#### Networking Configuration
+
+- **Frontend → Backend:** `NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1` (in `frontend/.env.local`)
+- **Backend → Redis:** `REDIS_HOST=localhost` (in local `.env`)
+- **Backend → Database:** `DB_HOST=localhost` (in local `.env`)
+
+### Docker (Production/Full Stack Mode)
+
 - **Main App:** `Dockerfile` (monorepo build)
 - **Frontend:** `frontend/Dockerfile` (Next.js standalone)
 - **Compose:** `docker-compose.yml` with services:
-  - `app` (port 3000)
+  - `app` (port 3000) - **STOPPED in Hybrid Dev Mode**
   - `db` (PostgreSQL 15, port 5432)
   - `redis` (Redis 7-alpine, port 6379)
   - `finbot` (port 5555)
@@ -809,7 +860,119 @@ interface RequestWithUser extends Request {
 
 ---
 
-## 9. ⚠️ Critical Architecture Notes
+## 9. 🔧 Troubleshooting & Configuration
+
+### Local Development Setup
+
+#### Port Configuration (Hybrid Dev Mode)
+- **Backend (Local):** Runs on **Port 3000** (Docker `app` container MUST be stopped)
+- **Frontend (Local):** Runs on **Port 3001** (forced via `package.json` script)
+- **Database (Docker):** Runs on **Port 5432** (container `db-1`)
+- **Redis (Docker):** Runs on **Port 6379** (container `redis-1`)
+
+#### Frontend Environment Configuration
+
+**Required:** Create `frontend/.env.local` file for local development:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+```
+
+**Important Notes:**
+- `.env.local` is gitignored (not committed to repository)
+- Each developer must create their own `.env.local` file
+- Without this file, frontend will default to relative paths (`/api/v1`), which will incorrectly resolve to `localhost:3001`
+- The API client in `frontend/src/lib/api.ts` uses this environment variable to construct full URLs
+
+#### Tailwind CSS v4 Configuration
+
+**Current Version:** Tailwind CSS v4.1.16
+
+**Critical:** The `frontend/src/app/globals.css` file uses Tailwind v4 syntax:
+
+```css
+@import "tailwindcss";
+```
+
+**Do NOT use old v3 directives:**
+- ❌ `@tailwind base;`
+- ❌ `@tailwind components;`
+- ❌ `@tailwind utilities;`
+
+**PostCSS Configuration:** `frontend/postcss.config.mjs` uses `@tailwindcss/postcss` plugin (v4 compatible).
+
+#### Package Manager (pnpm)
+
+**Current Setup:**
+- **Version:** pnpm 8.15.0+ (via corepack or npm global install)
+- **Windows Note:** If pnpm commands fail, ensure corepack is enabled:
+  ```powershell
+  corepack enable
+  corepack prepare pnpm@latest --activate
+  ```
+
+**Troubleshooting:**
+- If `pnpm` command not found, check PATH includes `C:\Users\<username>\AppData\Roaming\npm`
+- Remove broken shortcuts from `C:\Program Files\nodejs\pnpm*` if they exist
+- Use `where.exe pnpm` to verify correct pnpm location
+
+### API Client Configuration
+
+**Frontend API Client Files:**
+- `frontend/src/api/client.ts` - Axios instance (uses `NEXT_PUBLIC_API_URL`)
+- `frontend/src/lib/api.ts` - Authenticated fetch wrapper with URL resolution
+
+**URL Resolution Logic:**
+- Base URL: `http://localhost:3000/api/v1` (from `.env.local`)
+- Path handling: Automatically removes duplicate `/api/v1` if path already includes it
+- Example: `authenticatedGet("/api/v1/mcp/dashboard/aiops")` → `http://localhost:3000/api/v1/mcp/dashboard/aiops`
+
+### Common Issues
+
+1. **Port Conflicts (EADDRINUSE):**
+   - **Symptom:** `Error: listen EADDRINUSE: address already in use :::3000` or `:::3001`
+   - **Resolution:**
+     1. Kill local Node processes:
+        ```powershell
+        taskkill /F /IM node.exe
+        ```
+     2. Stop Docker `app` container:
+        ```powershell
+        docker stop app-1
+        # or
+        docker-compose stop app
+        ```
+     3. Verify ports are free:
+        ```powershell
+        netstat -ano | findstr :3000
+        netstat -ano | findstr :3001
+        ```
+     4. Restart services in correct order (DB/Redis → Backend → Frontend)
+
+2. **Frontend shows unstyled HTML (black screen):**
+   - Check `globals.css` uses `@import "tailwindcss";` (v4 syntax)
+   - Clear Next.js cache: `rm -rf frontend/.next`
+   - Restart dev server
+
+3. **API requests return 404:**
+   - Verify `.env.local` exists with correct `NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1`
+   - Check backend is running locally on port 3000 (NOT in Docker)
+   - Verify Docker `app` container is STOPPED
+   - Check Docker `db` and `redis` containers are running: `docker compose ps`
+
+4. **Backend cannot connect to Redis/Database:**
+   - Verify `REDIS_HOST=localhost` and `DB_HOST=localhost` in local `.env`
+   - Ensure Docker containers `db-1` and `redis-1` are running
+   - Check port mappings: `docker compose ps` should show `0.0.0.0:5432->5432/tcp` and `0.0.0.0:6379->6379/tcp`
+
+5. **pnpm command not found:**
+   - Enable corepack: `corepack enable`
+   - Or install globally: `npm install -g pnpm`
+   - Check PATH environment variable
+
+---
+
+## 10. ⚠️ Critical Architecture Notes
 
 1. **Route Order is Critical:** Routes must be registered from most-specific to most-general to prevent route conflicts.
 

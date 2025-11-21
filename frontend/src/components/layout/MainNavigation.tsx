@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Command, Menu } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Command, Menu, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { getUserRole } from "@/lib/auth";
 
 interface NavItem {
   readonly href: string;
@@ -46,9 +48,17 @@ const NAV_ITEMS: NavItem[] = [
 
 export default function MainNavigation() {
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUserRole(getUserRole());
+  }, [pathname]); // Re-check when pathname changes (after login)
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/85">
+    <header 
+      className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/85"
+      suppressHydrationWarning
+    >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-300/40 dark:bg-blue-500">
@@ -62,9 +72,6 @@ export default function MainNavigation() {
               Dese EA Plan
               <Badge variant="outline">v6.8.1</Badge>
             </Link>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              Kyverno stabilizasyonu · MCP Faz 1 revizyonu
-            </p>
           </div>
         </div>
 
@@ -117,6 +124,19 @@ export default function MainNavigation() {
           >
             Rehber
           </Button>
+          {userRole === "admin" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden items-center gap-2 md:flex text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+              asChild
+            >
+              <Link href="/dashboard/admin/users">
+                <ShieldCheck className="h-4 w-4" />
+                Admin Panel
+              </Link>
+            </Button>
+          )}
           <Button variant="primary" size="sm" className="dark:bg-blue-500">
             Yeni Görev Kaydı
           </Button>

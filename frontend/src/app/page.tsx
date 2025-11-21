@@ -83,11 +83,6 @@ export default function Home() {
           <div className="grid gap-8 lg:grid-cols-2 lg:gap-12 lg:items-center">
             {/* Left Column - Content */}
             <div className="space-y-6">
-              <Badge variant="outline" className="border-white/30 bg-white/10 text-white/90 backdrop-blur-sm">
-                <TrendingUp className="mr-1.5 h-3 w-3" />
-                Canlı güncelleme · Kyverno stabilizasyonu tamamlandı
-              </Badge>
-              
               <div className="space-y-4">
                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
                   GitOps ve AIOps operasyonlarınızı tek panelden yönetin.

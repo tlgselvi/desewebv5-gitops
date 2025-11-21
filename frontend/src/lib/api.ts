@@ -56,7 +56,12 @@ export async function authenticatedFetch(
   const token = getToken();
 
   if (!token) {
-    throw new Error("Authentication token not found. Please log in again.");
+    // Instead of throwing, return a response that indicates an auth failure.
+    // This allows the caller to handle it gracefully (e.g., redirect to login).
+    return new Response(JSON.stringify({ error: "Authentication token not found." }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   // Resolve full URL
@@ -76,8 +81,12 @@ export async function authenticatedFetch(
   // Handle 401 Unauthorized errors
   if (response.status === 401) {
     // Optionally clear token and redirect to login
-    localStorage.removeItem("token");
-    throw new Error("Session expired. Please log in again.");
+    console.warn("Session expired or token is invalid. Clearing token.");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      window.location.href = '/login?session=expired';
+    }
+    throw new Error("Session expired. Please log in again."); // This will be caught by the redirect
   }
 
   return response;
@@ -92,6 +101,19 @@ export async function authenticatedGet<T>(url: string): Promise<T> {
   });
 
   if (!response.ok) {
+    // If the custom 401 response from above is returned, handle it.
+    if (response.status === 401) {
+      console.error("Authentication required. Redirecting to login.");
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+    // Handle 403 Forbidden (authorization failed)
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || "You don't have permission to access this resource.";
+      console.error("Authorization failed:", errorMessage);
+      throw new Error(`Access denied: ${errorMessage}`);
+    }
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
@@ -111,9 +133,53 @@ export async function authenticatedPost<T>(
   });
 
   if (!response.ok) {
+    // Handle the custom 401 response here as well
+    if (response.status === 401) {
+      console.error("Authentication required. Redirecting to login.");
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+    // Handle 403 Forbidden (authorization failed)
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || "You don't have permission to access this resource.";
+      console.error("Authorization failed:", errorMessage);
+      throw new Error(`Access denied: ${errorMessage}`);
+    }
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
   return response.json() as Promise<T>;
 }
 
+/**
+ * Convenience method for authenticated PATCH requests
+ */
+export async function authenticatedPatch<T>(
+  url: string,
+  body?: unknown,
+): Promise<T> {
+  const response = await authenticatedFetch(url, {
+    method: "PATCH",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    // Handle the custom 401 response here as well
+    if (response.status === 401) {
+      console.error("Authentication required. Redirecting to login.");
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+    // Handle 403 Forbidden (authorization failed)
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || "You don't have permission to access this resource.";
+      console.error("Authorization failed:", errorMessage);
+      throw new Error(`Access denied: ${errorMessage}`);
+    }
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json() as Promise<T>;
+}

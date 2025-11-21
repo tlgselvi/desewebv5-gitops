@@ -5,6 +5,8 @@ import express, {
   type NextFunction,
 } from "express";
 import cors from "cors";
+import cookieSession from "cookie-session";
+import passport from "passport";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
@@ -37,12 +39,23 @@ import {
 } from "@/bus/streams/finbot-consumer.js";
 import { auditMiddleware } from "@/middleware/audit.js";
 
-const dev = config.nodeEnv !== "production";
-const nextApp = next({ dev, dir: "./frontend" });
-const nextHandler = nextApp.getRequestHandler();
+// Passport stratejisini yükle (sadece import etmek yeterli)
+import "@/services/passport.js";
 
-// Create Express app after Next.js is ready
-await nextApp.prepare();
+const dev = config.nodeEnv !== "production";
+// Hybrid Mode: Skip Next.js if SKIP_NEXT is set (frontend runs separately)
+const skipNext = process.env.SKIP_NEXT === "true";
+let nextApp: ReturnType<typeof next> | null = null;
+let nextHandler: ((req: Request, res: Response) => Promise<void>) | null = null;
+
+if (!skipNext) {
+  nextApp = next({ dev, dir: "./frontend" });
+  nextHandler = nextApp.getRequestHandler();
+  // Create Express app after Next.js is ready
+  await nextApp.prepare();
+} else {
+  logger.info("Next.js skipped (Hybrid Mode - frontend runs separately)");
+}
 
 const app: Application = express();
 
@@ -112,6 +125,21 @@ app.use(
   }),
 );
 
+// Session and Passport Middleware
+// IMPORTANT: These must come after CORS and before routes
+app.use(
+  cookieSession({
+    name: "dese-session",
+    keys: [config.security.cookieKey],
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: config.nodeEnv === "production", // Only send cookie over HTTPS in production
+    sameSite: "lax", // CSRF protection
+  }),
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Compression middleware with optimization
 app.use(
   compression({
@@ -143,6 +171,21 @@ if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true") {
   app.use(limiter);
 }
 
+// Session ve Passport Middleware
+// ÖNEMLİ: Bu middleware'ler CORS'tan sonra ve rotalardan önce gelmelidir.
+app.use(
+  cookieSession({
+    name: "dese-session",
+    keys: [config.security.cookieKey],
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: config.nodeEnv === "production", // Only send cookie over HTTPS in production
+    sameSite: "lax", // CSRF protection
+  }),
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -167,14 +210,31 @@ if (!dev) {
 // This must be placed after all API routes and before the final error handler.
 // Express 5 doesn't support app.all("*") with wildcard, so we use app.use as a catch-all.
 // app.use without a path matches all routes and all HTTP methods.
-app.use((req: Request, res: Response) => {
-  // Only pass to Next.js if response hasn't been sent yet
-  if (!res.headersSent) {
-    return nextHandler(req, res);
-  }
-  // If headers already sent, do nothing (response is already being handled)
-  return;
-});
+if (!skipNext && nextHandler) {
+  app.use((req: Request, res: Response) => {
+    // Only pass to Next.js if response hasn't been sent yet
+    if (!res.headersSent) {
+      return nextHandler!(req, res);
+    }
+    // If headers already sent, do nothing (response is already being handled)
+    return;
+  });
+} else {
+  // In Hybrid Mode, only handle API routes - ignore frontend routes
+  app.use((req: Request, res: Response) => {
+    // Only return 404 for API routes that don't exist
+    // Frontend routes (like /login, /dashboard, etc.) should be ignored
+    if (req.path.startsWith("/api/") && !res.headersSent) {
+      return res.status(404).json({
+        error: "Not Found",
+        message: "API endpoint not found. Frontend runs separately on port 3001.",
+        path: req.path,
+      });
+    }
+    // For non-API routes, do nothing (they're handled by frontend)
+    // This prevents backend from interfering with frontend routes
+  });
+}
 
 // Error handling middleware (must be last)
 // Note: Express error handlers require 4 parameters
