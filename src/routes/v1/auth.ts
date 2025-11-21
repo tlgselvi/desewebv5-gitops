@@ -13,8 +13,8 @@ authRouter.post("/login", (req: Request, res: Response): void => {
       {
         id: "mock-user",
         email: username,
-        role: "tester",
-        permissions: ["dashboard:read"],
+        role: "admin",
+        permissions: ["admin", "mcp.dashboard.read"],
       },
       config.security.jwtSecret,
       { expiresIn: "1h" },
@@ -28,7 +28,7 @@ authRouter.post("/login", (req: Request, res: Response): void => {
       user: {
         id: "mock-user",
         email: username,
-        role: "tester",
+        role: "admin",
       },
     });
   } catch (error) {

@@ -28,8 +28,11 @@ WORKDIR /app
 COPY frontend ./frontend
 # Copy frontend dependencies
 COPY --from=frontend-deps /app/frontend/node_modules ./frontend/node_modules
-# Build frontend
+# Build frontend (use --no-cache to ensure fresh build)
 WORKDIR /app/frontend
+# Add build timestamp to bust cache
+ARG BUILD_DATE=unknown
+RUN echo "Build date: $BUILD_DATE" > /tmp/build-info.txt
 RUN pnpm build
 
 # Stage 6: Final production image

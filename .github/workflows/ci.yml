@@ -88,12 +88,16 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-jwt-secret-for-ci' }}
           DISABLE_RATE_LIMIT: 'true'
         run: |
-          docker compose up --build -d
+          # Always pull the latest base images and then build
+          docker compose up --build --pull "always" -d
       
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to become healthy..."
-          timeout 300s bash -c 'until docker compose ps | grep -E "(app|db|redis|finbot|mubot|dese|observability)" | grep -q healthy; do echo -n "."; sleep 5; done'
+          # Wait until at least 7 services are in a 'healthy' state.
+          # This is more robust than checking for the word 'healthy' in the output.
+          EXPECTED_HEALTHY_SERVICES=7
+          timeout 300s bash -c "until [ \$(docker compose ps --filter 'status=healthy' | grep -c 'healthy') -ge $EXPECTED_HEALTHY_SERVICES ]; do echo -n '.'; sleep 5; done"
           echo ""
           echo "All services are healthy!"
           docker compose ps
