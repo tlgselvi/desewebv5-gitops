@@ -50,10 +50,14 @@ export default function LoginPage() {
     e.preventDefault();
     e.stopPropagation();
     
-    // Force full redirect to the Backend API
-    // NEXT_PUBLIC_API_URL should include /api/v1 (e.g., http://localhost:3000/api/v1)
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
-    const googleAuthUrl = `${apiUrl.replace(/\/$/, "")}/auth/google`;
+    // Get API base URL - could be full URL (http://localhost:3000/api/v1) or base URL (http://localhost:3000)
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    
+    // Ensure we always use /api/v1/auth/google regardless of NEXT_PUBLIC_API_URL format
+    // Remove trailing slashes and ensure we have the full API path
+    const baseUrl = apiBaseUrl.replace(/\/+$/, ""); // Remove trailing slashes
+    const apiPath = baseUrl.includes("/api/v1") ? baseUrl : `${baseUrl}/api/v1`;
+    const googleAuthUrl = `${apiPath}/auth/google`;
     
     // Direct redirect - backend will handle errors
     window.location.href = googleAuthUrl;

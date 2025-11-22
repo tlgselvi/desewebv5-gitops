@@ -101,6 +101,20 @@ spec:
           value: "production"
         - name: SKIP_NEXT
           value: "true"
+        - name: CORS_ORIGIN
+          value: "https://app.poolfab.com.tr"
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GOOGLE_CLIENT_ID
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GOOGLE_CLIENT_SECRET
+        - name: GOOGLE_CALLBACK_URL
+          value: "https://api.poolfab.com.tr/api/v1/auth/google/callback"
         
         # Resource limits
         resources:
