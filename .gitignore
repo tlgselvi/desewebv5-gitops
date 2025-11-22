@@ -66,6 +66,9 @@ Thumbs.db
 
 # Kubernetes secrets
 *-secret.yaml
+**/secret-*.yaml
+**/secret-*.yml
+k8s/secret-dese-secrets.yaml
 secrets/
 
 # Temporary files

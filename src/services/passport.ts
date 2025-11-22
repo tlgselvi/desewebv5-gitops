@@ -3,7 +3,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 import { db, users } from "@/db/index.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 /**
@@ -39,7 +39,7 @@ passport.deserializeUser(async (id: unknown, done) => {
       return done(new Error("Invalid user ID"), null);
     }
 
-    const userList = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const userList = await db.select().from(users).where(sql`${users.id} = ${id}`).limit(1);
     
     if (userList.length === 0 || !userList[0]) {
       return done(new Error("User not found"), null);
@@ -85,10 +85,11 @@ if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret
         }
 
         // Check if user exists in database
+        // Use sql template to avoid Drizzle ORM SQL generation bug
         const existingUsers = await db
           .select()
           .from(users)
-          .where(eq(users.email, email))
+          .where(sql`${users.email} = ${email}`)
           .limit(1);
 
         let userId: string;

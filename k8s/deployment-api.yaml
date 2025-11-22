@@ -59,7 +59,7 @@ spec:
           periodSeconds: 5
       
       - name: dese-api
-        image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v6.8.2
+        image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v6.8.3
         imagePullPolicy: Always
         ports:
         - name: http
