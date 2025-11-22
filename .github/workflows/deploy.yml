@@ -52,11 +52,19 @@ jobs:
         uses: azure/setup-helm@v3
 
       - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
-        env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         run: |
           ENV="${{ github.event.inputs.environment }}"
           echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          # Set KUBECONFIG_SECRET dynamically based on environment
+          if [ "$ENV" = "production" ]; then
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_PRODUCTION }}"
+          else
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_STAGING }}"
+          fi
+          
+          # Export to GITHUB_ENV for use in subsequent steps
+          echo "KUBECONFIG_SECRET=${KUBECONFIG_SECRET}" >> $GITHUB_ENV
           
           if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
             echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
@@ -82,7 +90,7 @@ jobs:
 
       - name: 🔐 Configure kubectl
         env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+          KUBECONFIG_SECRET: ${{ env.KUBECONFIG_SECRET }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
@@ -193,11 +201,19 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
 
       - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
-        env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         run: |
           ENV="${{ github.event.inputs.environment }}"
           echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          # Set KUBECONFIG_SECRET dynamically based on environment
+          if [ "$ENV" = "production" ]; then
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_PRODUCTION }}"
+          else
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_STAGING }}"
+          fi
+          
+          # Export to GITHUB_ENV for use in subsequent steps
+          echo "KUBECONFIG_SECRET=${KUBECONFIG_SECRET}" >> $GITHUB_ENV
           
           if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
             echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
@@ -223,7 +239,7 @@ jobs:
 
       - name: 🔐 Configure kubectl
         env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+          KUBECONFIG_SECRET: ${{ env.KUBECONFIG_SECRET }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
@@ -325,11 +341,19 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
 
       - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
-        env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         run: |
           ENV="${{ github.event.inputs.environment }}"
           echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          # Set KUBECONFIG_SECRET dynamically based on environment
+          if [ "$ENV" = "production" ]; then
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_PRODUCTION }}"
+          else
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_STAGING }}"
+          fi
+          
+          # Export to GITHUB_ENV for use in subsequent steps
+          echo "KUBECONFIG_SECRET=${KUBECONFIG_SECRET}" >> $GITHUB_ENV
           
           if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
             echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
@@ -355,7 +379,7 @@ jobs:
 
       - name: 🔐 Configure kubectl
         env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+          KUBECONFIG_SECRET: ${{ env.KUBECONFIG_SECRET }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
@@ -505,11 +529,19 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
 
       - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
-        env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         run: |
           ENV="${{ github.event.inputs.environment }}"
           echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          # Set KUBECONFIG_SECRET dynamically based on environment
+          if [ "$ENV" = "production" ]; then
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_PRODUCTION }}"
+          else
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_STAGING }}"
+          fi
+          
+          # Export to GITHUB_ENV for use in subsequent steps
+          echo "KUBECONFIG_SECRET=${KUBECONFIG_SECRET}" >> $GITHUB_ENV
           
           if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
             echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
@@ -535,7 +567,7 @@ jobs:
 
       - name: 🔐 Configure kubectl
         env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+          KUBECONFIG_SECRET: ${{ env.KUBECONFIG_SECRET }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
@@ -689,11 +721,19 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
 
       - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
-        env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         run: |
           ENV="${{ github.event.inputs.environment }}"
           echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          # Set KUBECONFIG_SECRET dynamically based on environment
+          if [ "$ENV" = "production" ]; then
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_PRODUCTION }}"
+          else
+            KUBECONFIG_SECRET="${{ secrets.KUBECONFIG_STAGING }}"
+          fi
+          
+          # Export to GITHUB_ENV for use in subsequent steps
+          echo "KUBECONFIG_SECRET=${KUBECONFIG_SECRET}" >> $GITHUB_ENV
           
           if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
             echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
@@ -719,7 +759,7 @@ jobs:
 
       - name: 🔐 Configure kubectl
         env:
-          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+          KUBECONFIG_SECRET: ${{ env.KUBECONFIG_SECRET }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
