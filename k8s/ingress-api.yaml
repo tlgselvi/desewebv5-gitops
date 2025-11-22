@@ -5,7 +5,9 @@ metadata:
   namespace: default
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
   ingressClassName: nginx
   rules:
@@ -35,6 +37,14 @@ spec:
             port:
               number: 80
       - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: dese-api-service
+            port:
+              number: 80
+      # Root path handler - API information
+      - path: /
         pathType: Prefix
         backend:
           service:
