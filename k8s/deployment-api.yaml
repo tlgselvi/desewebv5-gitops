@@ -31,7 +31,6 @@ spec:
           - "--address=0.0.0.0"
           - "--port=5432"
           - "--structured-logs"
-          - "--run-connection-test"
           - "ea-plan-seo-project:europe-west3:dese-ea-plan-db"
         env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
