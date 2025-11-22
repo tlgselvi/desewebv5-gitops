@@ -783,9 +783,14 @@ jobs:
           fi
 
       - name: 📧 Notify team
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          text: 'Deployment failed, automatic rollback initiated 🔄'
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ -n "${SLACK_WEBHOOK}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"🔄 Deployment failed, automatic rollback initiated"}' \
+              "${SLACK_WEBHOOK}" || echo "Slack notification skipped"
+          else
+            echo "Slack webhook not configured, skipping notification"
+          fi
 
