@@ -19,7 +19,45 @@ spec:
         version: v6.8.2
         component: backend
     spec:
+      serviceAccountName: cloudsql-proxy-sa
+      # nodeSelector removed to allow scheduling on any available node
+      # Previous: cloud.google.com/gke-nodepool: default-pool-v2
+      # Reason: Most nodes have 'default-pool' label, only 1 node has 'default-pool-v2' with insufficient resources
       containers:
+      # Cloud SQL Proxy sidecar container
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+        args:
+          - "--address=0.0.0.0"
+          - "--port=5432"
+          - "--structured-logs"
+          - "--run-connection-test"
+          - "ea-plan-seo-project:europe-west3:dese-ea-plan-db"
+        env:
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: ""  # Workload Identity kullanıyoruz
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      
       - name: dese-api
         image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v6.8.2
         imagePullPolicy: Always
@@ -42,6 +80,11 @@ spec:
         
         # Environment variables from Secrets
         env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dese-db-secret
+              key: password
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
@@ -56,6 +99,8 @@ spec:
           value: "3001"
         - name: NODE_ENV
           value: "production"
+        - name: SKIP_NEXT
+          value: "true"
         
         # Resource limits
         resources:
@@ -107,4 +152,6 @@ spec:
           capabilities:
             drop:
             - ALL
-
+      
+      # Workload Identity kullanıldığında volume mount'a gerek kalmaz.
+      volumes: []

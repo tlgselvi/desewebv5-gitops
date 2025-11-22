@@ -24,6 +24,10 @@ on:
 env:
   NODE_VERSION: '20.19'
   PNPM_VERSION: '8.15.0'
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/dese-ea-plan-v5
+  # Kubeconfig secret selection based on environment
+  # Note: KUBECONFIG_SECRET is set dynamically in each job step using if conditions
+  # Production uses KUBECONFIG_PRODUCTION, staging/others use KUBECONFIG_STAGING
 
 jobs:
   # ===================================
@@ -38,15 +42,113 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🏗️ Setup kubectl & helm
-        uses: azure/setup-kubectl@v3
-      - uses: azure/setup-helm@v3
+      - name: ☁️ Setup GCloud with GKE Auth Plugin
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: 'gke-gcloud-auth-plugin,kubectl'
+          project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
+
+      - name: 🏗️ Setup helm
+        uses: azure/setup-helm@v3
+
+      - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
+            echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
+            echo "::error::Environment: $ENV"
+            echo "::error::"
+            echo "::error::Required GitHub Actions secrets:"
+            if [ "$ENV" = "production" ]; then
+              echo "::error::  - KUBECONFIG_PRODUCTION (required for production)"
+            else
+              echo "::error::  - KUBECONFIG_STAGING (required for staging)"
+            fi
+            echo "::error::"
+            echo "::error::To set secrets:"
+            echo "::error::  1. Go to Repository Settings > Secrets and variables > Actions"
+            echo "::error::  2. Click 'New repository secret'"
+            echo "::error::  3. Add the required secret name and value"
+            echo "::error::  4. Re-run this workflow"
+            exit 1
+          fi
+          
+          echo "✅ Kubeconfig secret validated successfully for environment: $ENV"
+          echo "   Secret length: ${#KUBECONFIG_SECRET} characters"
 
       - name: 🔐 Configure kubectl
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          kubeconfig: ${{ env.KUBECONFIG_SECRET }}
+
+      - name: 🏭 Validate Production Environment Secrets (if production)
+        if: github.event.inputs.environment == 'production'
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "🔍 Validating production environment secrets..."
+          
+          MISSING_SECRETS=()
+          
+          # Required secrets for production
+          if [ -z "${{ secrets.JWT_SECRET }}" ]; then
+            MISSING_SECRETS+=("JWT_SECRET")
+          fi
+          
+          if [ -z "${{ secrets.COOKIE_KEY }}" ]; then
+            MISSING_SECRETS+=("COOKIE_KEY")
+          fi
+          
+          if [ -z "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
+            MISSING_SECRETS+=("GOOGLE_CLIENT_ID")
+          fi
+          
+          if [ -z "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]; then
+            MISSING_SECRETS+=("GOOGLE_CLIENT_SECRET")
+          fi
+          
+          if [ -z "${{ secrets.GOOGLE_CALLBACK_URL }}" ]; then
+            MISSING_SECRETS+=("GOOGLE_CALLBACK_URL")
+          fi
+          
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            MISSING_SECRETS+=("DATABASE_URL")
+          fi
+          
+          if [ -z "${{ secrets.REDIS_URL }}" ]; then
+            MISSING_SECRETS+=("REDIS_URL")
+          fi
+          
+          # Prometheus URL - either PROMETHEUS_URL or MCP_PROMETHEUS_BASE_URL
+          if [ -z "${{ secrets.PROMETHEUS_URL }}" ] && [ -z "${{ secrets.MCP_PROMETHEUS_BASE_URL }}" ]; then
+            MISSING_SECRETS+=("PROMETHEUS_URL or MCP_PROMETHEUS_BASE_URL")
+          fi
+          
+          if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
+            echo "::error::❌ CRITICAL: Missing required production secrets!"
+            echo "::error::Environment: $ENV"
+            echo "::error::"
+            echo "::error::Missing secrets:"
+            for secret in "${MISSING_SECRETS[@]}"; do
+              echo "::error::  - $secret"
+            done
+            echo "::error::"
+            echo "::error::To set secrets:"
+            echo "::error::  1. Go to Repository Settings > Secrets and variables > Actions"
+            echo "::error::  2. Click 'New repository secret'"
+            echo "::error::  3. Add the required secret name and value"
+            echo "::error::  4. Re-run this workflow"
+            exit 1
+          fi
+          
+          echo "✅ All required production secrets validated successfully"
+          echo "   Secrets checked: JWT_SECRET, COOKIE_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL, DATABASE_URL, REDIS_URL, PROMETHEUS_URL/MCP_PROMETHEUS_BASE_URL"
 
       - name: ✅ Check cluster connectivity
         run: kubectl cluster-info
@@ -55,13 +157,13 @@ jobs:
         run: |
           echo "Nodes:"
           kubectl get nodes
-          echo "`nNamespaces:"
+          echo -e "\nNamespaces:"
           kubectl get ns
 
       - name: 🔍 Check existing deployment
         id: check-deployment
         run: |
-          DEPLOYMENT_EXISTS=$(kubectl get deployment dese-ea-plan-v5 -n dese-ea-plan-v5 --no-headers 2>&1 || echo "NOT_FOUND")
+          DEPLOYMENT_EXISTS=$(kubectl get deployment dese-api-deployment -n default --no-headers 2>&1 || echo "NOT_FOUND")
           echo "exists=$DEPLOYMENT_EXISTS" >> $GITHUB_OUTPUT
         continue-on-error: true
 
@@ -75,15 +177,68 @@ jobs:
     if: github.event.inputs.strategy == 'canary'
     timeout-minutes: 30
 
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # For signing
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: ☁️ Setup GCloud with GKE Auth Plugin
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: 'gke-gcloud-auth-plugin,kubectl'
+          project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
+
+      - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
+            echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
+            echo "::error::Environment: $ENV"
+            echo "::error::"
+            echo "::error::Required GitHub Actions secrets:"
+            if [ "$ENV" = "production" ]; then
+              echo "::error::  - KUBECONFIG_PRODUCTION (required for production)"
+            else
+              echo "::error::  - KUBECONFIG_STAGING (required for staging)"
+            fi
+            echo "::error::"
+            echo "::error::To set secrets:"
+            echo "::error::  1. Go to Repository Settings > Secrets and variables > Actions"
+            echo "::error::  2. Click 'New repository secret'"
+            echo "::error::  3. Add the required secret name and value"
+            echo "::error::  4. Re-run this workflow"
+            exit 1
+          fi
+          
+          echo "✅ Kubeconfig secret validated successfully for environment: $ENV"
+          echo "   Secret length: ${#KUBECONFIG_SECRET} characters"
+
       - name: 🔐 Configure kubectl
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          kubeconfig: ${{ env.KUBECONFIG_SECRET }}
+
+      - name: ✒️ Sign the container image
+        uses: sigstore/cosign-installer@v3
+      - run: |-
+          cosign sign --yes "${{ env.IMAGE_NAME }}@${{ github.sha }}"
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+
+      - name: ✅ Verify image signature
+        run: |-
+          cosign verify --key "https://dev.sigstore.dev/fulcio/dev-instance" "${{ env.IMAGE_NAME }}@${{ github.sha }}"
 
       - name: 🐦 Create canary deployment
         run: |
@@ -106,7 +261,7 @@ jobs:
               spec:
                 containers:
                 - name: dese-ea-plan-v5
-                  image: ghcr.io/${{ github.repository }}/dese-ea-plan-v5:${{ github.sha }}
+                  image: ${{ env.IMAGE_NAME }}:${{ github.sha }}
                   ports:
                   - containerPort: 3000
           EOF
@@ -154,38 +309,180 @@ jobs:
     if: github.event.inputs.strategy == 'rolling'
     timeout-minutes: 30
 
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # For signing
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: ☁️ Setup GCloud with GKE Auth Plugin
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: 'gke-gcloud-auth-plugin,kubectl'
+          project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
+
+      - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
+            echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
+            echo "::error::Environment: $ENV"
+            echo "::error::"
+            echo "::error::Required GitHub Actions secrets:"
+            if [ "$ENV" = "production" ]; then
+              echo "::error::  - KUBECONFIG_PRODUCTION (required for production)"
+            else
+              echo "::error::  - KUBECONFIG_STAGING (required for staging)"
+            fi
+            echo "::error::"
+            echo "::error::To set secrets:"
+            echo "::error::  1. Go to Repository Settings > Secrets and variables > Actions"
+            echo "::error::  2. Click 'New repository secret'"
+            echo "::error::  3. Add the required secret name and value"
+            echo "::error::  4. Re-run this workflow"
+            exit 1
+          fi
+          
+          echo "✅ Kubeconfig secret validated successfully for environment: $ENV"
+          echo "   Secret length: ${#KUBECONFIG_SECRET} characters"
+
       - name: 🔐 Configure kubectl
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          kubeconfig: ${{ env.KUBECONFIG_SECRET }}
 
-      - name: 🔄 Rolling update
+      - name: ✒️ Sign the container image
+        uses: sigstore/cosign-installer@v3
+      - run: |-
+          cosign sign --yes "${{ env.IMAGE_NAME }}@${{ github.sha }}"
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+
+      - name: ✅ Verify image signature
+        run: |-
+          cosign verify --key "https://dev.sigstore.dev/fulcio/dev-instance" "${{ env.IMAGE_NAME }}@${{ github.sha }}"
+
+      - name: 🔄 Apply Backend API Deployment
         run: |
-          kubectl set image deployment/dese-ea-plan-v5 \
-            dese-ea-plan-v5=ghcr.io/${{ github.repository }}/dese-ea-plan-v5:${{ github.sha }} \
-            -n dese-ea-plan-v5 \
-            --record
+          echo "Applying backend API deployment from k8s/deployment-api.yaml..."
+          
+          # Update image tag in deployment file using sed (Linux/GitHub Actions compatible)
+          # The deployment uses GCR image format: europe-west3-docker.pkg.dev/.../dese-api:v6.8.2
+          # We'll update only the tag part (after the colon) to use the commit SHA
+          sed -i "s|image:.*dese-api:.*|image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:${{ github.sha }}|g" k8s/deployment-api.yaml
+          
+          # Apply the deployment
+          kubectl apply -f k8s/deployment-api.yaml
+          
+          echo "✅ Backend API deployment applied successfully"
+          echo "📦 Image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:${{ github.sha }}"
 
       - name: ✅ Wait for rollout
         run: |
-          kubectl rollout status deployment/dese-ea-plan-v5 -n dese-ea-plan-v5 --timeout=10m
+          kubectl rollout status deployment/dese-api-deployment -n default --timeout=10m
 
-      - name: 🧪 Smoke test
+      - name: 🧪 Comprehensive Health Check
         run: |
-          SERVICE_URL=$(kubectl get svc dese-ea-plan-v5 -n dese-ea-plan-v5 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-          for i in {1..5}; do
-            if curl -f https://$SERVICE_URL/health; then
-              echo "✅ Health check passed (attempt $i)"
+          # Get service endpoint for dese-api-service
+          SERVICE_URL=$(kubectl get svc dese-api-service -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+          USE_PORT_FORWARD=false
+          
+          if [ -z "$SERVICE_URL" ]; then
+            echo "⚠️ Service does not have external IP, testing via port-forward..."
+            USE_PORT_FORWARD=true
+            kubectl port-forward -n default svc/dese-api-service 8080:3001 &
+            PF_PID=$!
+            sleep 5
+            BASE_URL="http://localhost:8080"
+          else
+            BASE_URL="https://$SERVICE_URL"
+          fi
+          
+          # Wait for service to be ready with retries
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+          SERVICE_READY=false
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -sf "${BASE_URL}/health/live" > /dev/null 2>&1; then
+              SERVICE_READY=true
+              echo "✅ Service is ready (attempt $((RETRY_COUNT + 1)))"
               break
             fi
-            echo "⏳ Waiting for service to be ready (attempt $i)..."
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "⏳ Waiting for service to be ready (attempt $RETRY_COUNT/$MAX_RETRIES)..."
             sleep 10
           done
+          
+          if [ "$SERVICE_READY" = false ]; then
+            echo "::error::❌ Service health check failed after $MAX_RETRIES attempts"
+            if [ "$USE_PORT_FORWARD" = true ]; then
+              kill $PF_PID 2>/dev/null || true
+            fi
+            exit 1
+          fi
+          
+          # Run comprehensive health checks
+          echo "🧪 Running comprehensive API health checks..."
+          
+          # 1. Health check
+          echo -n "  ✓ GET /health/live: "
+          if curl -sf "${BASE_URL}/health/live" > /dev/null; then
+            echo "✅ PASS"
+          else
+            echo "❌ FAIL"
+            EXIT_CODE=1
+          fi
+          
+          # 2. API root
+          echo -n "  ✓ GET /api/v1: "
+          if curl -sf "${BASE_URL}/api/v1" > /dev/null; then
+            echo "✅ PASS"
+          else
+            echo "❌ FAIL"
+            EXIT_CODE=1
+          fi
+          
+          # 3. Metrics endpoint
+          echo -n "  ✓ GET /metrics: "
+          if curl -sf "${BASE_URL}/metrics" > /dev/null; then
+            echo "✅ PASS"
+          else
+            echo "❌ FAIL"
+            EXIT_CODE=1
+          fi
+          
+          # 4. GET /api/v1/auth/login (should return 405)
+          echo -n "  ✓ GET /api/v1/auth/login (405): "
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/v1/auth/login")
+          if [ "$STATUS_CODE" = "405" ]; then
+            echo "✅ PASS (got $STATUS_CODE)"
+          else
+            echo "❌ FAIL (got $STATUS_CODE, expected 405)"
+            EXIT_CODE=1
+          fi
+          
+          # Cleanup port-forward if used
+          if [ "$USE_PORT_FORWARD" = true ]; then
+            kill $PF_PID 2>/dev/null || true
+          fi
+          
+          if [ "${EXIT_CODE:-0}" -eq 1 ]; then
+            echo "::error::❌ One or more health checks failed"
+            exit 1
+          fi
+          
+          echo "✅ All health checks passed successfully!"
 
   # ===================================
   # POST-DEPLOYMENT VALIDATION
@@ -201,44 +498,175 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: ☁️ Setup GCloud with GKE Auth Plugin
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: 'gke-gcloud-auth-plugin,kubectl'
+          project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
+
+      - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
+            echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
+            echo "::error::Environment: $ENV"
+            echo "::error::"
+            echo "::error::Required GitHub Actions secrets:"
+            if [ "$ENV" = "production" ]; then
+              echo "::error::  - KUBECONFIG_PRODUCTION (required for production)"
+            else
+              echo "::error::  - KUBECONFIG_STAGING (required for staging)"
+            fi
+            echo "::error::"
+            echo "::error::To set secrets:"
+            echo "::error::  1. Go to Repository Settings > Secrets and variables > Actions"
+            echo "::error::  2. Click 'New repository secret'"
+            echo "::error::  3. Add the required secret name and value"
+            echo "::error::  4. Re-run this workflow"
+            exit 1
+          fi
+          
+          echo "✅ Kubeconfig secret validated successfully for environment: $ENV"
+          echo "   Secret length: ${#KUBECONFIG_SECRET} characters"
+
       - name: 🔐 Configure kubectl
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          kubeconfig: ${{ env.KUBECONFIG_SECRET }}
 
       - name: 📊 Deployment status
         run: |
           echo "📊 Current Deployment Status:"
-          kubectl get deployments -n dese-ea-plan-v5
+          kubectl get deployments -n default -l app=dese-api
           echo ""
-          kubectl get pods -n dese-ea-plan-v5
+          kubectl get pods -n default -l app=dese-api
           echo ""
-          kubectl get svc -n dese-ea-plan-v5
+          kubectl get svc -n default -l app=dese-api
 
-      - name: 🏥 Health checks
+      - name: 🏥 Health and Integrity Checks
         run: |
-          PODS=$(kubectl get pods -n dese-ea-plan-v5 -l app.kubernetes.io/name=dese-ea-plan-v5 -o json | jq -r '.items[].metadata.name')
+          PENDING_PODS=$(kubectl get pods -A --field-selector=status.phase=Pending -o name)
+          if [ -n "$PENDING_PODS" ]; then
+            echo "::error::❌ ERROR: Found pending pods in the cluster!"
+            echo "$PENDING_PODS"
+            exit 1
+          fi
+          echo "✅ No pending pods found in the cluster."
+
+          PODS=$(kubectl get pods -n default -l app=dese-api -o jsonpath='{.items[*].metadata.name}')
           
+          if [ -z "$PODS" ]; then
+            echo "::error::❌ ERROR: No pods found with label app=dese-api"
+            exit 1
+          fi
+          
+          HEALTH_CHECK_FAILED=0
           for POD in $PODS; do
             echo "Checking health of pod: $POD"
-            kubectl exec -n dese-ea-plan-v5 $POD -- curl -sf http://localhost:3000/health
-            echo "✅ $POD is healthy"
+            if kubectl exec -n default $POD -c dese-api -- curl -sf http://localhost:3001/health/live > /dev/null 2>&1; then
+              echo "✅ $POD health check passed"
+            else
+              echo "::error::❌ Health check failed for pod: $POD"
+              HEALTH_CHECK_FAILED=1
+            fi
           done
+          
+          if [ $HEALTH_CHECK_FAILED -eq 1 ]; then
+            echo "::error::❌ One or more pods failed health check"
+            exit 1
+          fi
+          
+          echo "✅ All pods passed health checks"
+
+      - name: 🧪 API Endpoint Health Checks
+        run: |
+          # Get service endpoint
+          SERVICE_URL=$(kubectl get svc dese-api-service -n default -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+          
+          if [ -z "$SERVICE_URL" ]; then
+            echo "⚠️ Service does not have external IP, using port-forward for health checks..."
+            kubectl port-forward -n default svc/dese-api-service 8080:3001 &
+            PF_PID=$!
+            sleep 5
+            BASE_URL="http://localhost:8080"
+            USE_PORT_FORWARD=true
+          else
+            BASE_URL="https://$SERVICE_URL"
+            USE_PORT_FORWARD=false
+          fi
+          
+          echo "🧪 Running API endpoint health checks against: $BASE_URL"
+          
+          EXIT_CODE=0
+          
+          # Test 1: Health live endpoint
+          echo -n "  ✓ GET /health/live: "
+          if curl -sf "${BASE_URL}/health/live" > /dev/null; then
+            echo "✅ PASS"
+          else
+            echo "❌ FAIL"
+            EXIT_CODE=1
+          fi
+          
+          # Test 2: API root
+          echo -n "  ✓ GET /api/v1: "
+          if curl -sf "${BASE_URL}/api/v1" > /dev/null; then
+            echo "✅ PASS"
+          else
+            echo "❌ FAIL"
+            EXIT_CODE=1
+          fi
+          
+          # Test 3: Metrics endpoint
+          echo -n "  ✓ GET /metrics: "
+          if curl -sf "${BASE_URL}/metrics" > /dev/null; then
+            echo "✅ PASS"
+          else
+            echo "❌ FAIL"
+            EXIT_CODE=1
+          fi
+          
+          # Test 4: GET /api/v1/auth/login (should return 405)
+          echo -n "  ✓ GET /api/v1/auth/login (405): "
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/v1/auth/login")
+          if [ "$STATUS_CODE" = "405" ]; then
+            echo "✅ PASS (got $STATUS_CODE)"
+          else
+            echo "❌ FAIL (got $STATUS_CODE, expected 405)"
+            EXIT_CODE=1
+          fi
+          
+          if [ "$USE_PORT_FORWARD" = true ]; then
+            kill $PF_PID 2>/dev/null || true
+          fi
+          
+          if [ $EXIT_CODE -eq 1 ]; then
+            echo "::error::❌ One or more API endpoint health checks failed"
+            exit 1
+          fi
+          
+          echo "✅ All API endpoint health checks passed successfully!"
 
       - name: 📈 Performance metrics
         run: |
-          kubectl top pods -n dese-ea-plan-v5 --containers
+          kubectl top pods -n default -l app=dese-api --containers
 
       - name: 📋 Pod logs (last 50 lines)
         if: failure()
         run: |
-          kubectl logs -n dese-ea-plan-v5 -l app.kubernetes.io/name=dese-ea-plan-v5 --tail=50
+          kubectl logs -n default -l app=dese-api -c dese-api --tail=50
 
       - name: 📊 Resource usage
         run: |
           kubectl top nodes
-          kubectl top pods -n dese-ea-plan-v5
+          kubectl top pods -n default -l app=dese-api
 
   # ===================================
   # ROLLBACK TRIGGER
@@ -254,22 +682,59 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: ☁️ Setup GCloud with GKE Auth Plugin
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: 'gke-gcloud-auth-plugin,kubectl'
+          project_id: ${{ secrets.GCP_PROJECT_ID || 'ea-plan-seo-project' }}
+
+      - name: 🛡️ Validate kubeconfig secret (Fail-Fast)
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
+        run: |
+          ENV="${{ github.event.inputs.environment }}"
+          echo "🔍 Validating kubeconfig secret for environment: $ENV"
+          
+          if [ -z "${KUBECONFIG_SECRET}" ] || [ "${KUBECONFIG_SECRET}" = "" ]; then
+            echo "::error::❌ CRITICAL: Kubeconfig secret is missing or empty!"
+            echo "::error::Environment: $ENV"
+            echo "::error::"
+            echo "::error::Required GitHub Actions secrets:"
+            if [ "$ENV" = "production" ]; then
+              echo "::error::  - KUBECONFIG_PRODUCTION (required for production)"
+            else
+              echo "::error::  - KUBECONFIG_STAGING (required for staging)"
+            fi
+            echo "::error::"
+            echo "::error::To set secrets:"
+            echo "::error::  1. Go to Repository Settings > Secrets and variables > Actions"
+            echo "::error::  2. Click 'New repository secret'"
+            echo "::error::  3. Add the required secret name and value"
+            echo "::error::  4. Re-run this workflow"
+            exit 1
+          fi
+          
+          echo "✅ Kubeconfig secret validated successfully for environment: $ENV"
+          echo "   Secret length: ${#KUBECONFIG_SECRET} characters"
+
       - name: 🔐 Configure kubectl
+        env:
+          KUBECONFIG_SECRET: ${{ github.event.inputs.environment == 'production' && secrets.KUBECONFIG_PRODUCTION || secrets.KUBECONFIG_STAGING }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_PRODUCTION }}
+          kubeconfig: ${{ env.KUBECONFIG_SECRET }}
 
       - name: ⏪ Rollback deployment
         run: |
           echo "⏪ Rolling back deployment..."
-          kubectl rollout undo deployment/dese-ea-plan-v5 -n dese-ea-plan-v5
-          kubectl rollout status deployment/dese-ea-plan-v5 -n dese-ea-plan-v5 --timeout=5m
+          kubectl rollout undo deployment/dese-api-deployment -n default
+          kubectl rollout status deployment/dese-api-deployment -n default --timeout=5m
 
       - name: ✅ Verify rollback
         run: |
-          kubectl get deployment dese-ea-plan-v5 -n dese-ea-plan-v5
-          PODS=$(kubectl get pods -n dese-ea-plan-v5 -l app.kubernetes.io/name=dese-ea-plan-v5)
+          kubectl get deployment dese-api-deployment -n default
+          PODS=$(kubectl get pods -n default -l app=dese-api)
           if [[ -n "$PODS" ]]; then
             echo "✅ Rollback successful"
           else

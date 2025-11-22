@@ -245,7 +245,7 @@ pwsh scripts/advanced-health-check.ps1 -Verbose
 docker ps | grep postgres
 
 # Check connection
-psql -h localhost -U dese -d dese_ea_plan_v5
+psql -h localhost -U postgres -d dese_db
 
 # Check environment variable
 echo $DATABASE_URL

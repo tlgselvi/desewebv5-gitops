@@ -84,10 +84,10 @@ COOKIE_KEY=your-production-cookie-key-min-32-chars-change-this
 BCRYPT_ROUNDS=12
 
 # Database Configuration
-DATABASE_URL=postgresql://user:password@db-host:5432/dese_ea_plan_v5
+DATABASE_URL=postgresql://postgres:PASSWORD@127.0.0.1:5432/dese_db
 DB_HOST=db-host
 DB_PORT=5432
-DB_NAME=dese_ea_plan_v5
+DB_NAME=dese_db
 DB_USER=user
 DB_PASSWORD=password
 

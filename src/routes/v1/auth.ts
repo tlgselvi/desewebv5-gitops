@@ -22,6 +22,22 @@ authRouter.get("/login", (req: Request, res: Response): void => {
 });
 
 authRouter.post("/login", (req: Request, res: Response): void => {
+  // Mock login is only allowed in non-production environments
+  if (config.nodeEnv === "production") {
+    logger.warn("Mock login attempted in production", {
+      ip: req.ip,
+      userAgent: req.get("user-agent"),
+    });
+    res.status(403).json({
+      success: false,
+      error: "mock_login_disabled",
+      message: "Mock login is disabled in production. Please use Google OAuth.",
+      availableMethods: ["google"],
+      googleOAuthUrl: "/api/v1/auth/google",
+    });
+    return;
+  }
+
   const { username = "admin@poolfab.com.tr" } = req.body ?? {};
 
   try {
@@ -36,7 +52,7 @@ authRouter.post("/login", (req: Request, res: Response): void => {
       { expiresIn: "1h" },
     );
 
-    logger.debug("Mock login token issued", { username });
+    logger.debug("Mock login token issued", { username, environment: config.nodeEnv });
 
     res.json({
       success: true,
@@ -46,6 +62,7 @@ authRouter.post("/login", (req: Request, res: Response): void => {
         email: username,
         role: "admin",
       },
+      warning: "This is a mock login endpoint. Use Google OAuth in production.",
     });
   } catch (error) {
     logger.error("Failed to generate mock login token", { error });

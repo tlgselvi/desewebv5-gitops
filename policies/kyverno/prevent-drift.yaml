@@ -2,7 +2,7 @@ apiVersion: kyverno.io/v1
 kind: Policy
 metadata:
   name: prevent-configuration-drift
-  namespace: dese-ea-plan-v5
+  namespace: default
   labels:
     app.kubernetes.io/name: drift-prevention
     app.kubernetes.io/part-of: cpt-optimization
@@ -20,8 +20,8 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - dese-ea-plan-v5
+              labels:
+                app: dese-api
       validate:
         message: "Manual replica changes blocked. Use GitOps workflow."
         pattern:
@@ -35,8 +35,8 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - dese-ea-plan-v5
+              labels:
+                app: dese-api
       validate:
         message: "Resource limits cannot be modified without GitOps approval."
         pattern:
@@ -54,8 +54,8 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - dese-ea-plan-v5
+              labels:
+                app: dese-api
       validate:
         message: "Only signed container images are allowed."
         pattern:
@@ -72,8 +72,8 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - dese-ea-plan-v5
+              labels:
+                app: dese-api
       validate:
         message: "Environment variable changes must go through GitOps."
         deny:
@@ -90,8 +90,8 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - dese-ea-plan-v5
+              labels:
+                app: dese-api
       validate:
         message: "Self-healing annotation required for production."
         pattern:
@@ -108,13 +108,13 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - dese-ea-plan-v5
+              labels:
+                app: dese-api
       validate:
         message: "Deployments must stay in designated namespace."
         pattern:
           metadata:
-            namespace: "dese-ea-plan-v5"
+            namespace: "default"
 
 # Generate ClusterPolicy for cross-cutting concerns
 ---
@@ -136,9 +136,8 @@ spec:
           - resources:
               kinds:
                 - Deployment
-              namespaces:
-                - "dese-ea-plan-v5"
-                - "monitoring"
+              labels:
+                app: dese-api
       validate:
         message: "All deployments must have resource limits and health probes."
         pattern:
@@ -151,4 +150,3 @@ spec:
                       limits: "?"
                     livenessProbe: "?"
                     readinessProbe: "?"
-

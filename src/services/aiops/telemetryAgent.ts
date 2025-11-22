@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '@/utils/logger.js';
+import { config } from '@/config/index.js';
 
 export interface TelemetryData {
   timestamp: number;
@@ -26,8 +27,24 @@ interface PrometheusQueryResponse {
 export class TelemetryAgent {
   private prometheusUrl: string;
 
-  constructor(prometheusUrl: string = 'http://prometheus-service.monitoring:9090') {
-    this.prometheusUrl = prometheusUrl;
+  constructor(prometheusUrl?: string) {
+    // Priority: constructor param > config.mcpDashboard.prometheus.baseUrl > env PROMETHEUS_URL > default
+    this.prometheusUrl =
+      prometheusUrl ||
+      config.mcpDashboard.prometheus.baseUrl ||
+      process.env.PROMETHEUS_URL ||
+      'http://prometheus-service.monitoring:9090';
+    
+    logger.debug('TelemetryAgent initialized', {
+      prometheusUrl: this.prometheusUrl,
+      source: prometheusUrl
+        ? 'constructor'
+        : config.mcpDashboard.prometheus.baseUrl
+          ? 'config.mcpDashboard.prometheus.baseUrl'
+          : process.env.PROMETHEUS_URL
+            ? 'env.PROMETHEUS_URL'
+            : 'default',
+    });
   }
 
   /**

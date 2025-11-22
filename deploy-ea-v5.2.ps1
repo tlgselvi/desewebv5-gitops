@@ -35,7 +35,7 @@ function Write-Info-Log {
 # Check prerequisites
 function Test-Prerequisites {
     Write-Log "Checking prerequisites..."
-    
+
     $commands = @('kubectl')
     foreach ($cmd in $commands) {
         if (!(Get-Command $cmd -ErrorAction SilentlyContinue)) {
@@ -43,8 +43,8 @@ function Test-Prerequisites {
         }
     }
     
-    # Optional commands
-    $optionalCommands = @('gh', 'jq', 'argocd')
+    # Optional but recommended commands
+    $optionalCommands = @('gh', 'jq', 'argocd', 'gcloud')
     foreach ($cmd in $optionalCommands) {
         if (!(Get-Command $cmd -ErrorAction SilentlyContinue)) {
             Write-Warning-Log "$cmd not found, some features may be disabled"
@@ -57,7 +57,65 @@ function Test-Prerequisites {
     } catch {
         Write-Error-Log "Cannot connect to Kubernetes cluster"
     }
+
+    # Verify required Kubernetes Secrets exist
+    Write-Info-Log "Verifying required Kubernetes Secrets..."
+    $requiredSecrets = @('dese-db-secret', 'dese-redis-secret')
+    $missingSecrets = @()
     
+    foreach ($secretName in $requiredSecrets) {
+        try {
+            $secretExists = kubectl get secret $secretName -n $Namespace --ignore-not-found=true 2>&1
+            if ($LASTEXITCODE -ne 0 -or $secretExists -match "NotFound") {
+                $missingSecrets += $secretName
+            } else {
+                Write-Log "✅ Secret '$secretName' found in namespace '$Namespace'"
+            }
+        } catch {
+            $missingSecrets += $secretName
+        }
+    }
+    
+    if ($missingSecrets.Count -gt 0) {
+        $missingSecretsList = $missingSecrets -join ", "
+        Write-Error-Log "Required Kubernetes Secret(s) not found: $missingSecretsList. Please create the missing Secret(s) before deploying."
+    } else {
+        Write-Log "✅ All required Kubernetes Secrets are present"
+    }
+
+    # Verify GKE Node Pool Autoscaling (if gcloud is available)
+    if (Get-Command gcloud -ErrorAction SilentlyContinue) {
+        Write-Info-Log "Verifying GKE Node Pool autoscaling configuration..."
+        try {
+            $nodePools = gcloud container node-pools list --cluster dese-ea-plan-cluster --region europe-west3 --format="json" | ConvertFrom-Json
+            foreach ($pool in $nodePools) {
+                if (-not $pool.autoscaling.enabled) {
+                    Write-Error-Log "Node pool '$($pool.name)' does not have autoscaling enabled. Deployment aborted."
+                }
+                Write-Log "✅ Node pool '$($pool.name)' has autoscaling enabled (Min: $($pool.autoscaling.minNodeCount), Max: $($pool.autoscaling.maxNodeCount))"
+            }
+        } catch {
+            Write-Warning-Log "Could not verify GKE node pool autoscaling. Check gcloud authentication or cluster name. Error: $_"
+        }
+    }
+
+    # Verify GKE is authorized for Cloud SQL (if gcloud is available)
+    if (Get-Command gcloud -ErrorAction SilentlyContinue) {
+        Write-Info-Log "Verifying Cloud SQL authorized networks..."
+        try {
+            $podRange = (gcloud container clusters describe dese-ea-plan-cluster --region europe-west3 --format="value(clusterIpv4Cidr)")
+            $authorizedNetworks = (gcloud sql instances describe dese-ea-plan-db --format="value(settings.ipConfiguration.authorizedNetworks.value)")
+
+            if ($authorizedNetworks -notlike "*$podRange*") {
+                Write-Error-Log "Pod IP range '$podRange' is NOT in Cloud SQL authorized networks. Deployment aborted."
+            }
+            Write-Log "✅ Pod IP range '$podRange' is authorized for Cloud SQL."
+
+        } catch {
+            Write-Warning-Log "Could not verify Cloud SQL authorized networks. Check gcloud authentication or resource names. Error: $_"
+        }
+    }
+
     Write-Log "✅ All prerequisites met"
 }
 
@@ -68,42 +126,70 @@ function Deploy-Manifests {
     try {
         kubectl apply -k deploy/base
         kubectl apply -k deploy/overlays/prod
-        
+
         # Check for ArgoCD app
-        $argocdOutput = argocd app get $AppName 2>&1
+        argocd app get $AppName 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
             argocd app sync $AppName --timeout 300
             Write-Log "✅ ArgoCD sync completed"
         } else {
             Write-Warning-Log "ArgoCD app '$AppName' not found, skipping sync"
         }
-        
+
         Write-Log "✅ Manifests deployed successfully"
     } catch {
         Write-Warning-Log "Deployment failed: $_"
     }
 }
 
+# Step 1.5: Verify Image Existence before Rollout
+function Test-Image {
+    Write-Log "[1.5/6] 🖼️ Verifying container image existence..."
+    if (Get-Command gh -ErrorAction SilentlyContinue) {
+        try {
+            $gitSha = git rev-parse HEAD
+            $imageName = "ghcr.io/$(git remote get-url origin -replace '.*github.com[:/]', '' -replace '\.git$', '')/dese-ea-plan-v5"
+            $imageWithSha = "$imageName`:$gitSha"
+            
+            Write-Info-Log "Checking for image: $imageWithSha"
+            # Check if image exists in GHCR using GitHub API
+            $repo = git remote get-url origin -replace '.*github.com[:/]', '' -replace '\.git$', ''
+            $packageName = "dese-ea-plan-v5"
+            $imageTag = $gitSha
+            
+            # Use gh api to check container package versions
+            $versions = gh api "orgs/$($repo.Split('/')[0])/packages/container/$packageName/versions" --jq ".[] | select(.metadata.container.tags[] == \"$imageTag\") | .id" 2>&1
+            if ($LASTEXITCODE -ne 0 -or -not $versions) {
+                throw "Image $imageWithSha not found in GHCR"
+            }
+            Write-Log "✅ Image for commit $gitSha found in registry."
+        } catch {
+            Write-Error-Log "Image for the latest commit ($gitSha) not found in ghcr.io. A build and push might be required before deploying. Error: $_"
+        }
+    }
+}
+
 # Step 2: Trigger AIOps canary rollout
-function Invoke-CanaryRollout {
-    Write-Log "[2/6] 🧠 Triggering AIOps canary rollout..."
+function Invoke-DeploymentWorkflow {
+    param([string]$Strategy = "rolling") # Default to rolling
+    Write-Log "[2/6] 🧠 Triggering GitHub Actions deployment workflow (Strategy: $Strategy)..."
     
     try {
         # Get GitHub repository from git remote
         $gitRemote = git remote get-url origin
         $githubRepo = $gitRemote -replace '.*github.com[:/]', '' -replace '\.git$', ''
         
-        gh workflow run ci-cd.yml `
+        gh workflow run deploy.yml `
             --ref $Branch `
-            --field rollout=canary `
-            --field policy_check=true `
+            --field environment=production `
+            --field strategy=$Strategy `
             --repo $githubRepo
         
         Write-Info-Log "Workflow triggered, waiting 10s for initialization..."
         Start-Sleep -Seconds 10
         
         # Check workflow status
-        $runId = gh run list --workflow=ci-cd.yml --branch=$Branch --limit 1 --json databaseId -q '.[0].databaseId'
+        $runId = gh run list --workflow=deploy.yml --branch=$Branch --limit 1 --json databaseId -q '.[0].databaseId'
         Write-Info-Log "Monitoring workflow run: $runId"
         
         Write-Log "✅ Canary rollout triggered"
@@ -113,9 +199,9 @@ function Invoke-CanaryRollout {
 }
 
 # Step 3: Apply guardrails and alert rules
-function Apply-Guardrails {
+function Set-Guardrails {
     Write-Log "[3/6] 🛡️ Applying guardrails & alert rules..."
-    
+
     # Apply Kyverno drift prevention policy
     if (Test-Path "policies/kyverno/prevent-drift.yaml") {
         kubectl apply -f policies/kyverno/prevent-drift.yaml
@@ -123,7 +209,7 @@ function Apply-Guardrails {
     } else {
         Write-Warning-Log "Kyverno drift prevention policy not found"
     }
-    
+
     # Apply Prometheus alert rules
     if (Test-Path "monitoring/prometheus-rules.yaml") {
         kubectl apply -f monitoring/prometheus-rules.yaml
@@ -131,7 +217,7 @@ function Apply-Guardrails {
     } else {
         Write-Warning-Log "Prometheus alert rules not found"
     }
-    
+
     # Apply self-healing job
     if (Test-Path "aiops/self-heal-job.yaml") {
         kubectl apply -f aiops/self-heal-job.yaml
@@ -139,7 +225,7 @@ function Apply-Guardrails {
     } else {
         Write-Warning-Log "Self-healing job not found"
     }
-    
+
     Write-Log "✅ Guardrails and alert rules applied"
 }
 
@@ -153,9 +239,9 @@ function Confirm-Rollout {
     } catch {
         Write-Warning-Log "Cannot get rollout status"
     }
-    
+
     # Check ArgoCD app diff
-    $argocdOutput = argocd app get $AppName 2>&1
+    argocd app get $AppName 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) {
         argocd app diff $AppName | Out-Null
     } else {
@@ -238,8 +324,9 @@ function Main {
     
     Test-Prerequisites
     Deploy-Manifests
-    Invoke-CanaryRollout
-    Apply-Guardrails
+    Test-Image
+    Invoke-DeploymentWorkflow -Strategy "rolling" # Or pass a parameter to the script
+    Set-Guardrails
     Confirm-Rollout
     Confirm-DriftRisk
     Show-Summary

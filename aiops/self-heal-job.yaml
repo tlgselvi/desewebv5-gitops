@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: self-heal-cpt
-  namespace: dese-ea-plan-v5
+  namespace: default
   labels:
     app.kubernetes.io/name: self-healing
     app.kubernetes.io/component: aiops
@@ -22,7 +22,7 @@ spec:
             app.kubernetes.io/name: self-healing
             app.kubernetes.io/component: aiops
         spec:
-          serviceAccountName: dese-ea-plan-v5
+          serviceAccountName: default # veya ilgili service account
           restartPolicy: OnFailure
           containers:
             - name: self-healing-analyzer
@@ -46,15 +46,15 @@ spec:
               
               env:
                 - name: NAMESPACE
-                  value: "dese-ea-plan-v5"
+                  value: "default"
                 - name: APP_NAME
-                  value: "dese-ea-plan-v5"
+                  value: "dese-api-deployment"
                 - name: PROMETHEUS_URL
                   value: "http://prometheus:9090"
                 - name: SLACK_WEBHOOK
                   valueFrom:
                     secretKeyRef:
-                      name: dese-ea-plan-v5-secrets
+                      name: dese-secrets
                       key: SLACK_WEBHOOK
               
               volumeMounts:
@@ -84,7 +84,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: self-healing-script
-  namespace: dese-ea-plan-v5
+  namespace: default
   labels:
     app.kubernetes.io/name: self-healing
     app.kubernetes.io/component: aiops
@@ -302,4 +302,3 @@ data:
     
     if __name__ == "__main__":
         sys.exit(main())
-

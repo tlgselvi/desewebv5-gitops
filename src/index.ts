@@ -171,21 +171,6 @@ if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true") {
   app.use(limiter);
 }
 
-// Session ve Passport Middleware
-// ÖNEMLİ: Bu middleware'ler CORS'tan sonra ve rotalardan önce gelmelidir.
-app.use(
-  cookieSession({
-    name: "dese-session",
-    keys: [config.security.cookieKey],
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true,
-    secure: config.nodeEnv === "production", // Only send cookie over HTTPS in production
-    sameSite: "lax", // CSRF protection
-  }),
-);
-app.use(passport.initialize());
-app.use(passport.session());
-
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -220,20 +205,39 @@ if (!skipNext && nextHandler) {
     return;
   });
 } else {
-  // In Hybrid Mode, only handle API routes - ignore frontend routes
+  // In Hybrid Mode, only handle API routes - return 404 for everything else
   app.use((req: Request, res: Response): void => {
-    // Only return 404 for API routes that don't exist
-    // Frontend routes (like /login, /dashboard, etc.) should be ignored
-    if (req.path.startsWith("/api/") && !res.headersSent) {
-      res.status(404).json({
-        error: "Not Found",
-        message: "API endpoint not found. Frontend runs separately on port 3001.",
-        path: req.path,
-      });
-      return;
+    if (!res.headersSent) {
+      // Check if it's an API, health, or metrics route
+      const isApiRoute = req.path.startsWith("/api/");
+      const isHealthRoute = req.path.startsWith("/health");
+      const isMetricsRoute = req.path.startsWith("/metrics");
+      
+      // Only return 404 for non-API/non-health/non-metrics routes
+      if (!isApiRoute && !isHealthRoute && !isMetricsRoute) {
+        res.status(404).json({
+          error: "Not Found",
+          message: "Endpoint not found. This is a backend API server. Use /api/v1/* for API endpoints, /health for health checks, or /metrics for metrics.",
+          path: req.path,
+          availableEndpoints: {
+            api: "/api/v1/*",
+            health: "/health/*",
+            metrics: "/metrics",
+          },
+        });
+        return;
+      }
+      
+      // For API routes that don't exist, return 404
+      if (isApiRoute) {
+        res.status(404).json({
+          error: "Not Found",
+          message: "API endpoint not found. Frontend runs separately on port 3001.",
+          path: req.path,
+        });
+        return;
+      }
     }
-    // For non-API routes, do nothing (they're handled by frontend)
-    // This prevents backend from interfering with frontend routes
   });
 }
 
