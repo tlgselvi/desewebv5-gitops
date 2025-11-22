@@ -50,8 +50,21 @@ export default function LoginPage() {
     e.preventDefault();
     e.stopPropagation();
     
-    // Get API base URL - could be full URL (http://localhost:3000/api/v1) or base URL (http://localhost:3000)
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    // Determine API URL based on environment
+    // Production: Use production API URL (https://api.poolfab.com.tr)
+    // Development: Use NEXT_PUBLIC_API_URL or default to localhost:3000
+    const isProduction = window.location.hostname === "app.poolfab.com.tr" || 
+                         window.location.hostname === "poolfab.com.tr" ||
+                         process.env.NODE_ENV === "production";
+    
+    let apiBaseUrl: string;
+    if (isProduction) {
+      // Production: Always use production API URL
+      apiBaseUrl = "https://api.poolfab.com.tr";
+    } else {
+      // Development: Use NEXT_PUBLIC_API_URL or default to localhost:3000
+      apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    }
     
     // Ensure we always use /api/v1/auth/google regardless of NEXT_PUBLIC_API_URL format
     // Remove trailing slashes and ensure we have the full API path
