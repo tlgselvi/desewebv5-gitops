@@ -20,9 +20,11 @@ spec:
         component: backend
     spec:
       serviceAccountName: cloudsql-proxy-sa
-      # nodeSelector removed to allow scheduling on any available node
-      # Previous: cloud.google.com/gke-nodepool: default-pool-v2
-      # Reason: Most nodes have 'default-pool' label, only 1 node has 'default-pool-v2' with insufficient resources
+      # Use default-pool-v2 only - it has Workload Identity properly configured
+      # default-pool nodes have ACCESS_TOKEN_SCOPE_INSUFFICIENT errors
+      # TODO: Update default-pool to use GKE_METADATA mode when quota allows
+      nodeSelector:
+        cloud.google.com/gke-nodepool: default-pool-v2
       containers:
       # Cloud SQL Proxy sidecar container
       - name: cloud-sql-proxy
