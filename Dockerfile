@@ -37,6 +37,7 @@ RUN pnpm build
 
 # Stage 6: Final production image
 FROM node:20.19-alpine AS runner
+RUN apk add --no-cache wget
 RUN corepack enable pnpm
 WORKDIR /app
 
@@ -71,6 +72,8 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+# Google Cloud credentials path (will be mounted via docker-compose volume)
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
 
 # Health check for backend API
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

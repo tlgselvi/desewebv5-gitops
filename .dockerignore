@@ -1,7 +1,59 @@
-node_modules
-frontend/node_modules
-dist
-drizzle
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build artifacts
+dist/
+drizzle/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Environment files
 .env
-logs
-uploads
+.env.local
+.env.*.local
+
+# Logs and runtime data
+logs/
+uploads/
+*.log
+backend-*.log
+frontend-*.log
+dev-server.*
+
+# Google Cloud credentials (security)
+gcp-credentials.json
+client_secret_*.json
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+test-results/
+playwright-report/
+
+# Documentation (not needed in Docker image)
+*.md
+!README.md
+docs/
+
+# Kubernetes (not needed in Docker)
+k8s/
+.gitops/
+
+# Archive and temporary files
+archive/
+dese-web/
+*.tmp
+*.temp

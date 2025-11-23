@@ -5,10 +5,10 @@ metadata:
   namespace: default
   labels:
     app: dese-api
-    version: v6.8.2
+    version: v6.8.3
     component: backend
 spec:
-  replicas: 2
+  replicas: 1  # Scaled to 1 due to resource constraints on default-pool-v2
   selector:
     matchLabels:
       app: dese-api
@@ -16,7 +16,7 @@ spec:
     metadata:
       labels:
         app: dese-api
-        version: v6.8.2
+        version: v6.8.3
         component: backend
     spec:
       serviceAccountName: cloudsql-proxy-sa
@@ -116,6 +116,42 @@ spec:
               key: GOOGLE_CLIENT_SECRET
         - name: GOOGLE_CALLBACK_URL
           value: "https://api.poolfab.com.tr/api/v1/auth/google/callback"
+        # Google Search Console (GSC) Configuration
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /app/gcp-credentials.json
+        - name: GSC_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GSC_PROJECT_ID
+              optional: true
+        - name: GSC_CLIENT_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GSC_CLIENT_EMAIL
+              optional: true
+        - name: GSC_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GSC_PRIVATE_KEY
+              optional: true
+        - name: GSC_PROPERTY_URL
+          value: "https://poolfab.com.tr"
+        # Google Maps & Business API
+        - name: GOOGLE_MAPS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GOOGLE_MAPS_API_KEY
+              optional: true
+        - name: GOOGLE_BUSINESS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: GOOGLE_BUSINESS_API_KEY
+              optional: true
         
         # Resource limits
         resources:
@@ -158,6 +194,13 @@ spec:
           failureThreshold: 30
           successThreshold: 1
         
+        # Volume mounts
+        volumeMounts:
+        - name: gcp-credentials
+          mountPath: /app/gcp-credentials.json
+          subPath: gcp-credentials.json
+          readOnly: true
+        
         # Security context
         securityContext:
           runAsNonRoot: true
@@ -168,5 +211,11 @@ spec:
             drop:
             - ALL
       
-      # Workload Identity kullanıldığında volume mount'a gerek kalmaz.
-      volumes: []
+      # Google Cloud credentials volume mount
+      volumes:
+      - name: gcp-credentials
+        secret:
+          secretName: gcp-credentials
+          items:
+          - key: gcp-credentials.json
+            path: gcp-credentials.json

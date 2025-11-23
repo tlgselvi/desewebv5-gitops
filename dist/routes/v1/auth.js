@@ -4,7 +4,35 @@ import jwt from "jsonwebtoken";
 import { config } from "../../config/index.js";
 import { logger } from "../../utils/logger.js";
 const authRouter = Router();
+/**
+ * Handle GET requests to /login endpoint
+ * Returns 405 Method Not Allowed with Allow header
+ */
+authRouter.get("/login", (req, res) => {
+    res.status(405).setHeader("Allow", "POST").json({
+        success: false,
+        error: "method_not_allowed",
+        message: "GET method is not allowed for this endpoint. Use POST method.",
+        allowedMethods: ["POST"],
+        endpoint: "/api/v1/auth/login",
+    });
+});
 authRouter.post("/login", (req, res) => {
+    // Mock login is only allowed in non-production environments
+    if (config.nodeEnv === "production") {
+        logger.warn("Mock login attempted in production", {
+            ip: req.ip,
+            userAgent: req.get("user-agent"),
+        });
+        res.status(403).json({
+            success: false,
+            error: "mock_login_disabled",
+            message: "Mock login is disabled in production. Please use Google OAuth.",
+            availableMethods: ["google"],
+            googleOAuthUrl: "/api/v1/auth/google",
+        });
+        return;
+    }
     const { username = "admin@poolfab.com.tr" } = req.body ?? {};
     try {
         const token = jwt.sign({
@@ -13,7 +41,7 @@ authRouter.post("/login", (req, res) => {
             role: "admin",
             permissions: ["admin", "mcp.dashboard.read"],
         }, config.security.jwtSecret, { expiresIn: "1h" });
-        logger.debug("Mock login token issued", { username });
+        logger.debug("Mock login token issued", { username, environment: config.nodeEnv });
         res.json({
             success: true,
             token,
@@ -22,6 +50,7 @@ authRouter.post("/login", (req, res) => {
                 email: username,
                 role: "admin",
             },
+            warning: "This is a mock login endpoint. Use Google OAuth in production.",
         });
     }
     catch (error) {

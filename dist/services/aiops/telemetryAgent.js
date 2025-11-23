@@ -1,9 +1,25 @@
 import axios from 'axios';
 import { logger } from '../../utils/logger.js';
+import { config } from '../../config/index.js';
 export class TelemetryAgent {
     prometheusUrl;
-    constructor(prometheusUrl = 'http://prometheus-service.monitoring:9090') {
-        this.prometheusUrl = prometheusUrl;
+    constructor(prometheusUrl) {
+        // Priority: constructor param > config.mcpDashboard.prometheus.baseUrl > env PROMETHEUS_URL > default
+        this.prometheusUrl =
+            prometheusUrl ||
+                config.mcpDashboard.prometheus.baseUrl ||
+                process.env.PROMETHEUS_URL ||
+                'http://prometheus-service.monitoring:9090';
+        logger.debug('TelemetryAgent initialized', {
+            prometheusUrl: this.prometheusUrl,
+            source: prometheusUrl
+                ? 'constructor'
+                : config.mcpDashboard.prometheus.baseUrl
+                    ? 'config.mcpDashboard.prometheus.baseUrl'
+                    : process.env.PROMETHEUS_URL
+                        ? 'env.PROMETHEUS_URL'
+                        : 'default',
+        });
     }
     /**
      * Collect metrics from Prometheus

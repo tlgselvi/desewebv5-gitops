@@ -10,3 +10,9 @@ coverage
 dist
 *.md
 !README.md
+# Google Cloud credentials (security)
+gcp-credentials.json
+client_secret_*.json
+# Test
+test-results
+playwright-report

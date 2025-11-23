@@ -1,22 +1,11 @@
 import { defineConfig } from 'drizzle-kit';
 
-// güvenli config yüklemesi ve normalize etme
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const _raw = require('./src/config/index.ts');
-const appConfig = _raw?.default ?? _raw?.config ?? _raw;
+// Docker environment için basit config
+const isDocker = process.env.NODE_ENV === 'production' || process.env.DOCKER_ENV === 'true';
 
-if (!appConfig || !appConfig.database) {
-  throw new Error(
-    'Drizzle migration: appConfig.database not found. Loaded config keys: ' +
-      JSON.stringify(Object.keys(appConfig ?? {})),
-  );
-}
-
-// güvenli erişim örneği kullan
-const connectionString = appConfig.database?.url ?? appConfig.database?.connectionString;
-if (!connectionString) {
-  throw new Error('Drizzle migration: database connection URL not defined on appConfig.database');
-}
+const connectionString = isDocker 
+  ? 'postgresql://dese:dese123@db:5432/dese_ea_plan_v5'
+  : 'postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5';
 
 export default defineConfig({
   schema: './src/db/schema.ts',

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { TelemetryAgent } from '../services/aiops/telemetryAgent.js';
 import { logger } from '../utils/logger.js';
 const router = Router();
+// TelemetryAgent will use config.mcpDashboard.prometheus.baseUrl or PROMETHEUS_URL env variable
 const agent = new TelemetryAgent();
 /**
  * GET /api/v1/aiops/collect

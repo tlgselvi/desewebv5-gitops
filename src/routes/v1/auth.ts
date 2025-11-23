@@ -38,7 +38,7 @@ authRouter.post("/login", (req: Request, res: Response): void => {
     return;
   }
 
-  const { username = "admin@poolfab.com.tr" } = req.body ?? {};
+  const { username = "admin@example.com" } = req.body ?? {};
 
   try {
     const token = jwt.sign(

@@ -13,9 +13,26 @@ import { config } from '../config/index.js';
 import { v1Router } from './v1/index.js';
 export function setupRoutes(app) {
     const apiPrefix = `/api/${config.apiVersion}`;
+    // Root path handler - API information
+    app.get('/', (req, res) => {
+        res.json({
+            name: 'Dese EA Plan API',
+            version: config.apiVersion || 'v1',
+            description: 'Backend API Server for Dese EA Plan v6.8.2',
+            environment: config.nodeEnv,
+            timestamp: new Date().toISOString(),
+            endpoints: {
+                api: `${apiPrefix}`,
+                health: '/health',
+                metrics: '/metrics',
+                docs: '/api-docs',
+            },
+            note: 'This is a backend API server. Use /api/v1/* for API endpoints, /health for health checks, or /metrics for metrics.',
+        });
+    });
     // Health check routes (most specific, no prefix)
     app.use('/health', healthRoutes);
-    // JWKS endpoint (root level)
+    // JWKS endpoint (root level, but after root GET handler)
     app.use('/', jwksRoutes);
     // Metrics endpoints (specific before general)
     app.get('/metrics/aiops', aiopsMetrics);

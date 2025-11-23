@@ -94,9 +94,9 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to become healthy..."
-          # Wait until at least 7 services are in a 'healthy' state.
-          # This is more robust than checking for the word 'healthy' in the output.
-          EXPECTED_HEALTHY_SERVICES=7
+          # Wait until at least 8 services are in a 'healthy' state.
+          # Services: db, redis, app, frontend, finbot, mubot, dese, observability
+          EXPECTED_HEALTHY_SERVICES=8
           timeout 300s bash -c "until [ \$(docker compose ps --filter 'status=healthy' | grep -c 'healthy') -ge $EXPECTED_HEALTHY_SERVICES ]; do echo -n '.'; sleep 5; done"
           echo ""
           echo "All services are healthy!"

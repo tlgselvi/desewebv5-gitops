@@ -16,8 +16,8 @@ const configSchema = z.object({
   database: z.object({
     url: z
       .string()
-      .default("postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5"),
-    host: z.string().default("localhost"),
+      .default("postgresql://dese:dese123@db:5432/dese_ea_plan_v5"),
+    host: z.string().default("db"),
     port: z.coerce.number().default(5432),
     name: z.string().default("dese_ea_plan_v5"),
     user: z.string().default("dese"),
@@ -26,8 +26,8 @@ const configSchema = z.object({
 
   // Redis Configuration
   redis: z.object({
-    url: z.string().default("redis://localhost:6379"),
-    host: z.string().default("localhost"),
+    url: z.string().default("redis://redis:6379"),
+    host: z.string().default("redis"),
     port: z.coerce.number().default(6379),
     password: z.string().optional(),
   }),

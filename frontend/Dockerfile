@@ -29,7 +29,7 @@ RUN pnpm build
 
 # Production image, copy all the files and run next
 FROM node:20.19-alpine AS runner
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat wget
 RUN corepack enable pnpm
 WORKDIR /app
 
@@ -48,8 +48,8 @@ COPY --from=builder /app/package.json ./package.json
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3001
 
-ENV PORT=3000
+ENV PORT=3001
 
 CMD ["pnpm", "start"]

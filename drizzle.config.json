@@ -1,0 +1,10 @@
+{
+  "schema": "./src/db/schema.ts",
+  "out": "./drizzle",
+  "dialect": "postgresql",
+  "dbCredentials": {
+    "url": "postgresql://dese:dese123@db:5432/dese_ea_plan_v5"
+  },
+  "verbose": true,
+  "strict": true
+}

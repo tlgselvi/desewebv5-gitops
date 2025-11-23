@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<LoginFormData>({
-    email: "admin@poolfab.com.tr",
+    email: "admin@example.com",
     password: "",
   });
 
@@ -51,19 +51,21 @@ export default function LoginPage() {
     e.stopPropagation();
     
     // Determine API URL based on environment
-    // Production: Use production API URL (https://api.poolfab.com.tr)
-    // Development: Use NEXT_PUBLIC_API_URL or default to localhost:3000
-    const isProduction = window.location.hostname === "app.poolfab.com.tr" || 
-                         window.location.hostname === "poolfab.com.tr" ||
-                         process.env.NODE_ENV === "production";
-    
+    // Use NEXT_PUBLIC_API_URL if available, otherwise construct from current hostname
     let apiBaseUrl: string;
-    if (isProduction) {
-      // Production: Always use production API URL
-      apiBaseUrl = "https://api.poolfab.com.tr";
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      // Use configured API URL (removes /api/v1 if present)
+      apiBaseUrl = process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/v1$/, "");
+    } else if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
+      // Production: Construct API URL from current hostname
+      // Assumes API is at api.{hostname} or same hostname
+      const hostname = window.location.hostname;
+      apiBaseUrl = hostname.startsWith("app.") 
+        ? `https://${hostname.replace("app.", "api.")}`
+        : `https://${hostname}`;
     } else {
-      // Development: Use NEXT_PUBLIC_API_URL or default to localhost:3000
-      apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+      // Development: Default to localhost:3000
+      apiBaseUrl = "http://localhost:3000";
     }
     
     // Ensure we always use /api/v1/auth/google regardless of NEXT_PUBLIC_API_URL format

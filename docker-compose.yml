@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:15
@@ -45,6 +43,17 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       DISABLE_RATE_LIMIT: "true"
       JWT_SECRET: ${JWT_SECRET}
+      # Google Cloud Configuration
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-credentials.json
+      GSC_PROJECT_ID: ${GSC_PROJECT_ID:-}
+      GSC_CLIENT_EMAIL: ${GSC_CLIENT_EMAIL:-}
+      GSC_PRIVATE_KEY: ${GSC_PRIVATE_KEY:-}
+      GSC_PROPERTY_URL: ${GSC_PROPERTY_URL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/api/v1/auth/google/callback}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_BUSINESS_API_KEY: ${GOOGLE_BUSINESS_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -55,6 +64,8 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./uploads:/app/uploads
+      # Google Cloud credentials (if file exists)
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     restart: unless-stopped
 
   finbot:
@@ -69,6 +80,9 @@ services:
       retries: 3
     environment:
       - BACKEND_URL=http://app:3000
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+    volumes:
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5555:5555"
     depends_on:
@@ -86,6 +100,9 @@ services:
       retries: 3
     environment:
       - BACKEND_URL=http://app:3000
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+    volumes:
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5556:5556"
     depends_on:
@@ -103,6 +120,9 @@ services:
       retries: 3
     environment:
       - BACKEND_URL=http://app:3000
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+    volumes:
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5557:5557"
     depends_on:
@@ -120,11 +140,37 @@ services:
       retries: 3
     environment:
       - BACKEND_URL=http://app:3000
-      - GRAFANA_API_TOKEN=${GRAFANA_API_TOKEN}
+      - GRAFANA_API_TOKEN=${GRAFANA_API_TOKEN:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+    volumes:
+      - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5558:5558"
     depends_on:
       - app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      app:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:3001 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
 
 volumes:
   postgres_data:

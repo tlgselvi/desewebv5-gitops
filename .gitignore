@@ -13,15 +13,24 @@ yarn-error.log*
 
 # Google OAuth credentials (security)
 client_secret_*.json
+gcp-credentials.json
+# Exclude all JSON files except package files and config files
 *.json
 !package.json
 !package-lock.json
+!pnpm-lock.json
 !tsconfig.json
 !tsconfig.*.json
+!*.config.json
+!composer.json
+!composer.lock.json
 
 # Logs
-logs
+logs/
 *.log
+backend-*.log
+frontend-*.log
+dev-server.*
 
 # Runtime data
 pids
@@ -75,9 +84,11 @@ secrets/
 *.tmp
 *.temp
 
-# Next.js build output
+# Build artifacts
+dist/
 frontend/.next/
-frontend/pnpm-lock.yaml
+frontend/tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # Playwright test reports and state
 test-results/

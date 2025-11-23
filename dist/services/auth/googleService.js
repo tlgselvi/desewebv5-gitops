@@ -1,7 +1,7 @@
 import { config } from "../../config/index.js";
 import { logger } from "../../utils/logger.js";
 import { db, users } from "../../db/index.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 /**
@@ -106,7 +106,8 @@ export const googleService = {
     async handleSocialLogin(email, name) {
         try {
             // Check if user exists
-            const existingUsers = await db.select().from(users).where(eq(users.email, email)).limit(1);
+            // Use sql template to avoid Drizzle ORM SQL generation bug
+            const existingUsers = await db.select().from(users).where(sql `${users.email} = ${email}`).limit(1);
             let userId;
             let userRole;
             let firstName = null;
