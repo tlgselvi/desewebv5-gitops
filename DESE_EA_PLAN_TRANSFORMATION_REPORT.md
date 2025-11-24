@@ -296,11 +296,11 @@ gantt
 **Hedef:** AI ve IoT entegrasyonlarını tamamlamak
 
 #### Görevler
-- [ ] **IoT Gateway** (4 gün)
-  - MQTT broker kurulumu (Mosquitto/EMQX)
-  - Telemetry data ingestion pipeline
-  - ESP32 firmware hazırlığı
-  - Alarm & notification sistemi
+- [x] **IoT Gateway** (4 gün)
+  - [x] MQTT broker kurulumu (Mosquitto/EMQX)
+  - [x] Telemetry data ingestion pipeline
+  - [x] ESP32 firmware hazırlığı (MQTT Client ile simüle edildi)
+  - [x] Alarm & notification sistemi (Database Alerting)
 
 - [ ] **JARVIS AI Agent** (5 gün)
   - OpenAI/Claude API entegrasyonu
@@ -316,9 +316,11 @@ gantt
 
 **Çıktılar:**
 - ✅ IoT data pipeline
-- ✅ AI-powered insights
-- ✅ Banka & E-Fatura entegrasyonu
-- ✅ Gerçek zamanlı monitoring
+- ✅ IoT Dashboard UI
+- ✅ MQTT Broker entegrasyonu
+- ⬜ AI-powered insights
+- ⬜ Banka & E-Fatura entegrasyonu
+- ⬜ Gerçek zamanlı monitoring (Kısmen)
 
 ---
 

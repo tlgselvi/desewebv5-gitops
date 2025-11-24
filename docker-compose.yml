@@ -17,6 +17,11 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
 
   redis:
     image: redis:7-alpine
@@ -31,9 +36,32 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
   prometheus:
     image: prom/prometheus:latest
+    profiles: ["monitoring"]
     container_name: prometheus
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -42,9 +70,15 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   grafana:
     image: grafana/grafana:latest
+    profiles: ["monitoring"]
     container_name: grafana
     ports:
       - "3002:3000"
@@ -56,6 +90,11 @@ services:
     depends_on:
       - prometheus
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   app:
     build:
@@ -80,11 +119,15 @@ services:
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/v1/auth/google/callback}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       GOOGLE_BUSINESS_API_KEY: ${GOOGLE_BUSINESS_API_KEY:-}
+      NODE_OPTIONS: "--max-old-space-size=512"
+      MQTT_BROKER_URL: "mqtt://mosquitto:1883"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mosquitto:
+        condition: service_started
     ports:
       - "3000:3000"
     volumes:
@@ -93,9 +136,15 @@ services:
       # Google Cloud credentials (if file exists)
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '2.0'
 
   finbot:
     build: .
+    profiles: ["bots"]
     command: pnpm mcp:finbot
     env_file:
       - .env
@@ -107,15 +156,22 @@ services:
     environment:
       - BACKEND_URL=http://app:3000
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - NODE_OPTIONS=--max-old-space-size=256
     volumes:
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5555:5555"
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   mubot:
     build: .
+    profiles: ["bots"]
     command: pnpm mcp:mubot
     env_file:
       - .env
@@ -127,15 +183,22 @@ services:
     environment:
       - BACKEND_URL=http://app:3000
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - NODE_OPTIONS=--max-old-space-size=256
     volumes:
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5556:5556"
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   dese:
     build: .
+    profiles: ["bots"]
     command: pnpm mcp:dese
     env_file:
       - .env
@@ -147,15 +210,22 @@ services:
     environment:
       - BACKEND_URL=http://app:3000
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - NODE_OPTIONS=--max-old-space-size=256
     volumes:
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5557:5557"
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   observability:
     build: .
+    profiles: ["monitoring"]
     command: pnpm mcp:observability
     env_file:
       - .env
@@ -168,12 +238,18 @@ services:
       - BACKEND_URL=http://app:3000
       - GRAFANA_API_TOKEN=${GRAFANA_API_TOKEN:-}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - NODE_OPTIONS=--max-old-space-size=256
     volumes:
       - ./gcp-credentials.json:/app/gcp-credentials.json:ro
     ports:
       - "5558:5558"
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   frontend:
     build:
@@ -186,6 +262,7 @@ services:
       NEXT_TELEMETRY_DISABLED: "1"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
       PORT: 3001
+      NODE_OPTIONS: "--max-old-space-size=512"
     ports:
       - "3001:3001"
     depends_on:
@@ -197,6 +274,11 @@ services:
       timeout: 5s
       retries: 3
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: '2.0'
 
 volumes:
   postgres_data:
