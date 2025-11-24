@@ -330,15 +330,29 @@ gantt
 
 #### Görevler
 - [ ] **Kubernetes Migration** (4 gün)
+  - [x] IoT MQTT Broker Deployment (Mosquitto)
+  - [ ] Core API & Database Migration
+  - [ ] Ingress Controller Setup
+
 - [ ] **Performance Optimization** (3 gün)
-- [ ] **Security Hardening** (2 gün)
+  - [x] TCMB & Dashboard Redis Caching
+  - [ ] Database Indexing Review
+  - [ ] Frontend Asset Optimization
+
+- [ ] **Quality Assurance** (2 gün)
+  - [x] E2E Test Scenarios (External Integrations)
+  - [ ] Load Testing (k6)
+  - [ ] Security Audit
+
 - [ ] **Go-Live** (1 gün)
+  - [ ] Final Data Sync
+  - [ ] DNS Switch
 
 **Çıktılar:**
-- ✅ K8s cluster (GKE/EKS)
-- ✅ Load testing (1000+ concurrent users)
-- ✅ Security audit raporu
-- ✅ Production deployment
+- ✅ K8s manifestleri (IoT hazır)
+- ✅ Redis tabanlı yüksek performans
+- ✅ E2E Test Suite (Playwright)
+- ⬜ Production deployment
 
 ---
 
