@@ -336,12 +336,12 @@ gantt
 
 - [ ] **Performance Optimization** (3 gün)
   - [x] TCMB & Dashboard Redis Caching
-  - [ ] Database Indexing Review
+  - [x] Database Indexing Review
   - [ ] Frontend Asset Optimization
 
 - [ ] **Quality Assurance** (2 gün)
   - [x] E2E Test Scenarios (External Integrations)
-  - [ ] Load Testing (k6)
+  - [x] Load Testing Scenarios Prepared (k6)
   - [ ] Security Audit
 
 - [ ] **Go-Live** (1 gün)

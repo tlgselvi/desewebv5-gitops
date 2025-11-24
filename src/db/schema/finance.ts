@@ -83,6 +83,7 @@ export const transactions = pgTable('transactions', {
   orgIdx: index('transactions_org_idx').on(table.organizationId),
   dateIdx: index('transactions_date_idx').on(table.date),
   accountIdx: index('transactions_account_idx').on(table.accountId),
+  categoryIdx: index('transactions_category_idx').on(table.category),
 }));
 
 // Relations

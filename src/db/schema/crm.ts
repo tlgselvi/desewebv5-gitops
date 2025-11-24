@@ -59,6 +59,7 @@ export const deals = pgTable('deals', {
   orgIdx: index('deals_org_idx').on(table.organizationId),
   stageIdx: index('deals_stage_idx').on(table.stageId),
   statusIdx: index('deals_status_idx').on(table.status),
+  closeDateIdx: index('deals_close_date_idx').on(table.expectedCloseDate),
 }));
 
 // Activities (CRM Aktiviteleri)

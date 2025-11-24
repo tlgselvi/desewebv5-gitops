@@ -152,6 +152,56 @@ spec:
               name: dese-secrets
               key: GOOGLE_BUSINESS_API_KEY
               optional: true
+
+        # IoT Configuration (MQTT)
+        - name: MQTT_BROKER_URL
+          value: "mqtt://dese-iot-mqtt-service:1883"
+        - name: MQTT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: dese-iot-secrets
+              key: MQTT_USERNAME
+              optional: true
+        - name: MQTT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dese-iot-secrets
+              key: MQTT_PASSWORD
+              optional: true
+
+        # AI Configuration (JARVIS)
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: OPENAI_API_KEY
+              optional: true
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: dese-secrets
+              key: ANTHROPIC_API_KEY
+              optional: true
+
+        # Banking & E-Invoice Integrations
+        - name: ISBANK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: dese-finance-secrets
+              key: ISBANK_CLIENT_ID
+              optional: true
+        - name: FORIBA_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: dese-finance-secrets
+              key: FORIBA_USERNAME
+              optional: true
+        - name: FORIBA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dese-finance-secrets
+              key: FORIBA_PASSWORD
+              optional: true
         
         # Resource limits
         resources:
