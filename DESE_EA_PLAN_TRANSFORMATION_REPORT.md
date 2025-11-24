@@ -337,7 +337,7 @@ gantt
 - [ ] **Performance Optimization** (3 gün)
   - [x] TCMB & Dashboard Redis Caching
   - [x] Database Indexing Review
-  - [ ] Frontend Asset Optimization
+  - [x] Frontend Asset Optimization (React Query + Next.js Config)
 
 - [ ] **Quality Assurance** (2 gün)
   - [x] E2E Test Scenarios (External Integrations)

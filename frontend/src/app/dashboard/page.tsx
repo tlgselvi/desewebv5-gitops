@@ -1,20 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Bar,
   BarChart,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts"
-import { Activity, CreditCard, DollarSign, Users, Loader2 } from "lucide-react"
+import { Activity, CreditCard, DollarSign, Users, Loader2, Sparkles, AlertTriangle } from "lucide-react"
 import { authenticatedGet } from "@/lib/api"
 import { toast } from "sonner"
+import { useQuery } from "@tanstack/react-query"
 
 // Mock chart data for visual filling until we have historical data endpoints
 const chartData = [
@@ -42,28 +40,38 @@ interface DashboardSummary {
     phLevel: number;
     chlorine: number;
   };
+  ai?: {
+    prediction: {
+      predictedRevenue: number;
+      confidence: number;
+      reasoning: string;
+    };
+  };
+}
+
+// Fetch function for React Query
+const fetchDashboardSummary = async (): Promise<DashboardSummary> => {
+  return await authenticatedGet<DashboardSummary>("/api/v1/ceo/summary");
 }
 
 export default function DashboardPage() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: summary, isLoading, isError } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: fetchDashboardSummary,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    refetchOnWindowFocus: true,
+  });
 
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setIsLoading(true);
-        const data = await authenticatedGet<DashboardSummary>("/api/v1/ceo/summary");
-        setSummary(data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard summary", error);
-        toast.error("Dashboard verileri yüklenemedi");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSummary();
-  }, []);
+  if (isError) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center flex-col gap-4">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <p className="text-lg font-medium text-muted-foreground">
+          Veriler yüklenirken bir hata oluştu. Lütfen tekrar deneyin.
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

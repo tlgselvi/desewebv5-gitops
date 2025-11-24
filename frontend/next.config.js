@@ -2,6 +2,12 @@
 console.log("----- LOADING NEXT.CONFIG.JS (CommonJS) -----");
 
 const nextConfig = {
+  compress: true,
+  poweredByHeader: false,
+  reactStrictMode: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
