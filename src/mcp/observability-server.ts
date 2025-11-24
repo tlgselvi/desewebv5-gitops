@@ -16,8 +16,8 @@ import { getAggregatedContext, selectContextByPriority } from "./context-aggrega
  */
 
 const PORT = Number(process.env.OBSERVABILITY_MCP_PORT ?? 5558);
-const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
-const PROMETHEUS_BASE = process.env.PROMETHEUS_URL || "http://localhost:9090";
+const BACKEND_BASE = process.env.BACKEND_URL || `http://app:${config.port}`;
+const PROMETHEUS_BASE = process.env.PROMETHEUS_URL || "http://prometheus:9090";
 const MODULE_ID = "observability";
 
 /**
@@ -149,9 +149,9 @@ const { app } = createMcpServer({
           endpoints: {
             metrics: "/metrics",
             prometheus: "/api/v1/metrics",
-            grafana: process.env.GRAFANA_URL || "http://localhost:3000",
-            loki: process.env.LOKI_URL || "http://localhost:3100",
-            tempo: process.env.TEMPO_URL || "http://localhost:3200",
+            grafana: process.env.GRAFANA_URL || "http://grafana:3000",
+            loki: process.env.LOKI_URL || "http://loki:3100",
+            tempo: process.env.TEMPO_URL || "http://tempo:3200",
           },
           metrics: [
             "http_requests_total",

@@ -1,22 +1,19 @@
 "use client";
 
-import { TrendingDown, TrendingUp } from "lucide-react";
-import type { ReactNode } from "react";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
+import { TrendingUp, TrendingDown } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface TrendProps {
-  readonly value: number;
-  readonly direction: "up" | "down";
-}
-
-export interface KpiCardProps {
-  readonly title: string;
-  readonly value: string;
-  readonly description?: string;
-  readonly icon?: ReactNode;
-  readonly trend?: TrendProps;
-  readonly variant?: "primary" | "neutral";
+interface KpiCardProps {
+  title: string;
+  value: string | number;
+  description?: string;
+  icon?: ReactNode;
+  trend?: {
+    value: number;
+    direction: "up" | "down" | "neutral";
+  };
+    variant?: "default" | "primary" | "success" | "warning" | "error" | "destructive";
 }
 
 export function KpiCard({
@@ -25,82 +22,60 @@ export function KpiCard({
   description,
   icon,
   trend,
-  variant = "neutral",
+  variant = "default",
 }: KpiCardProps) {
-  const isPositive = trend?.direction === "up";
+  const variantStyles = {
+    default: "border-gray-200 bg-white hover:border-gray-300",
+    primary: "border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 hover:border-blue-300",
+    success: "border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/50 hover:border-emerald-300",
+    warning: "border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/50 hover:border-amber-300",
+    error: "border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 hover:border-red-300",
+    destructive: "border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 hover:border-red-300",
+  };
 
   return (
-    <Card
-      variant={variant === "primary" ? "elevated" : "outlined"}
-      className={cn(
-        "flex h-full flex-col gap-4",
-        variant === "primary" && "bg-gradient-to-br from-blue-600 via-blue-500 to-blue-400 text-white",
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p
-            className={cn(
-              "text-sm font-medium text-gray-500 dark:text-slate-400",
-              variant === "primary" && "text-white/70",
-            )}
-          >
-            {title}
-          </p>
-          <p
-            className={cn(
-              "mt-2 text-3xl font-semibold tracking-tight text-gray-900 dark:text-slate-100",
-              variant === "primary" && "text-white",
-            )}
-          >
-            {value}
-          </p>
-        </div>
+    <Card className={`${variantStyles[variant]} transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="text-sm font-medium text-gray-600">
+          {title}
+        </CardTitle>
         {icon && (
-          <div
-            className={cn(
-              "flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-300",
-              variant === "primary" && "bg-white/15 text-white",
-            )}
-          >
+          <div className="rounded-lg bg-white/80 p-2.5 shadow-sm">
             {icon}
           </div>
         )}
-      </div>
-
-      <div className="mt-auto space-y-2 text-sm">
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="text-3xl font-bold tracking-tight text-gray-900">
+          {value}
+        </div>
         {description && (
-          <p
-            className={cn(
-              "text-gray-500 dark:text-slate-300",
-              variant === "primary" && "text-white/80",
-            )}
-          >
+          <p className="text-xs leading-relaxed text-gray-500">
             {description}
           </p>
         )}
-
         {trend && (
-          <div
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
-              isPositive
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200"
-                : "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200",
-              variant === "primary" && "bg-white/10 text-white",
-            )}
-          >
-            {isPositive ? (
-              <TrendingUp className="h-4 w-4" />
+          <div className="flex items-center gap-1.5 pt-1">
+            {trend.direction === "up" ? (
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
             ) : (
-              <TrendingDown className="h-4 w-4" />
+              <TrendingDown className="h-4 w-4 text-red-600" />
             )}
-            <span>{trend.value}%</span>
-            <span className="font-normal text-current">son 24 saat</span>
+            <span
+              className={`text-sm font-semibold ${
+                trend.direction === "up" 
+                  ? "text-emerald-600" 
+                  : "text-red-600"
+              }`}
+            >
+              {trend.value}%
+            </span>
+            <span className="text-xs text-gray-500">
+              {trend.direction === "up" ? "artış" : "azalış"}
+            </span>
           </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }
-

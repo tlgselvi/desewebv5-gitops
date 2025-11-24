@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
 import { config } from "@/config/index.js";
@@ -22,8 +22,8 @@ authRouter.get("/login", (req: Request, res: Response): void => {
 });
 
 authRouter.post("/login", (req: Request, res: Response): void => {
-  // Mock login is only allowed in non-production environments
-  if (config.nodeEnv === "production") {
+  // Mock login is only allowed in development environments.
+  if (config.nodeEnv !== "development") {
     logger.warn("Mock login attempted in production", {
       ip: req.ip,
       userAgent: req.get("user-agent"),
@@ -130,18 +130,69 @@ authRouter.get(
  */
 authRouter.get(
   "/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: `${config.corsOrigin}/login?error=social_failed`,
-    session: true,
-  }),
-  (req: Request, res: Response) => {
+  // Check for error from Google first (user denied, etc.)
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (req.query.error) {
+      logger.warn("Google OAuth error from callback", {
+        error: req.query.error,
+        errorDescription: req.query.error_description,
+      });
+      res.redirect(
+        `${config.corsOrigin}/login?error=social_failed&reason=${encodeURIComponent(String(req.query.error))}`,
+      );
+      return;
+    }
+    next();
+  },
+  // Passport authentication with proper error handling
+  (req: Request, res: Response, next: NextFunction): void => {
+    passport.authenticate("google", {
+      failureRedirect: `${config.corsOrigin}/login?error=social_failed`,
+      session: true,
+    })(req, res, (err?: Error) => {
+      // Handle Passport errors
+      if (err) {
+        logger.error("Passport authentication error", {
+          error: err.message,
+          errorName: err.name,
+          stack: err.stack,
+        });
+
+        // Check if it's a TokenError (OAuth token exchange failed)
+        if (
+          err.name === "TokenError" ||
+          err.message.includes("Unauthorized") ||
+          err.message.includes("invalid_grant")
+        ) {
+          logger.error("Google OAuth token exchange failed", {
+            error: err.message,
+            hint: "Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env file",
+          });
+          res.redirect(
+            `${config.corsOrigin}/login?error=oauth_token_error&message=${encodeURIComponent("Google OAuth token exchange failed. Please check your OAuth credentials.")}`,
+          );
+          return;
+        }
+
+        // Generic error
+        res.redirect(`${config.corsOrigin}/login?error=social_failed`);
+        return;
+      }
+
+      // If no error, continue to next middleware
+      next();
+    });
+  },
+  // Success handler
+  (req: Request, res: Response): void => {
     try {
       // User is authenticated via Passport session
       const user = req.user as Express.User;
 
       if (!user) {
         logger.warn("Google OAuth callback: user not found in session");
-        return res.redirect(`${config.corsOrigin}/login?error=social_failed`);
+        res.redirect(`${config.corsOrigin}/login?error=social_failed`);
+        return;
       }
 
       // Generate JWT token for frontend (maintain compatibility with existing frontend)
@@ -218,4 +269,3 @@ authRouter.get("/me", (req: Request, res: Response) => {
 });
 
 export { authRouter };
-

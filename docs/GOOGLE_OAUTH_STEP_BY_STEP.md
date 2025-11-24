@@ -136,16 +136,19 @@ GOOGLE_CLIENT_SECRET=GOCSPX-1234567890abcdefghijklmnop
 
 ## ✅ Adım 4: Backend'i Yeniden Başlatma
 
-1. Backend'in çalıştığı terminal penceresini bulun
-2. **Ctrl+C** tuşlarına basarak backend'i durdurun
-3. Şu komutu çalıştırın:
+1. Backend servisini yeniden başlatın:
 
 ```powershell
-pnpm dev
+docker compose restart app
 ```
 
-4. Backend'in başladığını görmek için birkaç saniye bekleyin
-5. Şu mesajı görmelisiniz: `Server is running on port 3000` veya benzeri
+2. Backend'in başladığını görmek için logları izleyin:
+
+```powershell
+docker compose logs -f app
+```
+
+3. `Server is running on port 3000` mesajını görmelisiniz.
 
 ---
 
@@ -200,9 +203,9 @@ pnpm dev
 
 **Çözüm:**
 1. Port 3000'in kullanılabilir olduğundan emin olun
-2. Docker `app` container'ının durdurulduğundan emin olun (Hybrid Mode için)
+2. Docker `app` container'ının çalıştığından emin olun
 3. `.env` dosyasındaki tüm değerlerin doğru olduğundan emin olun
-4. Terminal'deki hata mesajlarını okuyun
+4. Terminal'deki hata mesajlarını okuyun: `docker compose logs app`
 
 ---
 

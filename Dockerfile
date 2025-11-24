@@ -25,10 +25,11 @@ RUN pnpm build:backend
 FROM base AS frontend-builder
 WORKDIR /app
 # Copy frontend source
-COPY frontend ./frontend
+COPY frontend/package.json frontend/pnpm-lock.yaml* frontend/tsconfig.json frontend/next.config.js ./frontend/
 # Copy frontend dependencies
 COPY --from=frontend-deps /app/frontend/node_modules ./frontend/node_modules
-# Build frontend (use --no-cache to ensure fresh build)
+# Copy frontend source code after dependencies
+COPY frontend ./frontend
 WORKDIR /app/frontend
 # Add build timestamp to bust cache
 ARG BUILD_DATE=unknown

@@ -2,52 +2,49 @@ import { getToken } from "./auth";
 
 /**
  * Get the base API URL from environment variable or use default
+ * 
+ * RELATIVE PATH STRATEGY:
+ * Instead of hardcoding localhost:3000 or host.docker.internal:3000, we use relative paths
+ * starting with /api/v1. This allows the Next.js proxy (rewrites) to handle the routing
+ * to the backend, avoiding CORS and mixed content issues.
  */
 const getBaseUrl = (): string => {
   if (typeof window !== "undefined") {
-    // Client-side: use environment variable
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+    // Client-side: return empty string to use relative path
+    // The browser will append this to the current origin (e.g. http://localhost:3001)
+    return "";
   }
-  // Server-side: use environment variable or default
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+  // Server-side (SSR) - Use internal docker network name
+  return process.env.INTERNAL_API_URL || "http://app:3000";
 };
 
 /**
- * Resolve full URL from path (handles both absolute and relative paths)
- * Prevents duplicate /api/v1 in the final URL
+ * Resolve full URL from path
  */
 const resolveUrl = (url: string): string => {
-  // If URL is already absolute (starts with http:// or https://), use it as-is
+  // If URL is already absolute, use it as-is
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
   
-  const baseUrl = getBaseUrl().replace(/\/$/, ""); // Remove trailing slash from base
+  const baseUrl = getBaseUrl();
   
-  // If URL starts with /, it's an absolute path
-  if (url.startsWith("/")) {
-    // Check if base URL already ends with /api/v1 and path also starts with /api/v1
-    // If so, remove the duplicate /api/v1 from the path
-    if (baseUrl.endsWith("/api/v1") && url.startsWith("/api/v1")) {
-      // Remove /api/v1 from the beginning of the path
-      const cleanPath = url.replace(/^\/api\/v1/, "");
-      return `${baseUrl}${cleanPath}`;
-    }
-    return `${baseUrl}${url}`;
+  // Ensure path starts with /api/v1
+  let path = url;
+  if (!path.startsWith("/")) {
+    path = `/${path}`;
   }
   
-  // Relative path - prepend base URL with /
-  return `${baseUrl}/${url}`;
+  // If path doesn't start with /api/v1, prepend it
+  if (!path.startsWith("/api/v1")) {
+    path = `/api/v1${path}`;
+  }
+  
+  return `${baseUrl}${path}`;
 };
 
 /**
- * Authenticated fetch wrapper that automatically adds Authorization header
- * to all API requests using the token from localStorage.
- *
- * @param url - The URL to fetch from (can be absolute URL or path like "/api/v1/endpoint")
- * @param options - Optional fetch options (headers, method, body, etc.)
- * @returns Promise<Response> - The fetch response
- * @throws Error if token is not found or request fails
+ * Authenticated fetch wrapper
  */
 export async function authenticatedFetch(
   url: string,
@@ -56,130 +53,106 @@ export async function authenticatedFetch(
   const token = getToken();
 
   if (!token) {
-    // Instead of throwing, return a response that indicates an auth failure.
-    // This allows the caller to handle it gracefully (e.g., redirect to login).
     return new Response(JSON.stringify({ error: "Authentication token not found." }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  // Resolve full URL
   const fullUrl = resolveUrl(url);
-
-  // Merge headers, ensuring Authorization is set
   const headers = new Headers(options.headers);
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("Content-Type", "application/json");
 
-  // Create the request with merged options
   const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
 
-  // Handle 401 Unauthorized errors
   if (response.status === 401) {
-    // Optionally clear token and redirect to login
     console.warn("Session expired or token is invalid. Clearing token.");
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       window.location.href = '/login?session=expired';
     }
-    throw new Error("Session expired. Please log in again."); // This will be caught by the redirect
+    throw new Error("Session expired. Please log in again.");
   }
 
   return response;
 }
 
-/**
- * Convenience method for authenticated GET requests
- */
 export async function authenticatedGet<T>(url: string): Promise<T> {
-  const response = await authenticatedFetch(url, {
-    method: "GET",
-  });
+  const response = await authenticatedFetch(url, { method: "GET" });
 
   if (!response.ok) {
-    // If the custom 401 response from above is returned, handle it.
-    if (response.status === 401) {
-      console.error("Authentication required. Redirecting to login.");
-      // Redirect to login page
-      window.location.href = '/login';
-    }
-    // Handle 403 Forbidden (authorization failed)
+    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
     if (response.status === 403) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || errorData.error || "You don't have permission to access this resource.";
-      console.error("Authorization failed:", errorMessage);
-      throw new Error(`Access denied: ${errorMessage}`);
+      throw new Error(`Access denied: ${errorData.message || "Forbidden"}`);
     }
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    throw new Error(`API request failed: ${response.status}`);
   }
-
   return response.json() as Promise<T>;
 }
 
-/**
- * Convenience method for authenticated POST requests
- */
-export async function authenticatedPost<T>(
-  url: string,
-  body?: unknown,
-): Promise<T> {
+export async function authenticatedPost<T>(url: string, body?: unknown): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "POST",
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
-    // Handle the custom 401 response here as well
-    if (response.status === 401) {
-      console.error("Authentication required. Redirecting to login.");
-      // Redirect to login page
-      window.location.href = '/login';
-    }
-    // Handle 403 Forbidden (authorization failed)
-    if (response.status === 403) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || errorData.error || "You don't have permission to access this resource.";
-      console.error("Authorization failed:", errorMessage);
-      throw new Error(`Access denied: ${errorMessage}`);
-    }
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+     if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
+     throw new Error(`API request failed: ${response.status}`);
   }
-
   return response.json() as Promise<T>;
 }
 
-/**
- * Convenience method for authenticated PATCH requests
- */
-export async function authenticatedPatch<T>(
-  url: string,
-  body?: unknown,
-): Promise<T> {
+export async function authenticatedPatch<T>(url: string, body?: unknown): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "PATCH",
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
-    // Handle the custom 401 response here as well
-    if (response.status === 401) {
-      console.error("Authentication required. Redirecting to login.");
-      // Redirect to login page
-      window.location.href = '/login';
-    }
-    // Handle 403 Forbidden (authorization failed)
-    if (response.status === 403) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || errorData.error || "You don't have permission to access this resource.";
-      console.error("Authorization failed:", errorMessage);
-      throw new Error(`Access denied: ${errorMessage}`);
-    }
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
+    throw new Error(`API request failed: ${response.status}`);
   }
-
   return response.json() as Promise<T>;
 }
+
+export const api = {
+  post: async (url: string, body: any) => {
+    const fullUrl = resolveUrl(url);
+    console.log("Making API request to:", fullUrl);
+    
+    try {
+      const response = await fetch(fullUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+      }
+      return { data: await response.json() };
+    } catch (err) {
+      console.error("API request failed:", err);
+      throw err;
+    }
+  },
+  get: async (url: string) => {
+    const fullUrl = resolveUrl(url);
+    const response = await fetch(fullUrl, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return { data: await response.json() };
+  }
+};

@@ -6,7 +6,7 @@ dotenvConfig();
 
 // Prometheus configuration schema
 const prometheusConfigSchema = z.object({
-  url: z.string().default("http://localhost:9090"),
+  url: z.string().default("http://prometheus:9090"),
   enabled: z.boolean().default(true),
   pushGatewayUrl: z.string().optional(),
   scrapeInterval: z.string().default("15s"),

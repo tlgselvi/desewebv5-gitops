@@ -14,7 +14,7 @@ const CONSUMER_GROUP = "finbot-consumers";
 const CONSUMER_NAME = `consumer-${process.pid}-${Date.now()}`;
 
 // Backend API URLs
-const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
+const BACKEND_BASE = process.env.BACKEND_URL || `http://app:${config.port}`;
 const MUBOT_API_BASE = process.env.MUBOT_API_URL || `${BACKEND_BASE}/api/v1/mubot`;
 
 // AIOps Telemetry Agent

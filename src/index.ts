@@ -107,6 +107,7 @@ app.use(
         config.corsOrigin,
         "http://localhost:3001",
         "http://localhost:3000",
+        "http://host.docker.internal:3001", // Added for Docker Desktop
       ];
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);

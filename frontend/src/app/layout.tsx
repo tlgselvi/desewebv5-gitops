@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="tr" className={`h-full ${inter.variable}`} suppressHydrationWarning>
       <body
-        className="h-full bg-slate-50 font-sans text-slate-900 antialiased transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100"
+        className="h-full bg-white font-sans text-gray-900 antialiased"
         suppressHydrationWarning
       >
         <ClientLayout>{children}</ClientLayout>

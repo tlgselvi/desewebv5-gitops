@@ -7,7 +7,7 @@ dotenvConfig();
 // Configuration schema validation
 const configSchema = z.object({
   // Server Configuration
-  port: z.coerce.number().default(3001),
+  port: z.coerce.number().default(3000),
   nodeEnv: z.enum(["development", "production", "test"]).default("development"),
   apiVersion: z.string().default("v1"),
   corsOrigin: z.string().default("http://localhost:3001"),
@@ -43,6 +43,7 @@ const configSchema = z.object({
     bcryptRounds: z.coerce.number().default(12),
     rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes
     rateLimitMaxRequests: z.coerce.number().default(100),
+    enableMockLogin: z.boolean().default(false), // Added for testing in prod-like envs
     cookieKey: z
       .string()
       .default(
@@ -308,6 +309,7 @@ const rawConfig = {
     bcryptRounds: process.env.BCRYPT_ROUNDS,
     rateLimitWindowMs: process.env.RATE_LIMIT_WINDOW_MS,
     rateLimitMaxRequests: process.env.RATE_LIMIT_MAX_REQUESTS,
+    enableMockLogin: process.env.ENABLE_MOCK_LOGIN === "true",
     cookieKey: process.env.COOKIE_KEY,
   },
   apis: {
@@ -321,7 +323,7 @@ const rawConfig = {
       oauth: {
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/v1/auth/google/callback",
+        callbackUrl: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3001/api/v1/auth/google/callback",
       },
     },
     ahrefs: {

@@ -56,18 +56,18 @@ export default function MainNavigation() {
 
   return (
     <header 
-      className="sticky top-0 z-40 border-b border-gray-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/85"
+      className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur shadow-sm"
       suppressHydrationWarning
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-300/40 dark:bg-blue-500">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-300/40">
             <Command className="h-5 w-5" />
           </span>
           <div>
             <Link
               href="/"
-              className="flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-slate-100"
+              className="flex items-center gap-3 text-lg font-semibold text-gray-900"
             >
               Dese EA Plan
               <Badge variant="outline">v6.8.1</Badge>
@@ -87,8 +87,8 @@ export default function MainNavigation() {
                 className={cn(
                   "rounded-xl px-4 py-2 transition",
                   isActive
-                    ? "bg-blue-600 text-white shadow-sm dark:bg-blue-500"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
                 )}
               >
                 <span className="block">{label}</span>
@@ -113,14 +113,14 @@ export default function MainNavigation() {
             className="hidden items-center gap-2 md:flex"
           >
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
+            <span className="text-sm font-medium text-gray-700">
               Canlı: GKE · Kyverno · ArgoCD
             </span>
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            className="hidden md:inline-flex dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            className="hidden md:inline-flex"
           >
             Rehber
           </Button>
@@ -128,7 +128,7 @@ export default function MainNavigation() {
             <Button
               variant="ghost"
               size="sm"
-              className="hidden items-center gap-2 md:flex text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+              className="hidden items-center gap-2 md:flex text-blue-600 hover:bg-blue-50"
               asChild
             >
               <Link href="/dashboard/admin/users">
@@ -137,7 +137,7 @@ export default function MainNavigation() {
               </Link>
             </Button>
           )}
-          <Button variant="primary" size="sm" className="dark:bg-blue-500">
+          <Button variant="primary" size="sm">
             Yeni Görev Kaydı
           </Button>
           <ThemeToggle />
@@ -152,7 +152,7 @@ export default function MainNavigation() {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 bg-blue-50/70 text-xs text-gray-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+      <div className="border-t border-gray-100 bg-blue-50/70 text-xs text-gray-600">
         <div className="mx-auto flex w-full max-w-6xl snap-x items-center gap-3 overflow-x-auto px-4 py-2 sm:px-6">
           {NAV_ITEMS.map(({ href, label, description, badge }) => {
             const isActive =
@@ -162,9 +162,9 @@ export default function MainNavigation() {
               <Link
                 key={`${href}-meta`}
                 href={href}
-                className={cn(
-                  "flex min-w-fit snap-center items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-gray-600 transition hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800",
-                  isActive && "border-blue-400 text-blue-700 dark:border-blue-500 dark:text-blue-200",
+                  className={cn(
+                  "flex min-w-fit snap-center items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1 text-gray-600 transition hover:bg-white",
+                  isActive && "border-blue-400 text-blue-700",
                 )}
               >
                 <span className="font-semibold">{label}</span>

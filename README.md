@@ -55,21 +55,7 @@ docker compose logs -f
 
 ### Local Development (Opsiyonel)
 
-Eğer Docker dışında local development yapmak isterseniz:
-
-```bash
-pnpm install
-cp env.example .env
-# .env dosyasında DB_HOST=localhost ve REDIS_HOST=localhost yapın
-
-# Docker'da sadece db ve redis'i çalıştırın
-docker compose up db redis -d
-
-pnpm db:migrate
-pnpm dev
-```
-
-> **Not:** Artık tüm servisler Docker Compose ile çalıştırılmaktadır. Local development için yukarıdaki adımları izleyin.
+> **Not:** Tüm servisler Docker Compose ile çalıştırılmaktadır. Geliştirme için `docker compose up -d` komutunu kullanın.
 
 ### Servisler
 
@@ -84,17 +70,19 @@ Docker Compose şu servisleri içerir:
 - **dese** - MCP Dese (Port: 5557)
 - **observability** - MCP Observability (Port: 5558)
 
-### Google Cloud Entegrasyonu
+### Google Cloud & OAuth Kurulumu
 
-Google Cloud servislerini kullanmak için:
+Google OAuth (Giriş) ve diğer Google servislerini kullanmak için:
 
-1. **Google Cloud Console'dan credentials alın:**
-   - Detaylı adımlar: `docs/DOCKER_GOOGLE_CLOUD_SETUP.md`
-   - Hızlı başlangıç: `docs/DOCKER_QUICK_START.md`
+1. **Google Cloud Console'dan OAuth Credentials alın:**
+   - Detaylı adım adım rehber: `docs/GOOGLE_OAUTH_STEP_BY_STEP.md`
+   - Özet: `docs/DOCKER_QUICK_START.md`
 
-2. **gcp-credentials.json dosyasını proje root'una koyun**
+2. **Credentials Dosyasını Ekleyin:**
+   - `gcp-credentials.json` dosyasını proje ana dizinine ekleyin.
 
-3. **.env dosyasında Google Cloud değişkenlerini ayarlayın**
+3. **.env Dosyasını Güncelleyin:**
+   - Google OAuth Client ID ve Secret bilgilerini ekleyin.
 
 > **Detaylı Docker Setup:** `docs/DOCKER_COMPOSE_FULL_SETUP.md`
 
@@ -120,6 +108,7 @@ pnpm test:auto      # Playwright E2E senaryoları
 
 ### Docker & Deployment
 - `docs/DOCKER_COMPOSE_FULL_SETUP.md` – Docker Compose tam yapılandırma rehberi
+- `docs/GOOGLE_OAUTH_STEP_BY_STEP.md` – Google OAuth kurulum rehberi (Yeni)
 - `docs/DOCKER_GOOGLE_CLOUD_SETUP.md` – Google Cloud credentials yapılandırması
 - `docs/DOCKER_QUICK_START.md` – Docker hızlı başlangıç rehberi
 - `docs/KUBERNETES_GOOGLE_CLOUD_SETUP.md` – Kubernetes Google Cloud yapılandırması

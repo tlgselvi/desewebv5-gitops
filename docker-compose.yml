@@ -32,6 +32,31 @@ services:
       retries: 5
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -42,6 +67,7 @@ services:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
       DISABLE_RATE_LIMIT: "true"
+      ENABLE_MOCK_LOGIN: "true"
       JWT_SECRET: ${JWT_SECRET}
       # Google Cloud Configuration
       GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-credentials.json
@@ -51,7 +77,7 @@ services:
       GSC_PROPERTY_URL: ${GSC_PROPERTY_URL:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/api/v1/auth/google/callback}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/api/v1/auth/google/callback}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       GOOGLE_BUSINESS_API_KEY: ${GOOGLE_BUSINESS_API_KEY:-}
     depends_on:
@@ -158,7 +184,7 @@ services:
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
       PORT: 3001
     ports:
       - "3001:3001"

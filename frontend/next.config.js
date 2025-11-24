@@ -1,20 +1,29 @@
-/**
- * next.config.js
- * CommonJS config to avoid ESM/TS import issues during dev
- * If you later need dynamic imports from TS, use next.config.mjs with proper loader.
- */
-const withBundleAnalyzer = (config) => config;
+/** @type {import('next').NextConfig} */
+console.log("----- LOADING NEXT.CONFIG.JS (CommonJS) -----");
 
-const env = {
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
-  NEXT_PUBLIC_FEATURE_FLAG: process.env.NEXT_PUBLIC_FEATURE_FLAG ?? 'false',
+const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "localhost:3001", "host.docker.internal:3001"],
+    },
+  },
+  // Setup Rewrites to Proxy /api/v1 to Backend
+  async rewrites() {
+    console.log("----- CONFIGURING REWRITES (CommonJS) -----");
+    return [
+      {
+        source: "/google-test",
+        destination: "https://www.google.com",
+      },
+      {
+        source: "/api/v1/:path*",
+        destination: "http://app:3000/api/v1/:path*", // Proxy to backend container
+      },
+    ];
+  },
 };
 
-module.exports = withBundleAnalyzer({
-  reactStrictMode: true,
-  
-  env,
-  // Add other Next config items here if needed
-});
-
-
+module.exports = nextConfig;

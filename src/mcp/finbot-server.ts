@@ -15,7 +15,7 @@ import { initializeMCPWebSocket, pushContextUpdate } from "@/mcp/websocket-serve
  */
 
 const PORT = Number(process.env.FINBOT_MCP_PORT ?? 5555);
-const BACKEND_BASE = process.env.BACKEND_URL || `http://localhost:${config.port}`;
+const BACKEND_BASE = process.env.BACKEND_URL || `http://app:${config.port}`;
 const MODULE_ID = "finbot";
 
 const { app } = createMcpServer({
