@@ -13,7 +13,7 @@ RUN pnpm install --no-frozen-lockfile --prod=false
 FROM base AS frontend-deps
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod=false
+RUN pnpm install --no-frozen-lockfile --prod=false
 
 # Stage 4: Build backend
 FROM base AS backend-builder

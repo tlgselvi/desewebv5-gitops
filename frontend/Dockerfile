@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod=false
+RUN pnpm install --no-frozen-lockfile --prod=false
 
 # Rebuild the source code only when needed
 FROM base AS builder

@@ -9,6 +9,10 @@ import { feedbackRoutes } from './feedback.js';
 import { autoRemediationRoutes } from './autoRemediation.js';
 import { jwksRoutes } from './jwks.js';
 import { mcpDashboardRoutes } from './mcpDashboard.js';
+import { financeRoutes } from '../modules/finance/routes.js';
+import { crmRoutes } from '../modules/crm/routes.js';
+import { inventoryRoutes } from '../modules/inventory/routes.js';
+import { iotRoutes } from '../modules/iot/routes.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 import { v1Router } from '@/routes/v1/index.js';
@@ -20,8 +24,8 @@ export function setupRoutes(app: Application): void {
   app.get('/', (req, res) => {
     res.json({
       name: 'Dese EA Plan API',
-      version: config.apiVersion || 'v1',
-      description: 'Backend API Server for Dese EA Plan v6.8.2',
+      version: 'v7.0.0',
+      description: 'Enterprise ERP & IoT Platform API (v7.0)',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),
       endpoints: {
@@ -30,7 +34,7 @@ export function setupRoutes(app: Application): void {
         metrics: '/metrics',
         docs: '/api-docs',
       },
-      note: 'This is a backend API server. Use /api/v1/* for API endpoints, /health for health checks, or /metrics for metrics.',
+      note: 'This is the Enterprise backend. Use /api/v1/* for API endpoints.',
     });
   });
 
@@ -43,6 +47,12 @@ export function setupRoutes(app: Application): void {
   // Metrics endpoints (specific before general)
   app.get('/metrics/aiops', aiopsMetrics);
   app.use('/metrics', metricsRoutes);
+
+  // Enterprise Modules Routes
+  app.use(`${apiPrefix}/finance`, financeRoutes);
+  app.use(`${apiPrefix}/crm`, crmRoutes);
+  app.use(`${apiPrefix}/inventory`, inventoryRoutes);
+  app.use(`${apiPrefix}/iot`, iotRoutes);
 
   // Most specific API routes first (longest paths first)
   app.use(`${apiPrefix}/mcp/dashboard`, mcpDashboardRoutes);
@@ -61,9 +71,9 @@ export function setupRoutes(app: Application): void {
   // Root API endpoint (most general, last)
   app.get(apiPrefix, (req, res) => {
     res.json({
-      name: 'Dese EA Plan v6.8.1 API',
-      version: '6.8.1',
-      description: 'CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API',
+      name: 'Dese EA Plan v7.0 API',
+      version: '7.0.0',
+      description: 'Enterprise ERP, CRM & IoT Platform API',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),
       endpoints: {
@@ -72,6 +82,10 @@ export function setupRoutes(app: Application): void {
         content: `${apiPrefix}/content`,
         analytics: `${apiPrefix}/analytics`,
         aiops: `${apiPrefix}/aiops`,
+        finance: `${apiPrefix}/finance`,
+        crm: `${apiPrefix}/crm`,
+        inventory: `${apiPrefix}/inventory`,
+        iot: `${apiPrefix}/iot`,
         metrics: '/metrics',
         aiopsMetrics: '/metrics/aiops',
         health: '/health',

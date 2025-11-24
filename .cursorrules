@@ -1,66 +1,33 @@
-# Dese EA Plan – Cursor Kuralları
+# DESE EA PLAN v7.0 — Enterprise Ruleset
 
-**Durum:** Bakım modunda üretim sistemi. Tüm değişiklikler hotfix veya bakım kapsamındadır.
+## 1. Mimari Prensipler (Architecture First)
+- **Modular Monolith:** Kod tabanı `src/modules/{module_name}` altında ayrıştırılmalıdır.
+- **DDD (Domain Driven Design):** İş mantığı servislerde (`service.ts`), veri erişimi repolarda olmalıdır.
+- **Multi-tenancy:** Her veritabanı sorgusu `organization_id` kontrolü içermelidir.
+- **Strict Typing:** `any` kullanımı YASAKTIR. Zod şemaları ve TypeScript interface'leri zorunludur.
 
----
+## 2. Teknoloji Standartları (Tech Stack)
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS v4.
+- **Backend:** Node.js 20, Express, Drizzle ORM (PostgreSQL).
+- **AI & Botlar:** MCP (Model Context Protocol) sunucuları `src/mcp` altında tutulur.
+- **State Management:** Zustand (Global), React Query (Server State).
 
-## 🐳 DOCKER DEVELOPMENT ENVIRONMENT RULES
+## 3. Geliştirme Kuralları (Coding Standards)
+- **Hybrid Dev Mode:** Frontend lokalde (`pnpm dev`), Backend Docker'da çalışır.
+- **Schema Changes:** `src/db/schema` klasöründe modüler dosyalarda yapılır. Asla tek bir devasa `schema.ts` dosyası kullanılmaz.
+- **Error Handling:** Tüm async işlemler `try/catch` veya `asyncHandler` ile sarılır.
+- **Logging:** `console.log` yerine yapılandırılmış `logger` kullanılır.
 
-**CRITICAL:** This project uses a **Full Docker Environment**. All development and production work MUST follow these rules.
+## 4. Dokümantasyon & Dil
+- **Dil:** Kod yorumları ve commit mesajları İngilizce, iş mantığı (Business Logic) ve UI metinleri Türkçe olabilir.
+- **JSDoc:** Her yeni fonksiyon ve component için kısa bir açıklama eklenir.
 
-### Infrastructure Configuration
+## 5. Güvenlik (Security)
+- Asla `.env` dosyasını commitleme.
+- Kullanıcı verilerini (PII) loglama.
+- Her API endpoint'i `authMiddleware` ile korunmalıdır.
 
-- **All Services:** Run inside **Docker Desktop** via `docker-compose.yml`.
-  - **Backend API:** `app` container (Port 3000).
-  - **Frontend UI:** `frontend` container (Port 3001).
-  - **Database:** `db` container (Port 5432).
-  - **Redis:** `redis` container (Port 6379).
-  - **MCP Services:** `finbot`, `mubot`, `dese`, `observability` containers.
-
-### Networking Rules
-
-- **Frontend to Backend:** Uses `NEXT_PUBLIC_API_URL` (browser access) or internal docker network (SSR).
-- **Backend to Infra:** Connects to `db` and `redis` via service names.
-
-### Development Workflow
-
-1. **Start Environment:**
-   ```powershell
-   docker compose up -d
-   ```
-2. **View Logs:**
-   ```powershell
-   docker compose logs -f
-   ```
-3. **Run Commands (Migrations, etc.):**
-   ```powershell
-   docker compose exec app pnpm db:migrate
-   ```
-
----
-
-## Temel Uygulamalar
-
-- Path alias kullanımı zorunlu: `@/...`
-- TypeScript’te `any` kullanılmaz; açık tipler tanımlanır.
-- Loglama `logger` yardımıyla yapılır (`console.*` yasak).
-- Async işlemler `try/catch` veya `asyncHandler` ile sarılır, hiçbir promise sahipsiz bırakılmaz.
-- Veritabanı erişimi Drizzle ORM üzerinden yapılır; raw SQL yazılmaz.
-- Gizli bilgiler `.env` / secret yönetimi ile yönetilir, kaynak koda gömülmez.
-
----
-
-## MCP Sunucuları İçin Ek Şartlar
-
-- Her uçta JWT doğrulaması + RBAC yetki kontrolü çalışır.
-- Gerçek backend ve Prometheus API’lerine bağlanılır; mock veri kullanılmaz.
-- Redis önbelleği (TTL varsayılan 60 sn) ve yapılandırılmış logging zorunludur.
-- Hatalar `asyncHandler` ve merkezi error middleware’i ile ele alınır.
-
----
-
-## Çalışma Akışı Kısa Notlar
-
-- Ana şube korunur; geliştirme `feature/*` veya `fix/*` dallarında yapılır.
-- PR açmadan önce `pnpm lint`, `pnpm test` ve ilgili Playwright senaryoları çalıştırılır.
-- Operasyonel kararlar ve destek kanalları için `docs/OPERATIONS_GUIDE.md` referans alınır.
+## 6. Bellek ve Odak (Memory & Focus)
+- **Eski Versiyonlar:** v6.x ve öncesi "Legacy" olarak kabul edilir. Sadece referans içindir, geliştirilmez.
+- **Odak:** Şu anki tek gerçek "Enterprise Transformation Plan"dır (`DESE_EA_PLAN_TRANSFORMATION_REPORT.md`).
+- **Hedef:** SaaS, ERP, CRM ve IoT özelliklerini entegre etmek.

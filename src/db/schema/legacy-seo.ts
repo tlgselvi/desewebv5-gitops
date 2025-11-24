@@ -1,21 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-
-// Users and Authentication
-export const users = pgTable('users', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  password: text('password').notNull(),
-  firstName: varchar('first_name', { length: 100 }),
-  lastName: varchar('last_name', { length: 100 }),
-  role: varchar('role', { length: 50 }).default('user').notNull(),
-  isActive: boolean('is_active').default(true).notNull(),
-  lastLogin: timestamp('last_login'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  emailIdx: uniqueIndex('users_email_idx').on(table.email),
-}));
+import { users } from './saas';
 
 // SEO Projects
 export const seoProjects = pgTable('seo_projects', {
@@ -241,12 +226,6 @@ export const seoReports = pgTable('seo_reports', {
 }));
 
 // Define relations
-export const usersRelations = relations(users, ({ many }) => ({
-  seoProjects: many(seoProjects),
-  resolvedAlerts: many(seoAlerts),
-  generatedReports: many(seoReports),
-}));
-
 export const seoProjectsRelations = relations(seoProjects, ({ one, many }) => ({
   owner: one(users, {
     fields: [seoProjects.ownerId],
@@ -341,3 +320,4 @@ export const seoReportsRelations = relations(seoReports, ({ one }) => ({
     references: [users.id],
   }),
 }));
+

@@ -302,17 +302,17 @@ gantt
   - [x] ESP32 firmware hazırlığı (MQTT Client ile simüle edildi)
   - [x] Alarm & notification sistemi (Database Alerting)
 
-- [ ] **JARVIS AI Agent** (5 gün)
-  - OpenAI/Claude API entegrasyonu
-  - Log analizi & root cause detection
-  - Finansal tahminleme modeli
-  - Lead scoring algoritması
+- [x] **JARVIS AI Agent** (5 gün)
+  - [x] OpenAI/Claude API entegrasyonu
+  - [x] Log analizi & root cause detection
+  - [x] Finansal tahminleme modeli
+  - [x] Lead scoring algoritması
 
-- [ ] **External Integrations** (5 gün)
-  - Banka API (Open Banking)
-  - E-Fatura entegratörü (Foriba/Logo)
-  - TCMB kur API
-  - WhatsApp Business API (hazırlık)
+- [x] **External Integrations** (5 gün)
+  - [x] Banka API (Open Banking)
+  - [x] E-Fatura entegratörü (Foriba/Logo)
+  - [x] TCMB kur API
+  - [x] WhatsApp Business API (hazırlık)
 
 **Çıktılar:**
 - ✅ IoT data pipeline

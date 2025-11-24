@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from './schema.js';
+import * as schema from './schema/index.js';
 import { config } from '@/config/index.js';
 import { logger } from '@/utils/logger.js';
 
@@ -12,7 +12,7 @@ const client = postgres(connectionString);
 export const db = drizzle(client, { schema });
 
 // Export schema for use in other modules
-export * from './schema.js';
+export * from './schema/index.js';
 
 // Database health check
 export async function checkDatabaseConnection(): Promise<boolean> {

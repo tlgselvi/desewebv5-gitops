@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { financeService } from '@/modules/finance/service.js';
+import { jarvisService } from '@/services/ai/jarvis.js';
 import { authenticate } from '@/middleware/auth.js';
 import { asyncHandler } from '@/utils/asyncHandler.js';
 
@@ -27,6 +28,10 @@ router.get('/summary', authenticate, asyncHandler(async (req, res) => {
 
   const financialData = await financeService.getFinancialSummary(organizationId);
   
+  // Get AI Predictions
+  // In a real scenario, pass real history. For now, passing empty triggers mock/simple prediction.
+  const prediction = await jarvisService.predictFinancials([]);
+
   res.json({
     finance: financialData,
     system: {
@@ -38,6 +43,9 @@ router.get('/summary', authenticate, asyncHandler(async (req, res) => {
       poolTemp: 28.5,
       phLevel: 7.4,
       chlorine: 1.2
+    },
+    ai: {
+      prediction: prediction
     }
   });
 }));

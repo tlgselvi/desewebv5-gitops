@@ -55,6 +55,7 @@ const MODULES = [
     title: "DESE Analytics",
     excerpt:
       "Core Web Vitals, E-E-A-T skoru ve saha verilerini tek ekranda birleştiren öngörüler.",
+    link: "/dashboard", // Link eklendi
     tag: "Analytics",
     icon: <Sparkles className="h-6 w-6 text-amber-600" />,
     color: "amber",
@@ -367,7 +368,7 @@ export default function Home() {
                     className="text-blue-600 hover:bg-blue-50" 
                     asChild
                   >
-                    <Link href={link}>
+                    <Link href={link} prefetch={false}>
                       Paneli Aç
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>

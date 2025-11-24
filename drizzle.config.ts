@@ -8,7 +8,7 @@ const connectionString = isDocker
   : 'postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5';
 
 export default defineConfig({
-  schema: './src/db/schema.ts',
+  schema: './src/db/schema/index.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {

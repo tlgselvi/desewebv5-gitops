@@ -3,6 +3,7 @@ import { aiopsRouter } from "@/routes/v1/aiops.js";
 import { authRouter } from "@/routes/v1/auth.js";
 import { adminRouter } from "@/routes/v1/admin.js";
 import { ceoRouter } from "@/routes/v1/ceo.js";
+import { jarvisRouter } from "@/routes/v1/jarvis.js";
 import { financeRoutes } from "@/modules/finance/routes.js";
 import { crmRoutes } from "@/modules/crm/routes.js";
 import { inventoryRoutes } from "@/modules/inventory/routes.js";
@@ -17,6 +18,9 @@ v1Router.use("/aiops", aiopsRouter);
 
 // CEO Dashboard - Aggregated view
 v1Router.use("/ceo", authenticate, ceoRouter);
+
+// AI & Automation
+v1Router.use("/jarvis", jarvisRouter);
 
 // Enterprise Modules
 v1Router.use("/finance", financeRoutes);
