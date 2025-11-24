@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dese-db-migration
+  labels:
+    app: dese-api
+    component: migration
+    version: v7.0.0
+spec:
+  ttlSecondsAfterFinished: 3600 # Auto-cleanup after 1 hour
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: cloudsql-proxy-sa # Using same SA as API for Cloud SQL access
+      restartPolicy: OnFailure
+      containers:
+      # Cloud SQL Proxy sidecar (Required for DB access)
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+        args:
+          - "--address=0.0.0.0"
+          - "--port=5432"
+          - "ea-plan-seo-project:europe-west3:dese-ea-plan-db"
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+      
+      # Migration Runner
+      - name: migration-runner
+        image: europe-west3-docker.pkg.dev/ea-plan-seo-project/dese-ea-plan-images/dese-api:v7.0.0
+        command: ["/bin/sh", "-c"]
+        # Wait for proxy to be ready, run migrate, then kill proxy
+        args: 
+          - |
+            echo "Waiting for Cloud SQL Proxy..."
+            until nc -z 127.0.0.1 5432; do sleep 1; done
+            echo "Proxy is up. Running migrations..."
+            npm run db:migrate
+            EXIT_CODE=$?
+            echo "Migration finished with exit code $EXIT_CODE"
+            # Kill sidecar (otherwise Job never completes)
+            pkill -TERM cloud_sql_proxy
+            exit $EXIT_CODE
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: dese-db-secret
+              key: DATABASE_URL
+        # Using localhost since proxy is in the same pod
+        - name: DB_HOST
+          value: "127.0.0.1"
+

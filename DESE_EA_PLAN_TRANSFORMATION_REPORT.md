@@ -331,8 +331,8 @@ gantt
 #### Görevler
 - [ ] **Kubernetes Migration** (4 gün)
   - [x] IoT MQTT Broker Deployment (Mosquitto)
-  - [ ] Core API & Database Migration
-  - [ ] Ingress Controller Setup
+  - [x] Core API & Database Migration (Job + Redis + Ingress)
+  - [x] Ingress Controller Setup
 
 - [ ] **Performance Optimization** (3 gün)
   - [x] TCMB & Dashboard Redis Caching

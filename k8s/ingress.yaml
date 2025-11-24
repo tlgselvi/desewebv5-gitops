@@ -1,48 +1,61 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: dese-ea-plan-v5
-  namespace: dese-ea-plan-v5
-  labels:
-    app.kubernetes.io/name: dese-ea-plan-v5
-    app.kubernetes.io/version: "5.0.0"
-    app.kubernetes.io/component: api
-    app.kubernetes.io/part-of: cpt-optimization
+  name: dese-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-    nginx.ingress.kubernetes.io/rate-limit: "100"
-    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # API Rate Limiting (Basic)
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    # Enable CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://app.poolfab.com.tr"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS, DELETE, PATCH"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+
 spec:
-  ingressClassName: nginx
   tls:
   - hosts:
-    - api.dese.ai
-    - dese.ai
-    secretName: dese-ea-plan-v5-tls
+    - api.poolfab.com.tr
+    - app.poolfab.com.tr
+    - mqtt.poolfab.com.tr
+    secretName: dese-tls-secret
+  
   rules:
-  - host: api.dese.ai
+  # Frontend Domain
+  - host: app.poolfab.com.tr
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: dese-ea-plan-v5
+            name: dese-frontend-service
             port:
-              number: 80
-  - host: dese.ai
+              number: 3000
+  
+  # API Domain
+  - host: api.poolfab.com.tr
     http:
       paths:
-      - path: /api
+      - path: /
         pathType: Prefix
         backend:
           service:
-            name: dese-ea-plan-v5
+            name: dese-api-service
             port:
-              number: 80
+              number: 3001
+
+  # IoT MQTT (WebSockets)
+  - host: mqtt.poolfab.com.tr
+    http:
+      paths:
+      - path: /mqtt
+        pathType: Prefix
+        backend:
+          service:
+            name: dese-iot-mqtt-service
+            port:
+              number: 9001

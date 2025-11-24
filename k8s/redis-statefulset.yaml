@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dese-redis
+  labels:
+    app: dese-redis
+    tier: cache
+spec:
+  serviceName: "dese-redis-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dese-redis
+  template:
+    metadata:
+      labels:
+        app: dese-redis
+        tier: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dese-redis-service
+  labels:
+    app: dese-redis
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: redis
+  clusterIP: None # Headless service for StatefulSet
+  selector:
+    app: dese-redis
+
