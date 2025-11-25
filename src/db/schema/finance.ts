@@ -63,7 +63,7 @@ export const invoiceItems = pgTable('invoice_items', {
   total: decimal('total', { precision: 15, scale: 2 }).notNull(),
 });
 
-// Financial Transactions (Kasa/Banka Hareketleri)
+// Financial Transactions (Kasa/Banka Hareketleri - Tek Taraflı)
 export const transactions = pgTable('transactions', {
   id: uuid('id').primaryKey().defaultRandom(),
   organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
@@ -86,6 +86,47 @@ export const transactions = pgTable('transactions', {
   categoryIdx: index('transactions_category_idx').on(table.category),
 }));
 
+// General Ledger (Yevmiye Defteri - Çift Taraflı)
+export const ledgers = pgTable('ledgers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
+  
+  journalNumber: varchar('journal_number', { length: 50 }).notNull(), // Yevmiye No
+  date: timestamp('date').notNull(),
+  description: varchar('description', { length: 255 }).notNull(),
+  type: varchar('type', { length: 50 }).default('general'), // opening, closing, general
+  
+  referenceId: uuid('reference_id'),
+  referenceType: varchar('reference_type', { length: 50 }),
+  
+  status: varchar('status', { length: 20 }).default('draft'), // draft, posted
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  orgIdx: index('ledgers_org_idx').on(table.organizationId),
+  dateIdx: index('ledgers_date_idx').on(table.date),
+  journalIdx: uniqueIndex('ledgers_journal_idx').on(table.organizationId, table.journalNumber),
+}));
+
+// Ledger Entries (Yevmiye Maddeleri)
+export const ledgerEntries = pgTable('ledger_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  ledgerId: uuid('ledger_id').references(() => ledgers.id).notNull(),
+  accountId: uuid('account_id').references(() => accounts.id).notNull(),
+  
+  debit: decimal('debit', { precision: 15, scale: 2 }).default('0.00'),
+  credit: decimal('credit', { precision: 15, scale: 2 }).default('0.00'),
+  
+  description: varchar('description', { length: 255 }),
+  documentNumber: varchar('document_number', { length: 50 }),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  ledgerIdx: index('ledger_entries_ledger_idx').on(table.ledgerId),
+  accountIdx: index('ledger_entries_account_idx').on(table.accountId),
+}));
+
 // Relations
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
   organization: one(organizations, {
@@ -94,6 +135,7 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
   }),
   invoices: many(invoices),
   transactions: many(transactions),
+  ledgerEntries: many(ledgerEntries),
 }));
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({
@@ -134,3 +176,21 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
+export const ledgersRelations = relations(ledgers, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [ledgers.organizationId],
+    references: [organizations.id],
+  }),
+  entries: many(ledgerEntries),
+}));
+
+export const ledgerEntriesRelations = relations(ledgerEntries, ({ one }) => ({
+  ledger: one(ledgers, {
+    fields: [ledgerEntries.ledgerId],
+    references: [ledgers.id],
+  }),
+  account: one(accounts, {
+    fields: [ledgerEntries.accountId],
+    references: [accounts.id],
+  }),
+}));

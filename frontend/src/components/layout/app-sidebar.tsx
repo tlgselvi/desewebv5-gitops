@@ -13,6 +13,7 @@ import {
   Package,
   Wifi,
   ShieldCheck,
+  Briefcase,
 } from "lucide-react"
 
 interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
@@ -53,6 +54,12 @@ export function AppSidebar({ className, ...props }: React.HTMLAttributes<HTMLDiv
       roles: ["admin", "warehouse_manager"],
     },
     {
+      href: "/dashboard/hr",
+      title: "İnsan Kaynakları",
+      icon: <Briefcase className="mr-2 h-4 w-4" />,
+      roles: ["admin", "hr"],
+    },
+    {
       href: "/dashboard/iot",
       title: "IoT & Cihazlar",
       icon: <Wifi className="mr-2 h-4 w-4" />,
@@ -65,9 +72,20 @@ export function AppSidebar({ className, ...props }: React.HTMLAttributes<HTMLDiv
       roles: ["admin"],
     },
     {
+      href: "/dashboard/super-admin",
+      title: "Super Admin",
+      icon: <ShieldCheck className="mr-2 h-4 w-4 text-red-500" />,
+      roles: ["super_admin"],
+    },
+    {
       href: "/dashboard/settings",
       title: "Ayarlar",
       icon: <Settings className="mr-2 h-4 w-4" />,
+    },
+    {
+      href: "/dashboard/settings/integrations",
+      title: "Entegrasyonlar",
+      icon: <Wifi className="mr-2 h-4 w-4" />,
     },
   ]
 

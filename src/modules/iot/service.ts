@@ -40,6 +40,30 @@ export class IoTService {
       .where(eq(deviceAlerts.organizationId, organizationId))
       .orderBy(desc(deviceAlerts.createdAt));
   }
+
+  async getLatestMetrics(organizationId: string) {
+    // Get the most recent telemetry entry for the organization (across all devices)
+    // Ideally we'd filter by device type = 'pool_controller'
+    const [latest] = await db.select()
+      .from(telemetry)
+      .where(eq(telemetry.organizationId, organizationId))
+      .orderBy(desc(telemetry.timestamp))
+      .limit(1);
+
+    if (!latest) {
+      return {
+        poolTemp: 0,
+        phLevel: 0,
+        chlorine: 0
+      };
+    }
+
+    return {
+      poolTemp: Number(latest.temperature) || 0,
+      phLevel: Number(latest.ph) || 0,
+      chlorine: Number(latest.orp) || 0 // Using ORP as proxy for now
+    };
+  }
 }
 
 export const iotService = new IoTService();

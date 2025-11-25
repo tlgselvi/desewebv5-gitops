@@ -7,6 +7,7 @@ interface AppState {
     email: string
     name: string
     role: string
+    organizationId?: string
   } | null
   isAuthenticated: boolean
   sidebarOpen: boolean

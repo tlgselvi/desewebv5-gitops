@@ -13,6 +13,7 @@ export interface RequestWithUser extends Omit<Request, 'user'> {
     id: string;
     email: string;
     role: string;
+    organizationId?: string;
     permissions?: string[];
   };
 }
@@ -55,6 +56,7 @@ export const authenticate = (
         id: string;
         email: string;
         role: string;
+        organizationId?: string;
         permissions?: string[];
         iat?: number;
         exp?: number;
@@ -65,6 +67,7 @@ export const authenticate = (
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,
+        organizationId: decoded.organizationId,
         permissions: decoded.permissions || [],
       };
 
@@ -72,6 +75,7 @@ export const authenticate = (
         userId: decoded.id,
         email: decoded.email,
         role: decoded.role,
+        orgId: decoded.organizationId,
         permissions: decoded.permissions || [],
       });
 
@@ -196,6 +200,7 @@ export const optionalAuth = (
         id: string;
         email: string;
         role: string;
+        organizationId?: string;
         permissions?: string[];
       };
 
@@ -203,12 +208,14 @@ export const optionalAuth = (
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,
+        organizationId: decoded.organizationId,
         permissions: decoded.permissions || [],
       };
 
       logger.debug("Optional authentication successful", {
         userId: decoded.id,
         email: decoded.email,
+        orgId: decoded.organizationId
       });
     } catch (error) {
       // Invalid token, but continue without user
@@ -226,4 +233,3 @@ export const optionalAuth = (
     next();
   }
 };
-

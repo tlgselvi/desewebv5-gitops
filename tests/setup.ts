@@ -4,8 +4,16 @@ import { logger } from '@/utils/logger.js';
 
 // Test environment variables
 process.env.NODE_ENV = 'test';
+// Use localhost for tests (not Docker service names)
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+process.env.REDIS_HOST = 'localhost';
+process.env.REDIS_PORT = '6379';
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5_test';
+process.env.DB_HOST = 'localhost';
+process.env.DB_PORT = '5432';
+process.env.DB_NAME = 'dese_ea_plan_v5_test';
+process.env.DB_USER = 'dese';
+process.env.DB_PASSWORD = 'dese123';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-min-32-chars-for-testing';
 
 // Mock logger for tests to reduce noise

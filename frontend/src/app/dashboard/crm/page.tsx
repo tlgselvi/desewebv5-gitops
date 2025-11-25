@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Loader2, RefreshCw, Activity, CircleDollarSign, CheckCircle2 } from "lucide-react";
 import { KanbanBoard } from "@/components/crm/kanban-board";
 import { crmService } from "@/services/crm";
 import { KanbanData } from "@/types/crm";
 import { toast } from "sonner";
+import { KPICard } from "@/components/dashboard/kpi-card";
 
 export default function CRMPage() {
   const [data, setData] = useState<KanbanData | null>(null);
@@ -55,20 +56,24 @@ export default function CRMPage() {
       
       {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Toplam Fırsat</div>
-          <div className="text-2xl font-bold">{totalDeals}</div>
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Pipeline Değeri</div>
-          <div className="text-2xl font-bold">
-            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(totalValue)}
-          </div>
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Kazanılan</div>
-          <div className="text-2xl font-bold">{wonDeals}</div>
-        </div>
+        <KPICard
+          title="Toplam Fırsat"
+          value={totalDeals}
+          icon={<Activity className="h-4 w-4" />}
+          loading={isLoading}
+        />
+        <KPICard
+          title="Pipeline Değeri"
+          value={new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(totalValue)}
+          icon={<CircleDollarSign className="h-4 w-4" />}
+          loading={isLoading}
+        />
+        <KPICard
+          title="Kazanılan"
+          value={wonDeals}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          loading={isLoading}
+        />
       </div>
       
       {/* Kanban Board Area */}

@@ -23,6 +23,32 @@ export const organizations = pgTable('organizations', {
   taxIdIdx: index('organizations_tax_id_idx').on(table.taxId),
 }));
 
+// Integrations (Tenant Settings)
+export const integrations = pgTable('integrations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
+  
+  provider: varchar('provider', { length: 50 }).notNull(), // 'stripe', 'isbank', 'foriba', 'sendgrid', 'aws_ses', 'twilio'
+  category: varchar('category', { length: 50 }).notNull(), // 'payment', 'banking', 'einvoice', 'email', 'sms'
+  
+  // Encrypted Credentials
+  apiKey: text('api_key'),
+  apiSecret: text('api_secret'),
+  endpointUrl: text('endpoint_url'),
+  
+  // Config JSON (Additional settings like webhook_secret, region, etc.)
+  config: text('config'), // JSON stringified
+  
+  isActive: boolean('is_active').default(true),
+  isVerified: boolean('is_verified').default(false), // Test connection successful?
+  
+  lastSync: timestamp('last_sync'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  orgProviderIdx: uniqueIndex('integrations_org_provider_idx').on(table.organizationId, table.provider),
+}));
+
 // Users (Updated for Multi-tenancy)
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -30,7 +56,7 @@ export const users = pgTable('users', {
   password: text('password').notNull(),
   firstName: varchar('first_name', { length: 100 }),
   lastName: varchar('last_name', { length: 100 }),
-  role: varchar('role', { length: 50 }).default('user').notNull(), // admin, user, accountant, sales
+  role: varchar('role', { length: 50 }).default('user').notNull(), // admin, user, accountant, sales, super_admin
   isActive: boolean('is_active').default(true).notNull(),
   
   // Multi-tenancy Link
@@ -58,6 +84,7 @@ export const permissions = pgTable('permissions', {
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(users),
   permissions: many(permissions),
+  integrations: many(integrations),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -77,4 +104,3 @@ export const permissionsRelations = relations(permissions, ({ one }) => ({
     references: [organizations.id],
   }),
 }));
-

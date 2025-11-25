@@ -43,9 +43,10 @@ authRouter.post("/login", (req: Request, res: Response): void => {
   try {
     const token = jwt.sign(
       {
-        id: "mock-user",
+        id: "22222222-2222-2222-2222-222222222222", // Mock User UUID
         email: username,
         role: "admin",
+        organizationId: "11111111-1111-1111-1111-111111111111", // Mock Org UUID
         permissions: ["admin", "mcp.dashboard.read"],
       },
       config.security.jwtSecret,
@@ -58,9 +59,10 @@ authRouter.post("/login", (req: Request, res: Response): void => {
       success: true,
       token,
       user: {
-        id: "mock-user",
+        id: "22222222-2222-2222-2222-222222222222",
         email: username,
         role: "admin",
+        organizationId: "11111111-1111-1111-1111-111111111111",
       },
       warning: "This is a mock login endpoint. Use Google OAuth in production.",
     });
@@ -200,6 +202,7 @@ authRouter.get(
         id: user.id,
         email: user.email,
         role: user.role,
+        organizationId: user.organizationId,
         permissions: user.role === "admin" ? ["admin", "mcp.dashboard.read"] : [],
       };
       const expiresInValue = config.security.jwtExpiresIn ?? "24h";
@@ -212,6 +215,7 @@ authRouter.get(
         email: user.email,
         userId: user.id,
         role: user.role,
+        orgId: user.organizationId,
       });
 
       // Redirect to frontend callback page with token
@@ -248,6 +252,7 @@ authRouter.get("/me", (req: Request, res: Response) => {
         id: string;
         email: string;
         role: string;
+        organizationId?: string;
       };
       return res.json({
         success: true,
@@ -255,6 +260,7 @@ authRouter.get("/me", (req: Request, res: Response) => {
           id: decoded.id,
           email: decoded.email,
           role: decoded.role,
+          organizationId: decoded.organizationId,
         },
       });
     } catch (error) {

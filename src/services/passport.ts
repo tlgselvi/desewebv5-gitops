@@ -2,9 +2,10 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
-import { db, users } from "@/db/index.js";
+import { db, users, organizations, permissions } from "@/db/index.js";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Passport Google OAuth Strategy
@@ -18,6 +19,7 @@ interface PassportUser {
   role: string;
   firstName: string | null;
   lastName: string | null;
+  organizationId: string | null;
 }
 
 // Extend Express.User type for Passport
@@ -52,6 +54,7 @@ passport.deserializeUser(async (id: unknown, done) => {
       role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      organizationId: user.organizationId,
     };
     done(null, passportUser);
   } catch (error) {
@@ -94,27 +97,48 @@ if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret
 
         let userId: string;
         let userRole: string;
+        let userOrgId: string | null = null;
         let firstName: string | null = null;
         let lastName: string | null = null;
 
         if (existingUsers.length === 0) {
-          // Create new user
+          // Create new user with Organization
           const randomPassword = crypto.randomBytes(32).toString("hex");
           const nameParts = displayName?.split(" ") || [];
           firstName = nameParts[0] || null;
           lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
 
-          const [newUser] = await db
-            .insert(users)
-            .values({
-              email,
-              password: randomPassword, // OAuth users have random password
-              firstName,
-              lastName,
-              role: "user", // Default role
-              isActive: true,
-            })
-            .returning();
+          // Start transaction
+          const newUser = await db.transaction(async (tx) => {
+             // 1. Create Organization
+             const [newOrg] = await tx.insert(organizations).values({
+                 id: uuidv4(),
+                 name: `${displayName || email}'s Org`,
+                 slug: (displayName || email || 'org').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + crypto.randomBytes(4).toString('hex'),
+                 subscriptionTier: 'starter'
+             }).returning();
+
+             // 2. Create User linked to Org
+             const [createdUser] = await tx.insert(users).values({
+                email,
+                password: randomPassword, // OAuth users have random password
+                firstName,
+                lastName,
+                role: "admin", // Default role for new org owner
+                isActive: true,
+                organizationId: newOrg.id
+             }).returning();
+             
+             // 3. Create Admin Permissions
+             await tx.insert(permissions).values({
+                 organizationId: newOrg.id,
+                 role: 'admin',
+                 resource: '*',
+                 action: '*'
+             });
+
+             return createdUser;
+          });
 
           if (!newUser) {
             throw new Error("Failed to create user");
@@ -122,7 +146,8 @@ if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret
 
           userId = newUser.id;
           userRole = newUser.role;
-          logger.info("Created new user from Google OAuth", { email, userId, googleId });
+          userOrgId = newUser.organizationId;
+          logger.info("Created new user & org from Google OAuth", { email, userId, googleId, orgId: userOrgId });
         } else {
           // User exists, update last login
           const existingUser = existingUsers[0];
@@ -131,6 +156,7 @@ if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret
           }
           userId = existingUser.id;
           userRole = existingUser.role;
+          userOrgId = existingUser.organizationId;
           firstName = existingUser.firstName;
           lastName = existingUser.lastName;
 
@@ -151,6 +177,7 @@ if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret
           role: userRole,
           firstName,
           lastName,
+          organizationId: userOrgId,
         };
 
         return done(null, user);

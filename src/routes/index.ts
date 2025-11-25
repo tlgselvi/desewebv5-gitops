@@ -13,6 +13,7 @@ import { financeRoutes } from '../modules/finance/routes.js';
 import { crmRoutes } from '../modules/crm/routes.js';
 import { inventoryRoutes } from '../modules/inventory/routes.js';
 import { iotRoutes } from '../modules/iot/routes.js';
+import hrRoutes from '../modules/hr/routes.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 import { v1Router } from '@/routes/v1/index.js';
@@ -53,6 +54,7 @@ export function setupRoutes(app: Application): void {
   app.use(`${apiPrefix}/crm`, crmRoutes);
   app.use(`${apiPrefix}/inventory`, inventoryRoutes);
   app.use(`${apiPrefix}/iot`, iotRoutes);
+  app.use(`${apiPrefix}/hr`, hrRoutes);
 
   // Most specific API routes first (longest paths first)
   app.use(`${apiPrefix}/mcp/dashboard`, mcpDashboardRoutes);
@@ -86,6 +88,7 @@ export function setupRoutes(app: Application): void {
         crm: `${apiPrefix}/crm`,
         inventory: `${apiPrefix}/inventory`,
         iot: `${apiPrefix}/iot`,
+        hr: `${apiPrefix}/hr`,
         metrics: '/metrics',
         aiopsMetrics: '/metrics/aiops',
         health: '/health',

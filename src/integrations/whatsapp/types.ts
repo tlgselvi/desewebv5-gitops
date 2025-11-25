@@ -1,14 +1,17 @@
 export interface WhatsAppMessage {
   to: string;
-  type: 'text' | 'template' | 'image';
+  type: 'text' | 'template' | 'image' | 'document' | 'video' | 'audio';
   content: string | Record<string, any>;
   templateName?: string;
   language?: string;
+  templateParams?: any[];
+  mediaType?: 'image' | 'document' | 'video' | 'audio';
+  mediaUrl?: string;
 }
 
 export interface WhatsAppResponse {
   messageId: string;
-  status: 'sent' | 'failed';
+  status: 'sent' | 'failed' | 'delivered' | 'read';
   error?: string;
 }
 

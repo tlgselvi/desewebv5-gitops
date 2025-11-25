@@ -8,6 +8,8 @@ import { financeRoutes } from "@/modules/finance/routes.js";
 import { crmRoutes } from "@/modules/crm/routes.js";
 import { inventoryRoutes } from "@/modules/inventory/routes.js";
 import { iotRoutes } from "@/modules/iot/routes.js";
+import hrRoutes from "@/modules/hr/routes.js";
+import { integrationRoutes } from "@/modules/saas/integration.routes.js";
 import { authenticate } from "@/middleware/auth.js";
 import { requireRole } from "@/middleware/rbac.js";
 
@@ -27,6 +29,10 @@ v1Router.use("/finance", financeRoutes);
 v1Router.use("/crm", crmRoutes);
 v1Router.use("/inventory", inventoryRoutes);
 v1Router.use("/iot", iotRoutes);
+v1Router.use("/hr", hrRoutes);
+
+// SaaS & Integrations
+v1Router.use("/integrations", integrationRoutes);
 
 // Admin routes - protected with authentication and admin role
 v1Router.use("/admin", authenticate, requireRole(["admin"]), adminRouter);

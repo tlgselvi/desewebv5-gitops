@@ -13,6 +13,7 @@ import { Activity, CreditCard, DollarSign, Users, Loader2, Sparkles, AlertTriang
 import { authenticatedGet } from "@/lib/api"
 import { toast } from "sonner"
 import { useQuery } from "@tanstack/react-query"
+import { KPICard } from "@/components/dashboard/kpi-card"
 
 // Mock chart data for visual filling until we have historical data endpoints
 const chartData = [
@@ -34,6 +35,7 @@ interface DashboardSummary {
     uptime: number;
     activeUsers: number;
     openTickets: number;
+    activeAlerts?: number;
   };
   iot: {
     poolTemp: number;
@@ -87,58 +89,35 @@ export default function DashboardPage() {
         <h2 className="text-3xl font-bold tracking-tight">CEO Dashboard</h2>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Toplam Ciro</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₺{summary?.finance.totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% geçen aydan (Mock)
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktif Kullanıcı</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{summary?.system.activeUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              +180 geçen aydan
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bekleyen Tahsilat</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₺{summary?.finance.pendingPayments.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {summary?.system.openTickets} açık destek talebi
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sistem Sağlığı</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">%{summary?.system.uptime}</div>
-            <p className="text-xs text-muted-foreground">
-              IoT: {summary?.iot.poolTemp}°C | pH {summary?.iot.phLevel}
-            </p>
-          </CardContent>
-        </Card>
+        <KPICard
+          title="Toplam Ciro"
+          value={`₺${summary?.finance.totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) ?? '0,00'}`}
+          icon={<DollarSign className="h-4 w-4" />}
+          loading={isLoading}
+          trend={{ value: 20.1, label: "geçen aydan", direction: "up" }}
+          description="geçen aydan (Mock)"
+        />
+        <KPICard
+          title="Aktif Kullanıcı"
+          value={`+${summary?.system.activeUsers ?? 0}`}
+          icon={<Users className="h-4 w-4" />}
+          loading={isLoading}
+          description="+180 geçen aydan"
+        />
+        <KPICard
+          title="Bekleyen Tahsilat"
+          value={`₺${summary?.finance.pendingPayments.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) ?? '0,00'}`}
+          icon={<CreditCard className="h-4 w-4" />}
+          loading={isLoading}
+          description={`${summary?.system.openTickets ?? 0} açık destek talebi`}
+        />
+        <KPICard
+          title="Sistem Sağlığı"
+          value={`%${summary?.system.uptime ?? 0}`}
+          icon={<Activity className="h-4 w-4" />}
+          loading={isLoading}
+          description={`IoT: ${summary?.iot.poolTemp ?? 0}°C | pH ${summary?.iot.phLevel ?? 0}`}
+        />
       </div>
 
       {/* Jarvis AI Insights */}

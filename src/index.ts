@@ -41,6 +41,8 @@ import { auditMiddleware } from "@/middleware/audit.js";
 
 // Passport stratejisini yükle (sadece import etmek yeterli)
 import "@/services/passport.js";
+// IoT MQTT Client başlat (Instance oluşturulunca otomatik bağlanır)
+import "@/services/iot/mqtt-client.js";
 
 const dev = config.nodeEnv !== "production";
 // Hybrid Mode: Skip Next.js if SKIP_NEXT is set (frontend runs separately)

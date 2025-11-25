@@ -284,22 +284,28 @@ const configSchema = z.object({
 });
 
 // Parse and validate configuration
+// In test environment, use localhost instead of Docker service names
+const isTest = process.env.NODE_ENV === 'test';
 const rawConfig = {
   port: process.env.PORT,
   nodeEnv: process.env.NODE_ENV,
   apiVersion: process.env.API_VERSION,
   corsOrigin: process.env.CORS_ORIGIN,
   database: {
-    url: process.env.DATABASE_URL,
-    host: process.env.DB_HOST,
+    url: process.env.DATABASE_URL || (isTest 
+      ? 'postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5_test'
+      : 'postgresql://dese:dese123@db:5432/dese_ea_plan_v5'),
+    host: process.env.DB_HOST || (isTest ? 'localhost' : 'db'),
     port: process.env.DB_PORT,
-    name: process.env.DB_NAME,
+    name: process.env.DB_NAME || (isTest ? 'dese_ea_plan_v5_test' : 'dese_ea_plan_v5'),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
   },
   redis: {
-    url: process.env.REDIS_URL,
-    host: process.env.REDIS_HOST,
+    url: process.env.REDIS_URL || (isTest 
+      ? 'redis://localhost:6379'
+      : 'redis://redis:6379'),
+    host: process.env.REDIS_HOST || (isTest ? 'localhost' : 'redis'),
     port: process.env.REDIS_PORT,
     password: process.env.REDIS_PASSWORD,
   },

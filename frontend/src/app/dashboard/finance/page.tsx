@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { financeService, type FinancialSummary } from "@/services/finance"
 import { CreateInvoiceDialog } from "@/components/finance/create-invoice-dialog"
 import { ExchangeRatesCard } from "@/components/finance/exchange-rates"
-import { Loader2 } from "lucide-react"
+import { KPICard } from "@/components/dashboard/kpi-card"
+import { DollarSign, CreditCard } from "lucide-react"
 
 export default function FinancePage() {
   const [summary, setSummary] = useState<FinancialSummary | null>(null)
@@ -38,28 +39,21 @@ export default function FinancePage() {
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Ciro Kartı */}
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Toplam Ciro</div>
-          <div className="text-2xl font-bold flex items-center">
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            ) : (
-              `₺${summary?.totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) ?? '0,00'}`
-            )}
-          </div>
-        </div>
+        <KPICard
+          title="Toplam Ciro"
+          value={`₺${summary?.totalRevenue.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) ?? '0,00'}`}
+          icon={<DollarSign className="h-4 w-4" />}
+          loading={loading}
+        />
 
         {/* Bekleyen Ödemeler Kartı */}
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Bekleyen Ödemeler</div>
-          <div className="text-2xl font-bold flex items-center text-orange-600">
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              `₺${summary?.pendingPayments.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) ?? '0,00'}`
-            )}
-          </div>
-        </div>
+        <KPICard
+          title="Bekleyen Ödemeler"
+          value={`₺${summary?.pendingPayments.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) ?? '0,00'}`}
+          icon={<CreditCard className="h-4 w-4" />}
+          loading={loading}
+          valueClassName="text-orange-600"
+        />
 
         {/* Döviz Kurları */}
         <div className="md:col-span-2 lg:col-span-2">

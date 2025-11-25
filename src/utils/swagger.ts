@@ -8,10 +8,10 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Dese EA Plan v6.8.1 API",
-      version: "6.8.1",
+      title: "Dese EA Plan v7.0 Enterprise API",
+      version: "7.0.0",
       description:
-        "CPT Optimization Domain için Kubernetes + GitOps + AIOps uyumlu kurumsal planlama API",
+        "Enterprise ERP & AI Platform (Finance, CRM, IoT, SaaS) API Documentation",
       contact: {
         name: "CPT Digital Team",
         email: "dev@dese.ai",
@@ -241,6 +241,133 @@ const options = {
           },
           required: ["projectId", "url", "measuredAt"],
         },
+        Integration: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+            },
+            organizationId: {
+              type: "string",
+              format: "uuid",
+            },
+            provider: {
+              type: "string",
+              description: "Integration provider name (e.g., 'isbank', 'foriba', 'meta')",
+            },
+            category: {
+              type: "string",
+              enum: ["payment", "banking", "einvoice", "email", "sms", "whatsapp"],
+              description: "Integration category",
+            },
+            apiKey: {
+              type: "string",
+              description: "API Key (encrypted in database)",
+            },
+            apiSecret: {
+              type: "string",
+              description: "API Secret (encrypted in database)",
+            },
+            endpointUrl: {
+              type: "string",
+              format: "uri",
+              description: "Custom endpoint URL (optional)",
+            },
+            config: {
+              type: "object",
+              description: "Additional configuration (sandbox mode, etc.)",
+            },
+            isActive: {
+              type: "boolean",
+              description: "Whether the integration is active",
+            },
+            isVerified: {
+              type: "boolean",
+              description: "Whether the integration credentials are verified",
+            },
+            lastSync: {
+              type: "string",
+              format: "date-time",
+              description: "Last synchronization timestamp",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+            },
+            updatedAt: {
+              type: "string",
+              format: "date-time",
+            },
+          },
+          required: ["id", "organizationId", "provider", "category", "isActive", "isVerified"],
+        },
+        CreateIntegrationRequest: {
+          type: "object",
+          required: ["provider", "category"],
+          properties: {
+            provider: {
+              type: "string",
+              description: "Provider name (e.g., 'isbank', 'foriba', 'meta')",
+            },
+            category: {
+              type: "string",
+              enum: ["payment", "banking", "einvoice", "email", "sms", "whatsapp"],
+            },
+            apiKey: {
+              type: "string",
+              description: "API Key or Client ID",
+            },
+            apiSecret: {
+              type: "string",
+              description: "API Secret or Password",
+            },
+            endpointUrl: {
+              type: "string",
+              format: "uri",
+              description: "Custom endpoint URL (optional)",
+            },
+            config: {
+              type: "object",
+              description: "Additional configuration (e.g., { sandbox: true })",
+            },
+          },
+        },
+        UpdateIntegrationRequest: {
+          type: "object",
+          properties: {
+            apiKey: {
+              type: "string",
+            },
+            apiSecret: {
+              type: "string",
+            },
+            endpointUrl: {
+              type: "string",
+              format: "uri",
+            },
+            config: {
+              type: "object",
+            },
+            isActive: {
+              type: "boolean",
+            },
+          },
+        },
+        TestConnectionResponse: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              description: "Whether the connection test was successful",
+            },
+            message: {
+              type: "string",
+              description: "Test result message",
+            },
+          },
+          required: ["success", "message"],
+        },
       },
     },
     security: [
@@ -252,7 +379,7 @@ const options = {
       },
     ],
   },
-  apis: ["./src/routes/*.ts", "./src/middleware/*.ts"],
+  apis: ["./src/routes/**/*.ts", "./src/middleware/**/*.ts", "./src/modules/**/*.ts"],
 };
 
 const specs = swaggerJsdoc(options);

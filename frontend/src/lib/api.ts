@@ -1,4 +1,5 @@
 import { getToken } from "./auth";
+import { useStore } from "@/store/useStore";
 
 /**
  * Get the base API URL from environment variable or use default
@@ -64,6 +65,19 @@ export async function authenticatedFetch(
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("Content-Type", "application/json");
 
+  // Add Organization ID from store if available (Client-side only)
+  if (typeof window !== "undefined") {
+    try {
+      // Use getState to avoid React hook rules outside components
+      const orgId = useStore.getState().user?.organizationId;
+      if (orgId) {
+        headers.set("x-organization-id", orgId);
+      }
+    } catch (e) {
+      // Ignore store errors during SSR or initialization
+    }
+  }
+
   const response = await fetch(fullUrl, {
     ...options,
     headers,
@@ -108,6 +122,19 @@ export async function authenticatedPost<T>(url: string, body?: unknown): Promise
   return response.json() as Promise<T>;
 }
 
+export async function authenticatedPut<T>(url: string, body?: unknown): Promise<T> {
+  const response = await authenticatedFetch(url, {
+    method: "PUT",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
 export async function authenticatedPatch<T>(url: string, body?: unknown): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "PATCH",
@@ -119,6 +146,36 @@ export async function authenticatedPatch<T>(url: string, body?: unknown): Promis
     throw new Error(`API request failed: ${response.status}`);
   }
   return response.json() as Promise<T>;
+}
+
+export async function authenticatedDelete(url: string): Promise<void> {
+  const response = await authenticatedFetch(url, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
+    if (response.status === 403) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Access denied: ${errorData.message || "Forbidden"}`);
+    }
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  
+  // DELETE requests may not have a body
+  if (response.status === 204) {
+    return;
+  }
+  
+  // If there's a body, try to parse it (some APIs return data on DELETE)
+  const text = await response.text();
+  if (text) {
+    try {
+      return JSON.parse(text) as void;
+    } catch {
+      return;
+    }
+  }
 }
 
 export const api = {
