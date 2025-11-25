@@ -131,4 +131,4 @@ router.post('/whatsapp/send', (req, res) => crmController.sendWhatsApp(req, res)
 // Contacts
 // ... contacts controller eklenebilir ...
 
-export const crmRoutes = router;
+export const crmRoutes: Router = router;

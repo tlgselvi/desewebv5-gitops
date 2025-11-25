@@ -59,7 +59,8 @@ export function setupRoutes(app: Application): void {
   // Most specific API routes first (longest paths first)
   app.use(`${apiPrefix}/mcp/dashboard`, mcpDashboardRoutes);
   app.use(`${apiPrefix}/projects`, projectRoutes);
-  app.use(`${apiPrefix}/seo`, seoRoutes);
+  // SEO routes moved to /api/v1/seo (modular structure)
+  // app.use(`${apiPrefix}/seo`, seoRoutes); // Legacy route - use /api/v1/seo instead
   app.use(`${apiPrefix}/content`, contentRoutes);
   app.use(`${apiPrefix}/analytics`, analyticsRoutes);
 

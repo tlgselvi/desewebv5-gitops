@@ -153,4 +153,4 @@ router.get('/exchange-rates', (req, res) => financeController.getExchangeRates(r
  */
 router.post('/bank-sync', (req, res) => financeController.syncBankTransactions(req, res));
 
-export const financeRoutes = router;
+export const financeRoutes: Router = router;

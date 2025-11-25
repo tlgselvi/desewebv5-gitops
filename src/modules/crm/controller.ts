@@ -31,7 +31,7 @@ export class CRMController {
       const deal = await crmService.createDeal({
         ...data,
         organizationId,
-        assignedTo: userId 
+        ...(userId && { assignedTo: userId }),
       });
 
       return res.status(201).json(deal);
@@ -61,6 +61,7 @@ export class CRMController {
       const { stageId } = req.body;
       const organizationId = (req.user as any)?.organizationId || 'default-org-id'; // Fallback
 
+      if (!id) return res.status(400).json({ error: 'Deal ID required' });
       if (!stageId) return res.status(400).json({ error: 'stageId required' });
 
       const result = await crmService.updateDealStage(id, stageId, organizationId);
@@ -87,11 +88,18 @@ export class CRMController {
 
       if (!organizationId) return res.status(400).json({ error: 'Organization context required' });
 
-      const activity = await crmService.createActivity({
-        ...data,
+      const activityData: any = {
         organizationId,
-        createdBy: userId || 'system'
-      });
+        createdBy: userId || 'system',
+        type: data.type,
+        subject: data.subject,
+      };
+      if (data.dealId) activityData.dealId = data.dealId;
+      if (data.contactId) activityData.contactId = data.contactId;
+      if (data.description) activityData.description = data.description;
+      if (data.dueDate) activityData.dueDate = data.dueDate;
+
+      const activity = await crmService.createActivity(activityData);
 
       return res.status(201).json(activity);
     } catch (error: any) {

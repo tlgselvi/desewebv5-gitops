@@ -71,6 +71,11 @@ class MQTTClientService {
       if (parts.length !== 4) return;
 
       const [prefix, organizationId, deviceId, type] = parts;
+      if (!organizationId || !deviceId || !type) {
+        logger.warn('Invalid MQTT topic format', { topic });
+        return;
+      }
+
       const payload = JSON.parse(messageStr);
 
       logger.debug('MQTT Message Received', { topic, type, deviceId });
@@ -125,7 +130,9 @@ class MQTTClientService {
         // This is a simplified example.
         try {
             const [metric, operator, value] = rule.condition.split(' ');
-            const metricValue = data[metric];
+            if (!metric || !operator || !value) continue;
+            const metricValue = data[metric as keyof typeof data];
+            if (metricValue === undefined) continue;
             
             let triggered = false;
             if (operator === '>' && Number(metricValue) > Number(value)) triggered = true;

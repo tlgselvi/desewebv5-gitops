@@ -6,7 +6,7 @@ import { redis } from "@/services/storage/redisClient.js";
  * Provides multi-module query support and context merging
  */
 
-type MCPModule = "finbot" | "mubot" | "dese" | "observability";
+type MCPModule = "finbot" | "mubot" | "dese" | "observability" | "seo" | "service" | "crm" | "inventory" | "hr" | "iot";
 
 interface MCPContext {
   module: MCPModule;
@@ -31,16 +31,22 @@ interface AggregatedContext {
 interface QueryRequest {
   query: string;
   modules?: MCPModule[];
-  priority?: "finbot" | "mubot" | "dese" | "observability" | "auto";
+  priority?: MCPModule | "auto";
   mergeStrategy?: "merge" | "priority" | "latest";
   context?: Record<string, unknown>;
 }
 
 // Module priorities (higher = more important)
 const MODULE_PRIORITIES: Record<MCPModule, number> = {
-  finbot: 4,
-  mubot: 3,
-  dese: 2,
+  finbot: 9,
+  mubot: 8,
+  crm: 7,
+  inventory: 6,
+  hr: 5,
+  iot: 4,
+  service: 3,
+  seo: 2,
+  dese: 1,
   observability: 1,
 };
 
@@ -68,6 +74,12 @@ async function fetchModuleContext(
     mubot: 5556,
     dese: 5557,
     observability: 5558,
+    seo: 5559,
+    service: 5560,
+    crm: 5561,
+    inventory: 5562,
+    hr: 5563,
+    iot: 5564,
   };
 
   const port = portMap[module];

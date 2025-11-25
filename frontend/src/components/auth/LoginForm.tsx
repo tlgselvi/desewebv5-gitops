@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useStore } from "@/store/useStore"
+import { getToken } from "@/lib/auth"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Geçerli bir e-posta adresi giriniz." }),
@@ -30,6 +31,15 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const login = useStore((state) => state.login)
+  const isAuthenticated = useStore((state) => state.isAuthenticated)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    const token = getToken()
+    if (token && isAuthenticated) {
+      router.push("/dashboard")
+    }
+  }, [router, isAuthenticated])
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,29 +53,75 @@ export function LoginForm() {
     setIsLoading(true)
     
     try {
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      
-      if (values.email === "admin@dese.ai" && values.password === "123456") {
-        login({
-          id: "1",
-          email: values.email,
-          name: "Admin User",
-          role: "admin",
-        })
-        toast.success("Giriş başarılı!", {
-          description: "Yönetim paneline yönlendiriliyorsunuz.",
-        })
-        router.push("/dashboard")
-      } else {
-        throw new Error("Hatalı e-posta veya şifre")
+      // Call backend API for login
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: values.email,
+          password: values.password,
+        }),
+      });
+
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(`Sunucu hatası: ${response.status} ${response.statusText}. ${text.substring(0, 100)}`);
       }
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        // Handle specific error cases
+        if (data.error === "mock_login_disabled") {
+          // Show Google OAuth option when mock login is disabled
+          toast.error("Mock login devre dışı", {
+            description: "Lütfen Google OAuth ile giriş yapın veya .env dosyanızda ENABLE_MOCK_LOGIN=true olduğundan emin olun.",
+            duration: 5000,
+          });
+          // Optionally redirect to Google OAuth
+          if (data.googleOAuthUrl) {
+            window.location.href = data.googleOAuthUrl;
+            return;
+          }
+        }
+        throw new Error(data.message || data.error || "Giriş başarısız");
+      }
+
+      // Save token to localStorage
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      } else {
+        throw new Error("Token alınamadı");
+      }
+
+      // Update store with user info
+      if (data.user) {
+        login({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.email, // Backend doesn't return name, use email
+          role: data.user.role,
+          organizationId: data.user.organizationId,
+        });
+      }
+
+      toast.success("Giriş başarılı!", {
+        description: "Yönetim paneline yönlendiriliyorsunuz.",
+      });
+      
+      // Redirect to dashboard
+      router.push("/dashboard");
     } catch (error) {
+      console.error("Login error:", error);
       toast.error("Giriş başarısız", {
         description: error instanceof Error ? error.message : "Bir hata oluştu",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -112,10 +168,20 @@ export function LoginForm() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center">
+      <CardFooter className="flex flex-col items-center gap-2">
         <p className="text-sm text-muted-foreground">
           Demo: admin@dese.ai / 123456
         </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => {
+            window.location.href = "/api/v1/auth/google";
+          }}
+        >
+          Google ile Giriş Yap
+        </Button>
       </CardFooter>
     </Card>
   )

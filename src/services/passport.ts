@@ -114,9 +114,13 @@ if (config.apis.google.oauth?.clientId && config.apis.google.oauth?.clientSecret
              const [newOrg] = await tx.insert(organizations).values({
                  id: uuidv4(),
                  name: `${displayName || email}'s Org`,
-                 slug: (displayName || email || 'org').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + crypto.randomBytes(4).toString('hex'),
+                 slug: (displayName || email || 'org').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + (crypto.randomBytes(4).toString('hex') || 'default'),
                  subscriptionTier: 'starter'
              }).returning();
+
+             if (!newOrg) {
+                 throw new Error('Failed to create organization');
+             }
 
              // 2. Create User linked to Org
              const [createdUser] = await tx.insert(users).values({

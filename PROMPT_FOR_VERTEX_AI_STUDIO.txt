@@ -1,0 +1,48 @@
+DESE EA Plan için entegre bir finansal yönetim ve muhasebe asistanı uygulaması geliştir. 
+
+**Temel Özellikler:**
+
+1. **Finansal Danışman (FinBot):**
+   - Kullanıcıların finansal verilerini analiz eder
+   - Gelir-gider dengesini değerlendirir
+   - Gelecek dönemler için tahminler yapar
+   - Yatırım önerileri sunar
+   - Bütçe planlaması yapar
+
+2. **Muhasebe Asistanı (MuBot):**
+   - İşlem kayıtlarını kategorize eder
+   - Muhasebe kayıtlarını doğrular
+   - Dönemsel raporlar hazırlar
+   - Vergi uyumluluğu kontrolü yapar
+   - Nakit akışı takibi yapar
+
+3. **Raporlama ve Analiz:**
+   - Otomatik rapor oluşturma
+   - Grafik ve görselleştirme
+   - Karşılaştırmalı analizler
+   - Trend analizi
+   - Performans metrikleri
+
+4. **Kullanıcı Arayüzü:**
+   - Türkçe doğal dil işleme
+   - Soru-cevap formatı
+   - Adım adım rehberlik
+   - Örnekler ve açıklamalar
+   - Hata mesajları Türkçe
+
+5. **Entegrasyon:**
+   - REST API desteği
+   - Webhook entegrasyonu
+   - Veri import/export
+   - Excel/CSV desteği
+
+**Teknik Gereksinimler:**
+- Türkçe dil desteği
+- Europe/Istanbul zaman dilimi
+- JSON formatında veri işleme
+- Güvenli veri saklama
+- KVKK uyumluluğu
+
+Uygulama adı: "DESE Finansal Yönetim Asistanı"
+Hedef kullanıcılar: KOBİ'ler, muhasebe departmanları, finansal danışmanlar
+

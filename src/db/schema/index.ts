@@ -5,3 +5,4 @@ export * from './inventory';
 export * from './iot';
 export * from './legacy-seo';
 export * from './hr';
+export * from './service';

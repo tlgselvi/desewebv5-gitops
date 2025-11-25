@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import * as controller from './controller.js';
 import { authenticate, authorize } from '@/middleware/auth.js';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 router.use(authenticate);
 

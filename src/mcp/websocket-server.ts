@@ -9,7 +9,7 @@ import {
   recordWebSocketEventPublished,
 } from '@/services/monitoring/metrics.js';
 
-type MCPModule = "finbot" | "mubot" | "dese" | "observability";
+type MCPModule = "finbot" | "mubot" | "dese" | "observability" | "seo" | "service" | "crm" | "inventory" | "hr" | "iot";
 
 /**
  * MCP WebSocket Server
@@ -46,6 +46,12 @@ const allowedMessageModules = new Set<MCPWebSocketMessage["module"]>([
   "mubot",
   "dese",
   "observability",
+  "seo",
+  "service",
+  "crm",
+  "inventory",
+  "hr",
+  "iot",
   "all",
 ]);
 

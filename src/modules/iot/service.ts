@@ -50,18 +50,26 @@ export class IoTService {
       .orderBy(desc(telemetry.timestamp))
       .limit(1);
 
+    // Get device count
+    const deviceCount = await db.select()
+      .from(devices)
+      .where(eq(devices.organizationId, organizationId))
+      .then(devices => devices.length);
+
     if (!latest) {
       return {
         poolTemp: 0,
         phLevel: 0,
-        chlorine: 0
+        chlorine: 0,
+        deviceCount
       };
     }
 
     return {
       poolTemp: Number(latest.temperature) || 0,
       phLevel: Number(latest.ph) || 0,
-      chlorine: Number(latest.orp) || 0 // Using ORP as proxy for now
+      chlorine: Number(latest.orp) || 0, // Using ORP as proxy for now
+      deviceCount
     };
   }
 }

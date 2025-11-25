@@ -1,5 +1,5 @@
 import { db } from '@/db/index.js';
-import { invoices, invoiceItems, accounts, transactions, ledgers, ledgerEntries } from '@/db/schema/index.js';
+import { invoices, invoiceItems, accounts, transactions, ledgers, ledgerEntries, organizations } from '@/db/schema/index.js';
 import { eq, sql, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { BankTransaction } from '@/integrations/banking/types.js';
@@ -87,6 +87,10 @@ export class FinanceService {
         gibStatus: data.eInvoice ? 'pending' : null, // E-Fatura ise pending
       }).returning();
 
+      if (!newInvoice) {
+        throw new Error('Failed to create invoice');
+      }
+
       // 2. Fatura kalemlerini ekle
       if (itemsWithTotals.length > 0) {
         await tx.insert(invoiceItems).values(
@@ -139,10 +143,16 @@ export class FinanceService {
       .where(eq(accounts.id, invoice.accountId))
       .limit(1);
 
+    // Get organization taxId (accounts don't have taxId, get from organization)
+    const [organization] = await db.select()
+      .from(organizations)
+      .where(eq(organizations.id, orgId))
+      .limit(1);
+
     // Prepare invoice data for E-Invoice
     const invoiceData = {
       receiver: {
-        vkn: account?.taxId || '1111111111', // Fallback to test VKN
+        vkn: organization?.taxId || '1111111111', // Fallback to test VKN
         name: account?.name || 'Test Müşteri',
       },
       payableAmount: parseFloat(invoice.total),
@@ -153,34 +163,42 @@ export class FinanceService {
         description: item.description,
         quantity: parseFloat(item.quantity),
         unitPrice: parseFloat(item.unitPrice),
-        taxRate: parseFloat(item.taxRate),
+        taxRate: parseFloat(item.taxRate.toString()),
       })),
     };
 
     try {
       const provider = await integrationService.getEInvoiceProvider(orgId, einvoiceProvider);
-      return await provider.sendInvoice(invoiceData);
+      const result = await provider.sendInvoice(invoiceData);
+
+      // DB güncelle
+      await db.update(invoices)
+          .set({ 
+              gibStatus: result.status, 
+              invoiceNumber: result.id, // GIB'den gelen resmi numara
+              updatedAt: new Date() 
+          })
+          .where(eq(invoices.id, invoiceId));
+
+      return result;
     } catch (error) {
       // If integration not found, fallback to mock (for development)
       logger.warn('[FinanceService] E-Invoice integration not found, using mock', error);
       const { ForibaProvider } = await import('@/integrations/einvoice/foriba.js');
       const mockProvider = new ForibaProvider('mock-user', 'mock-pass', { sandbox: true });
-      return await mockProvider.sendInvoice(invoiceData);
+      const result = await mockProvider.sendInvoice(invoiceData);
+
+      // DB güncelle
+      await db.update(invoices)
+          .set({ 
+              gibStatus: result.status, 
+              invoiceNumber: result.id,
+              updatedAt: new Date() 
+          })
+          .where(eq(invoices.id, invoiceId));
+
+      return result;
     }
-
-    // Provider'a gönder
-    const result = await provider.sendInvoice(ublInvoice);
-
-    // DB güncelle
-    await db.update(invoices)
-        .set({ 
-            gibStatus: result.status, 
-            invoiceNumber: result.id, // GIB'den gelen resmi numara
-            updatedAt: new Date() 
-        })
-        .where(eq(invoices.id, invoiceId));
-
-    return result;
   }
 
   /**
@@ -258,6 +276,10 @@ export class FinanceService {
         status: 'posted'
       }).returning();
 
+      if (!newLedger) {
+        throw new Error('Failed to create ledger');
+      }
+
       // Entries Logic
       if (invoice.type === 'sales') {
         // Debit: 120 Alıcılar (Customer)
@@ -272,6 +294,9 @@ export class FinanceService {
 
         // Credit: 600 Yurt İçi Satışlar
         const salesAccount = await getAccount('600', 'Yurt İçi Satışlar', 'revenue');
+        if (!salesAccount) {
+          throw new Error('Sales account not found');
+        }
         await tx.insert(ledgerEntries).values({
             id: uuidv4(),
             ledgerId: newLedger.id,
@@ -283,6 +308,9 @@ export class FinanceService {
 
         // Credit: 391 Hesaplanan KDV
         const vatAccount = await getAccount('391', 'Hesaplanan KDV', 'liability');
+        if (!vatAccount) {
+          throw new Error('VAT account not found');
+        }
         await tx.insert(ledgerEntries).values({
             id: uuidv4(),
             ledgerId: newLedger.id,
@@ -295,6 +323,9 @@ export class FinanceService {
       } else if (invoice.type === 'purchase') {
         // Debit: 150/740/770 (Expense/Inventory) - Simplified to 770 Genel Giderler
         const expenseAccount = await getAccount('770', 'Genel Yönetim Giderleri', 'expense');
+        if (!expenseAccount) {
+          throw new Error('Expense account not found');
+        }
         await tx.insert(ledgerEntries).values({
             id: uuidv4(),
             ledgerId: newLedger.id,
@@ -305,11 +336,14 @@ export class FinanceService {
         });
 
         // Debit: 191 İndirilecek KDV
-        const vatAccount = await getAccount('191', 'İndirilecek KDV', 'asset');
+        const vatAccount2 = await getAccount('191', 'İndirilecek KDV', 'asset');
+        if (!vatAccount2) {
+          throw new Error('VAT account (191) not found');
+        }
         await tx.insert(ledgerEntries).values({
             id: uuidv4(),
             ledgerId: newLedger.id,
-            accountId: vatAccount.id,
+            accountId: vatAccount2.id,
             debit: invoice.taxTotal,
             credit: '0.00',
             description: `KDV Tutarı`
@@ -365,9 +399,22 @@ export class FinanceService {
       .orderBy(desc(transactions.date))
       .limit(5);
 
+    // Calculate total expenses (purchase invoices)
+    const [expensesResult] = await db
+      .select({ 
+        total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
+      })
+      .from(invoices)
+      .where(and(
+        eq(invoices.organizationId, organizationId),
+        eq(invoices.type, 'purchase'),
+        eq(invoices.status, 'paid')
+      ));
+
     return {
-      totalRevenue: parseFloat(salesResult.total),
-      pendingPayments: parseFloat(pendingResult.total),
+      totalRevenue: parseFloat(salesResult?.total || '0'),
+      totalExpenses: parseFloat(expensesResult?.total || '0'),
+      pendingPayments: parseFloat(pendingResult?.total || '0'),
       recentTransactions
     };
   }
@@ -395,8 +442,8 @@ export class FinanceService {
       throw new Error('Account not found');
     }
 
-    // Use account number or IBAN from account record
-    const accountNumber = account.iban || account.accountNumber || '1234567890';
+    // Use account code as account number (accounts table doesn't have iban/accountNumber fields)
+    const accountNumber = account.code || '1234567890';
     const bankTransactions = await provider.getTransactions(accountNumber, fromDate);
     const results = [];
     

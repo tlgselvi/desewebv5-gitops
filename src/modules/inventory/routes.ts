@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { inventoryController } from './controller.js';
 import { authenticate } from '@/middleware/auth.js';
 import { db } from '@/db/index.js';
@@ -6,7 +6,7 @@ import { products, stockLevels, warehouses } from '@/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { asyncHandler } from '@/utils/asyncHandler.js';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 router.use(authenticate);
 

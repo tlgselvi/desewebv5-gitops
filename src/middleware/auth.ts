@@ -67,8 +67,8 @@ export const authenticate = (
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,
-        organizationId: decoded.organizationId,
-        permissions: decoded.permissions || [],
+        ...(decoded.organizationId && { organizationId: decoded.organizationId }),
+        ...(decoded.permissions && decoded.permissions.length > 0 && { permissions: decoded.permissions }),
       };
 
       logger.debug("JWT authentication successful", {
@@ -208,8 +208,8 @@ export const optionalAuth = (
         id: decoded.id,
         email: decoded.email,
         role: decoded.role,
-        organizationId: decoded.organizationId,
-        permissions: decoded.permissions || [],
+        ...(decoded.organizationId && { organizationId: decoded.organizationId }),
+        ...(decoded.permissions && decoded.permissions.length > 0 && { permissions: decoded.permissions }),
       };
 
       logger.debug("Optional authentication successful", {

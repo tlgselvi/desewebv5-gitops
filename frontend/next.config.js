@@ -19,6 +19,10 @@ const nextConfig = {
   // Setup Rewrites to Proxy /api/v1 to Backend
   async rewrites() {
     console.log("----- CONFIGURING REWRITES (CommonJS) -----");
+    // Use localhost for local dev, app:3000 for Docker
+    const backendUrl = process.env.BACKEND_URL || 
+      (process.env.NODE_ENV === 'production' ? 'http://app:3000' : 'http://localhost:3000');
+    console.log("Backend URL for proxy:", backendUrl);
     return [
       {
         source: "/google-test",
@@ -26,7 +30,7 @@ const nextConfig = {
       },
       {
         source: "/api/v1/:path*",
-        destination: "http://app:3000/api/v1/:path*", // Proxy to backend container
+        destination: `${backendUrl}/api/v1/:path*`, // Proxy to backend
       },
     ];
   },

@@ -21,17 +21,28 @@ authRouter.get("/login", (req: Request, res: Response): void => {
   });
 });
 
-authRouter.post("/login", (req: Request, res: Response): void => {
-  // Mock login is only allowed in development environments.
-  if (config.nodeEnv !== "development") {
-    logger.warn("Mock login attempted in production", {
+authRouter.post("/login", asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // Mock login is allowed in development or if explicitly enabled in config
+  const isMockLoginAllowed = config.nodeEnv === "development" || config.security.enableMockLogin;
+  
+  logger.debug("Login attempt", {
+    nodeEnv: config.nodeEnv,
+    enableMockLogin: config.security.enableMockLogin,
+    isMockLoginAllowed,
+    envEnableMockLogin: process.env.ENABLE_MOCK_LOGIN,
+  });
+  
+  if (!isMockLoginAllowed) {
+    logger.warn("Mock login attempted but disabled", {
       ip: req.ip,
       userAgent: req.get("user-agent"),
+      nodeEnv: config.nodeEnv,
+      enableMockLogin: config.security.enableMockLogin,
     });
     res.status(403).json({
       success: false,
       error: "mock_login_disabled",
-      message: "Mock login is disabled in production. Please use Google OAuth.",
+      message: "Mock login is disabled. Please use Google OAuth.",
       availableMethods: ["google"],
       googleOAuthUrl: "/api/v1/auth/google",
     });
@@ -39,6 +50,15 @@ authRouter.post("/login", (req: Request, res: Response): void => {
   }
 
   const { username = "admin@example.com" } = req.body ?? {};
+
+  // Validate JWT secret is configured
+  if (!config.security.jwtSecret || config.security.jwtSecret.length < 32) {
+    logger.error("JWT secret is not properly configured", {
+      hasSecret: !!config.security.jwtSecret,
+      secretLength: config.security.jwtSecret?.length || 0,
+    });
+    throw createError("JWT secret is not properly configured. Please set JWT_SECRET environment variable.", 500);
+  }
 
   try {
     const token = jwt.sign(
@@ -67,14 +87,13 @@ authRouter.post("/login", (req: Request, res: Response): void => {
       warning: "This is a mock login endpoint. Use Google OAuth in production.",
     });
   } catch (error) {
-    logger.error("Failed to generate mock login token", { error });
-    res.status(500).json({
-      success: false,
-      error: "mock_login_failed",
-      message: "Unable to generate mock login token",
+    logger.error("Failed to generate mock login token", { 
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
     });
+    throw createError("Unable to generate mock login token", 500);
   }
-});
+}));
 
 /**
  * @swagger

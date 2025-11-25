@@ -21,8 +21,29 @@ export const sanitizeInput = (
     }
   }
 
-  // Sanitize body (if it's a string)
-  if (req.body && typeof req.body === 'string') {
+  // Sanitize body (if it's an object, recursively sanitize string values)
+  if (req.body && typeof req.body === 'object') {
+    const sanitizeObject = (obj: any): any => {
+      if (typeof obj === 'string') {
+        return obj
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+          .replace(/javascript:/gi, '')
+          .replace(/on\w+\s*=/gi, '');
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(sanitizeObject);
+      }
+      if (obj && typeof obj === 'object') {
+        const sanitized: any = {};
+        for (const key in obj) {
+          sanitized[key] = sanitizeObject(obj[key]);
+        }
+        return sanitized;
+      }
+      return obj;
+    };
+    req.body = sanitizeObject(req.body);
+  } else if (req.body && typeof req.body === 'string') {
     req.body = req.body
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/javascript:/gi, '')

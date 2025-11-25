@@ -59,8 +59,13 @@ export class IsBankProvider implements IBankProvider {
    * @param accountNumber Bank account number
    * @param fromDate Start date for transaction query
    */
-  async getTransactions(accountNumber: string, fromDate: Date): Promise<BankTransaction[]> {
-    logger.info(`[IsBank] Fetching transactions for account ${accountNumber} since ${fromDate.toISOString()}`);
+  async getTransactions(accountNumber: string, fromDate?: Date): Promise<BankTransaction[]> {
+    const queryDate = fromDate || (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      return d;
+    })();
+    logger.info(`[IsBank] Fetching transactions for account ${accountNumber} since ${queryDate.toISOString()}`);
 
     // Sandbox mode: Return mock data
     if (this.isSandbox || !this.apiKey || !this.apiSecret) {
@@ -96,10 +101,10 @@ export class IsBankProvider implements IBankProvider {
 
     // Production mode: Real API call
     try {
-      const params = new URLSearchParams({
-        fromDate: fromDate.toISOString().split('T')[0], // YYYY-MM-DD format
-        limit: '100',
-      });
+      const dateStr = queryDate.toISOString().split('T')[0] || queryDate.toISOString().substring(0, 10);
+      const params = new URLSearchParams();
+      params.append('fromDate', dateStr); // YYYY-MM-DD format
+      params.append('limit', '100');
 
       const response = await fetch(`${this.baseUrl}/accounts/${accountNumber}/transactions?${params}`, {
         method: 'GET',

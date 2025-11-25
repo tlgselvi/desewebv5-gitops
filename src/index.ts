@@ -78,11 +78,15 @@ app.use(
 // Additional security headers
 app.use(cspHeaders);
 
-// Input sanitization
-app.use(sanitizeInput);
-
-// Request size limiter (10MB)
+// Request size limiter (10MB) - Must be before body parsing
 app.use(requestSizeLimiter(10 * 1024 * 1024));
+
+// Body parsing middleware - Must be before sanitization
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Input sanitization - After body parsing so we can sanitize parsed objects
+app.use(sanitizeInput);
 
 // Audit middleware (before authentication to capture all requests)
 app.use(auditMiddleware);
@@ -173,10 +177,6 @@ if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true") {
   });
   app.use(limiter);
 }
-
-// Body parsing middleware
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Request logging
 app.use(requestLogger);

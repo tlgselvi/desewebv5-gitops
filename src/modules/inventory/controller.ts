@@ -21,13 +21,18 @@ export class InventoryController {
 
       if (!organizationId) return res.status(400).json({ error: 'Organization context required' });
 
-      const movement = await inventoryService.createStockMovement({
-        ...data,
+      const movementData: any = {
         organizationId,
+        warehouseId: data.warehouseId,
+        productId: data.productId,
+        type: data.type,
+        quantity: data.quantity,
         createdBy: userId || 'system',
-        // @ts-ignore
-        type: data.type 
-      });
+      };
+      if (data.notes) movementData.notes = data.notes;
+      if (data.referenceId) movementData.referenceId = data.referenceId;
+      
+      const movement = await inventoryService.createStockMovement(movementData);
 
       return res.status(201).json(movement);
     } catch (error: any) {

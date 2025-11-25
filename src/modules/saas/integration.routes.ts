@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { integrationController } from './integration.controller.js';
 import { authorize } from '@/middleware/auth.js';
 import { asyncHandler } from '@/utils/asyncHandler.js';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 // All routes require authentication
 router.use(authorize(['admin', 'user']));
@@ -30,7 +30,10 @@ router.use(authorize(['admin', 'user']));
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.get('/', asyncHandler((req, res) => integrationController.list(req, res)));
+router.get('/', asyncHandler(async (req, res, next) => {
+  await integrationController.list(req, res);
+  next();
+}));
 
 /**
  * @swagger
@@ -60,7 +63,10 @@ router.get('/', asyncHandler((req, res) => integrationController.list(req, res))
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.post('/', asyncHandler((req, res) => integrationController.create(req, res)));
+router.post('/', asyncHandler(async (req, res, next) => {
+  await integrationController.create(req, res);
+  next();
+}));
 
 /**
  * @swagger

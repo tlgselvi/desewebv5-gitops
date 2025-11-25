@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { checkDatabaseConnection } from '@/db/index.js';
 import { redis } from '@/services/storage/redisClient.js';
 import { logger } from '@/utils/logger.js';
+import { genAIAppBuilderService } from '@/services/ai/genai-app-builder.js';
 
 const router: Router = Router();
 
@@ -50,6 +51,7 @@ router.get('/', async (req, res) => {
           }
         })(),
         openai: !!process.env.OPENAI_API_KEY,
+        genai: genAIAppBuilderService.getStatus(),
         lighthouse: true,
       },
     };

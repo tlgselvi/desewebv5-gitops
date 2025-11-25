@@ -12,10 +12,17 @@ import {
   CheckCircle2,
   Clock,
   Users,
+  ShoppingCart,
+  Wrench,
+  Search,
+  Package,
+  Briefcase,
+  Radio,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/ui/kpi-card";
+// Note: KpiCard is in @/components/ui/kpi-card.tsx
 import { Card } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { getHomeDashboardData, HomeDashboardDto } from "@/lib/dashboard-service";
@@ -52,10 +59,64 @@ const MODULES = [
     color: "purple",
   },
   {
+    title: "CRM MCP",
+    excerpt:
+      "Lead yönetimi, satış pipeline'ı, müşteri ilişkileri ve SalesBot AI destekli deal yönetimi.",
+    link: "/mcp/crm",
+    tag: "Customer Relations",
+    icon: <Briefcase className="h-6 w-6 text-indigo-600" />,
+    color: "indigo",
+  },
+  {
+    title: "Inventory MCP",
+    excerpt:
+      "Stok yönetimi, tedarik planlama, envanter optimizasyonu ve StockBot AI destekli sipariş önerileri.",
+    link: "/mcp/inventory",
+    tag: "Stock Management",
+    icon: <Package className="h-6 w-6 text-orange-600" />,
+    color: "orange",
+  },
+  {
+    title: "HR MCP",
+    excerpt:
+      "Bordro hesaplama, performans takibi, SGK uyumu ve HRBot AI destekli İK süreçleri.",
+    link: "/mcp/hr",
+    tag: "Human Resources",
+    icon: <Users className="h-6 w-6 text-pink-600" />,
+    color: "pink",
+  },
+  {
+    title: "IoT MCP",
+    excerpt:
+      "IoT cihaz yönetimi, sensör verisi analizi, alarm yönetimi ve IoTBot AI destekli bakım önerileri.",
+    link: "/mcp/iot",
+    tag: "IoT Management",
+    icon: <Radio className="h-6 w-6 text-cyan-600" />,
+    color: "cyan",
+  },
+  {
+    title: "Service MCP",
+    excerpt:
+      "Servis talepleri, teknisyen yönetimi, bakım planlaması ve ServiceBot AI destekli randevu optimizasyonu.",
+    link: "/mcp/service",
+    tag: "Service Management",
+    icon: <Wrench className="h-6 w-6 text-teal-600" />,
+    color: "teal",
+  },
+  {
+    title: "SEO MCP",
+    excerpt:
+      "SEO analizi, içerik üretimi, keyword araştırması ve SEOBot AI destekli optimizasyon önerileri.",
+    link: "/mcp/seo",
+    tag: "SEO & Content",
+    icon: <Search className="h-6 w-6 text-yellow-600" />,
+    color: "yellow",
+  },
+  {
     title: "DESE Analytics",
     excerpt:
       "Core Web Vitals, E-E-A-T skoru ve saha verilerini tek ekranda birleştiren öngörüler.",
-    link: "/dashboard", // Link eklendi
+    link: "/dashboard",
     tag: "Analytics",
     icon: <Sparkles className="h-6 w-6 text-amber-600" />,
     color: "amber",
@@ -335,7 +396,7 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {MODULES.map(({ title, excerpt, link, tag, icon, color }) => (
             <Card
               key={title}

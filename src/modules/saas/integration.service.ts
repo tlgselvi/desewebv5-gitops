@@ -51,6 +51,10 @@ export class IntegrationService {
       isVerified: false, // Will be verified via test connection
     }).returning();
 
+    if (!integration) {
+      throw new Error('Failed to create integration');
+    }
+
     logger.info(`[IntegrationService] Created integration: ${integration.id} for provider: ${data.provider}`);
     return integration;
   }

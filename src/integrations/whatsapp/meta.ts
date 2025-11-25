@@ -90,10 +90,10 @@ export class MetaWhatsAppProvider implements IWhatsAppProvider {
           language: { code: message.language || 'tr' },
           components: message.templateParams || [],
         };
-      } else if (message.type === 'media') {
-        payload[message.mediaType || 'image'] = {
+      } else if ((message.type === 'image' || message.type === 'document' || message.type === 'video' || message.type === 'audio') && message.mediaUrl) {
+        payload[message.type] = {
           link: message.mediaUrl,
-          caption: message.content,
+          caption: typeof message.content === 'string' ? message.content : '',
         };
       }
 

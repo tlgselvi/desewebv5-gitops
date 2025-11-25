@@ -43,7 +43,7 @@ const configSchema = z.object({
     bcryptRounds: z.coerce.number().default(12),
     rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes
     rateLimitMaxRequests: z.coerce.number().default(100),
-    enableMockLogin: z.boolean().default(false), // Added for testing in prod-like envs
+    enableMockLogin: z.coerce.boolean().default(process.env.ENABLE_MOCK_LOGIN === "true" || process.env.ENABLE_MOCK_LOGIN === "1"), // Added for testing in prod-like envs
     cookieKey: z
       .string()
       .default(
@@ -60,6 +60,14 @@ const configSchema = z.object({
       searchConsoleApiKey: z.string().optional(),
       businessApiKey: z.string().optional(),
       mapsApiKey: z.string().optional(),
+      projectId: z.string().optional(),
+      location: z.string().default("us-central1"),
+      genaiAppBuilder: z.object({
+        enabled: z.boolean().default(false),
+        agentId: z.string().optional(),
+        dataStoreId: z.string().optional(),
+        searchEngineId: z.string().optional(),
+      }).optional(),
       oauth: z.object({
         clientId: z.string().optional(),
         clientSecret: z.string().optional(),
@@ -315,7 +323,7 @@ const rawConfig = {
     bcryptRounds: process.env.BCRYPT_ROUNDS,
     rateLimitWindowMs: process.env.RATE_LIMIT_WINDOW_MS,
     rateLimitMaxRequests: process.env.RATE_LIMIT_MAX_REQUESTS,
-    enableMockLogin: process.env.ENABLE_MOCK_LOGIN === "true",
+    enableMockLogin: process.env.ENABLE_MOCK_LOGIN === "true" || process.env.ENABLE_MOCK_LOGIN === "1",
     cookieKey: process.env.COOKIE_KEY,
   },
   apis: {
@@ -326,6 +334,14 @@ const rawConfig = {
       searchConsoleApiKey: process.env.GOOGLE_SEARCH_CONSOLE_API_KEY,
       businessApiKey: process.env.GOOGLE_BUSINESS_API_KEY,
       mapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      projectId: process.env.GCP_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT_ID,
+      location: process.env.GCP_LOCATION || "us-central1",
+      genaiAppBuilder: {
+        enabled: process.env.GENAI_APP_BUILDER_ENABLED === "true",
+        agentId: process.env.GENAI_AGENT_ID,
+        dataStoreId: process.env.GENAI_DATA_STORE_ID,
+        searchEngineId: process.env.GENAI_SEARCH_ENGINE_ID,
+      },
       oauth: {
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,

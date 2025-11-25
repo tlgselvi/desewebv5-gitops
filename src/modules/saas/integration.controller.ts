@@ -11,14 +11,14 @@ const CreateIntegrationSchema = z.object({
   apiKey: z.string().optional(),
   apiSecret: z.string().optional(),
   endpointUrl: z.string().url().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 const UpdateIntegrationSchema = z.object({
   apiKey: z.string().optional(),
   apiSecret: z.string().optional(),
   endpointUrl: z.string().url().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -36,7 +36,12 @@ export class IntegrationController {
     const validated = CreateIntegrationSchema.parse(req.body);
     const dto: CreateIntegrationDTO = {
       organizationId,
-      ...validated,
+      provider: validated.provider,
+      category: validated.category,
+      ...(validated.apiKey && { apiKey: validated.apiKey }),
+      ...(validated.apiSecret && { apiSecret: validated.apiSecret }),
+      ...(validated.endpointUrl && { endpointUrl: validated.endpointUrl }),
+      ...(validated.config && { config: validated.config }),
     };
 
     const integration = await integrationService.createIntegration(dto);
@@ -67,7 +72,12 @@ export class IntegrationController {
       return res.status(403).json({ error: 'Organization ID required' });
     }
 
-    const integration = await integrationService.getIntegration(req.params.id, organizationId);
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: 'Integration ID required' });
+    }
+
+    const integration = await integrationService.getIntegration(id, organizationId);
     return res.json(integration);
   }
 
@@ -81,10 +91,21 @@ export class IntegrationController {
       return res.status(403).json({ error: 'Organization ID required' });
     }
 
-    const validated = UpdateIntegrationSchema.parse(req.body);
-    const dto: UpdateIntegrationDTO = validated;
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: 'Integration ID required' });
+    }
 
-    const integration = await integrationService.updateIntegration(req.params.id, organizationId, dto);
+    const validated = UpdateIntegrationSchema.parse(req.body);
+    const dto: UpdateIntegrationDTO = {
+      ...(validated.apiKey !== undefined && { apiKey: validated.apiKey }),
+      ...(validated.apiSecret !== undefined && { apiSecret: validated.apiSecret }),
+      ...(validated.endpointUrl !== undefined && { endpointUrl: validated.endpointUrl }),
+      ...(validated.config !== undefined && { config: validated.config }),
+      ...(validated.isActive !== undefined && { isActive: validated.isActive }),
+    };
+
+    const integration = await integrationService.updateIntegration(id, organizationId, dto);
     return res.json(integration);
   }
 
@@ -98,7 +119,12 @@ export class IntegrationController {
       return res.status(403).json({ error: 'Organization ID required' });
     }
 
-    await integrationService.deleteIntegration(req.params.id, organizationId);
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: 'Integration ID required' });
+    }
+
+    await integrationService.deleteIntegration(id, organizationId);
     return res.status(204).send();
   }
 
@@ -112,7 +138,12 @@ export class IntegrationController {
       return res.status(403).json({ error: 'Organization ID required' });
     }
 
-    const result = await integrationService.testConnection(req.params.id, organizationId);
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: 'Integration ID required' });
+    }
+
+    const result = await integrationService.testConnection(id, organizationId);
     return res.json(result);
   }
 }

@@ -4,7 +4,7 @@ import { queryInstant } from "@/services/monitoring/prometheusClient.js";
 import { redis } from "@/services/storage/redisClient.js";
 import { logger } from "@/utils/logger.js";
 
-export type ModuleName = "mubot" | "finbot" | "aiops" | "observability";
+export type ModuleName = "mubot" | "finbot" | "aiops" | "observability" | "seo" | "service" | "crm" | "inventory" | "hr" | "iot";
 
 export type MetricChangeType = "increase" | "decrease" | "neutral";
 

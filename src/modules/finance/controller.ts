@@ -19,7 +19,8 @@ export class FinanceController {
       const { vkn } = req.params;
       if (!vkn) return res.status(400).json({ error: 'VKN/TCKN required' });
       
-      const result = await financeService.checkEInvoiceUser(vkn);
+      const organizationId = (req.user as any)?.organizationId || 'default-org-id';
+      const result = await financeService.checkEInvoiceUser(organizationId, vkn);
       return res.json({ isEInvoiceUser: !!result, user: result });
     } catch (error: any) {
       return res.status(500).json({ error: 'Failed to check e-invoice user' });
@@ -51,11 +52,19 @@ export class FinanceController {
         return res.status(400).json({ error: 'Organization context required' });
       }
 
-      const invoice = await financeService.createInvoice({
-        ...data,
+      const invoiceData: any = {
         organizationId,
+        accountId: data.accountId,
+        type: data.type,
+        invoiceDate: data.invoiceDate,
+        items: data.items,
         createdBy: userId || 'system', // Fallback for dev/test
-      });
+      };
+      if (data.dueDate) invoiceData.dueDate = data.dueDate;
+      if (data.notes) invoiceData.notes = data.notes;
+      if (data.eInvoice !== undefined) invoiceData.eInvoice = data.eInvoice;
+
+      const invoice = await financeService.createInvoice(invoiceData);
 
       return res.status(201).json(invoice);
     } catch (error: any) {
@@ -67,6 +76,8 @@ export class FinanceController {
   async approveInvoice(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      if (!id) return res.status(400).json({ error: 'Invoice ID required' });
+      
       const userId = (req.user as any)?.id || 'system';
       
       const result = await financeService.approveInvoice(id, userId);
