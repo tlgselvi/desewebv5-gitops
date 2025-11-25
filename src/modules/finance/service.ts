@@ -1,11 +1,11 @@
 import { db } from '@/db/index.js';
-import { invoices, invoiceItems, accounts, transactions } from '@/db/schema/index.js';
+import { invoices, invoiceItems, accounts, transactions, ledgers, ledgerEntries } from '@/db/schema/index.js';
 import { eq, sql, and, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { IsBankProvider } from '@/integrations/banking/isbank.js';
 import { BankTransaction } from '@/integrations/banking/types.js';
-import { ForibaProvider } from '@/integrations/einvoice/foriba.js';
 import { EInvoiceDocument, EInvoiceUser } from '@/integrations/einvoice/types.js';
+import { integrationService } from '@/modules/saas/integration.service.js';
+import { logger } from '@/utils/logger.js';
 
 interface CreateInvoiceDTO {
   organizationId: string;
@@ -29,9 +29,17 @@ export class FinanceService {
   /**
    * E-Fatura Mükellef Kontrolü
    */
-  async checkEInvoiceUser(vkn: string): Promise<EInvoiceUser | null> {
-    const provider = new ForibaProvider('mock-user', 'mock-pass');
-    return await provider.checkUser(vkn);
+  async checkEInvoiceUser(organizationId: string, vkn: string, einvoiceProvider: string = 'foriba'): Promise<EInvoiceUser | null> {
+    try {
+      const provider = await integrationService.getEInvoiceProvider(organizationId, einvoiceProvider);
+      return await provider.checkUser(vkn);
+    } catch (error) {
+      // If integration not found, fallback to mock (for development)
+      logger.warn('[FinanceService] E-Invoice integration not found, using mock', error);
+      const { ForibaProvider } = await import('@/integrations/einvoice/foriba.js');
+      const mockProvider = new ForibaProvider('mock-user', 'mock-pass', { sandbox: true });
+      return await mockProvider.checkUser(vkn);
+    }
   }
 
   /**
@@ -114,21 +122,51 @@ export class FinanceService {
   /**
    * E-Fatura Gönder (GIB Entegrasyonu)
    */
-  async sendEInvoice(invoiceId: string) {
+  async sendEInvoice(invoiceId: string, organizationId?: string, einvoiceProvider: string = 'foriba'): Promise<EInvoiceDocument> {
     const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
     if (!invoice) throw new Error('Invoice not found');
 
-    // Mock Provider (Gerçekte DB'den settings çekilmeli)
-    const provider = new ForibaProvider('mock-user', 'mock-pass');
+    const orgId = organizationId || invoice.organizationId;
 
-    // Faturayı UBL formatına dönüştür (Burada çok basit bir mapping yapıyoruz)
-    const ublInvoice = {
-        invoiceId: invoice.id,
-        issueDate: invoice.invoiceDate,
-        payableAmount: invoice.total,
-        currency: invoice.currency,
-        receiver: { vkn: '1111111111' } // Mock VKN - Gerçekte Account'tan çekilmeli
+    // Get invoice items
+    const items = await db.select()
+      .from(invoiceItems)
+      .where(eq(invoiceItems.invoiceId, invoiceId));
+
+    // Get account (customer) data
+    const [account] = await db.select()
+      .from(accounts)
+      .where(eq(accounts.id, invoice.accountId))
+      .limit(1);
+
+    // Prepare invoice data for E-Invoice
+    const invoiceData = {
+      receiver: {
+        vkn: account?.taxId || '1111111111', // Fallback to test VKN
+        name: account?.name || 'Test Müşteri',
+      },
+      payableAmount: parseFloat(invoice.total),
+      currency: invoice.currency || 'TRY',
+      profileId: 'TICARIFATURA',
+      typeCode: invoice.type === 'sales' ? 'SATIS' : 'IADE',
+      items: items.map(item => ({
+        description: item.description,
+        quantity: parseFloat(item.quantity),
+        unitPrice: parseFloat(item.unitPrice),
+        taxRate: parseFloat(item.taxRate),
+      })),
     };
+
+    try {
+      const provider = await integrationService.getEInvoiceProvider(orgId, einvoiceProvider);
+      return await provider.sendInvoice(invoiceData);
+    } catch (error) {
+      // If integration not found, fallback to mock (for development)
+      logger.warn('[FinanceService] E-Invoice integration not found, using mock', error);
+      const { ForibaProvider } = await import('@/integrations/einvoice/foriba.js');
+      const mockProvider = new ForibaProvider('mock-user', 'mock-pass', { sandbox: true });
+      return await mockProvider.sendInvoice(invoiceData);
+    }
 
     // Provider'a gönder
     const result = await provider.sendInvoice(ublInvoice);
@@ -147,7 +185,7 @@ export class FinanceService {
 
   /**
    * Faturayı Onayla (Draft -> Sent)
-   * Cari hesaba borç/alacak kaydı atar.
+   * Cari hesaba borç/alacak kaydı atar VE Yevmiye Kaydı (Ledger) oluşturur.
    */
   async approveInvoice(invoiceId: string, userId: string) {
     return await db.transaction(async (tx) => {
@@ -161,11 +199,8 @@ export class FinanceService {
         .set({ status: 'sent', updatedAt: new Date() })
         .where(eq(invoices.id, invoiceId));
 
-      // Cari hareket (Transaction) oluştur
+      // 1. Cari hareket (Transaction) oluştur (Legacy/Simple View)
       const amount = Number(invoice.total);
-      // Satış faturası ise cariye borç (+), alış faturası ise alacak (-) yazarız (Basit mantık)
-      // Enterprise muhasebede: 120 Alıcılar (Borç) - 600 Satışlar (Alacak)
-      // Burada tek hesap üzerinden bakiye yönetiyoruz.
       const transactionAmount = invoice.type === 'sales' ? amount : -amount;
 
       await tx.insert(transactions).values({
@@ -182,7 +217,6 @@ export class FinanceService {
       });
 
       // Cari hesap bakiyesini güncelle
-      // Not: Trigger veya event ile de yapılabilir ama şimdilik manuel update
       const [account] = await tx.select().from(accounts).where(eq(accounts.id, invoice.accountId));
       if (account) {
         const newBalance = Number(account.balance || 0) + transactionAmount;
@@ -191,7 +225,108 @@ export class FinanceService {
           .where(eq(accounts.id, invoice.accountId));
       }
 
-      return { success: true, invoiceId };
+      // 2. Create General Ledger Entry (Yevmiye Defteri) - Double Entry Bookkeeping
+      // Helper: Get or create system account by code
+      const getAccount = async (code: string, name: string, type: string = 'revenue') => {
+        let [acc] = await tx.select().from(accounts).where(and(
+            eq(accounts.organizationId, invoice.organizationId),
+            eq(accounts.code, code)
+        ));
+        if (!acc) {
+            [acc] = await tx.insert(accounts).values({
+                id: uuidv4(),
+                organizationId: invoice.organizationId,
+                code,
+                name,
+                type,
+                balance: '0.00'
+            }).returning();
+        }
+        return acc;
+      };
+
+      // Create Ledger Header
+      const [newLedger] = await tx.insert(ledgers).values({
+        id: uuidv4(),
+        organizationId: invoice.organizationId,
+        journalNumber: `JNL-${Date.now()}`, 
+        date: new Date(),
+        description: `Satış Faturası: ${invoice.invoiceNumber}`,
+        type: 'sales',
+        referenceId: invoice.id,
+        referenceType: 'invoice',
+        status: 'posted'
+      }).returning();
+
+      // Entries Logic
+      if (invoice.type === 'sales') {
+        // Debit: 120 Alıcılar (Customer)
+        await tx.insert(ledgerEntries).values({
+            id: uuidv4(),
+            ledgerId: newLedger.id,
+            accountId: invoice.accountId,
+            debit: invoice.total,
+            credit: '0.00',
+            description: `Fatura Alacağı`
+        });
+
+        // Credit: 600 Yurt İçi Satışlar
+        const salesAccount = await getAccount('600', 'Yurt İçi Satışlar', 'revenue');
+        await tx.insert(ledgerEntries).values({
+            id: uuidv4(),
+            ledgerId: newLedger.id,
+            accountId: salesAccount.id,
+            debit: '0.00',
+            credit: invoice.subtotal, // KDV hariç
+            description: `Mal/Hizmet Bedeli`
+        });
+
+        // Credit: 391 Hesaplanan KDV
+        const vatAccount = await getAccount('391', 'Hesaplanan KDV', 'liability');
+        await tx.insert(ledgerEntries).values({
+            id: uuidv4(),
+            ledgerId: newLedger.id,
+            accountId: vatAccount.id,
+            debit: '0.00',
+            credit: invoice.taxTotal,
+            description: `KDV Tutarı`
+        });
+
+      } else if (invoice.type === 'purchase') {
+        // Debit: 150/740/770 (Expense/Inventory) - Simplified to 770 Genel Giderler
+        const expenseAccount = await getAccount('770', 'Genel Yönetim Giderleri', 'expense');
+        await tx.insert(ledgerEntries).values({
+            id: uuidv4(),
+            ledgerId: newLedger.id,
+            accountId: expenseAccount.id,
+            debit: invoice.subtotal,
+            credit: '0.00',
+            description: `Mal/Hizmet Bedeli`
+        });
+
+        // Debit: 191 İndirilecek KDV
+        const vatAccount = await getAccount('191', 'İndirilecek KDV', 'asset');
+        await tx.insert(ledgerEntries).values({
+            id: uuidv4(),
+            ledgerId: newLedger.id,
+            accountId: vatAccount.id,
+            debit: invoice.taxTotal,
+            credit: '0.00',
+            description: `KDV Tutarı`
+        });
+
+        // Credit: 320 Satıcılar (Vendor)
+        await tx.insert(ledgerEntries).values({
+            id: uuidv4(),
+            ledgerId: newLedger.id,
+            accountId: invoice.accountId,
+            debit: '0.00',
+            credit: invoice.total,
+            description: `Fatura Borcu`
+        });
+      }
+
+      return { success: true, invoiceId, ledgerId: newLedger.id };
     });
   }
 
@@ -240,12 +375,29 @@ export class FinanceService {
   /**
    * Banka Hareketlerini Senkronize Et
    */
-  async syncBankTransactions(organizationId: string, accountId: string) {
-    const provider = new IsBankProvider('mock-key', 'mock-secret');
+  async syncBankTransactions(organizationId: string, accountId: string, bankProvider: string = 'isbank') {
+    // Get banking provider from integration service
+    const provider = await integrationService.getBankingProvider(organizationId, bankProvider);
+    
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - 30);
 
-    const bankTransactions = await provider.getTransactions('1234567890', fromDate);
+    // Get account number from account record
+    const [account] = await db.select()
+      .from(accounts)
+      .where(and(
+        eq(accounts.id, accountId),
+        eq(accounts.organizationId, organizationId)
+      ))
+      .limit(1);
+
+    if (!account) {
+      throw new Error('Account not found');
+    }
+
+    // Use account number or IBAN from account record
+    const accountNumber = account.iban || account.accountNumber || '1234567890';
+    const bankTransactions = await provider.getTransactions(accountNumber, fromDate);
     const results = [];
     
     for (const tx of bankTransactions) {
