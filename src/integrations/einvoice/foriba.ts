@@ -1,6 +1,7 @@
 import { IEInvoiceProvider, EInvoiceUser, EInvoiceDocument } from './types.js';
 import { logger } from '@/utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import { UBLGenerator } from './ubl-generator.js';
 
 export class ForibaProvider implements IEInvoiceProvider {
   name = 'Foriba';
@@ -170,15 +171,9 @@ export class ForibaProvider implements IEInvoiceProvider {
 
   /**
    * Convert invoice data to UBL-TR XML format
-   * Note: This is a simplified version. Real implementation needs full UBL-TR 1.2 schema
    */
   private convertToUBL(invoiceData: any): string {
-    // TODO: Implement full UBL-TR 1.2 XML generation
-    // For now, return a basic structure
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
-  <!-- UBL-TR 1.2 structure here -->
-</Invoice>`;
+    return UBLGenerator.generateInvoice(invoiceData);
   }
 
   /**

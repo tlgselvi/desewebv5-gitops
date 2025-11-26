@@ -1,8 +1,12 @@
-export * from './saas';
-export * from './finance';
-export * from './crm';
-export * from './inventory';
-export * from './iot';
-export * from './legacy-seo';
-export * from './hr';
-export * from './service';
+export * from './saas.js';
+export * from './finance.js';
+export * from './crm.js';
+export * from './inventory.js';
+export * from './iot.js';
+export * from './legacy-seo.js';
+export * from './hr.js';
+export * from './service.js';
+
+// Re-export commonly used tables with aliases for backward compatibility
+export { contacts as leads } from './crm.js';
+export { stockLevels as stocks } from './inventory.js';

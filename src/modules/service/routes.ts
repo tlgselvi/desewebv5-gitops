@@ -2,6 +2,7 @@ import { Router, type Router as ExpressRouter } from 'express';
 import { serviceController } from './controller.js';
 import { authenticate } from '@/middleware/auth.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
+import type { RequestWithUser } from '@/middleware/auth.js';
 
 const router: ExpressRouter = Router();
 
@@ -24,7 +25,7 @@ router.use(authenticate);
  *       - bearerAuth: []
  */
 router.post('/requests', asyncHandler(async (req, res) => {
-  return serviceController.createServiceRequest(req, res);
+  return serviceController.createServiceRequest(req as RequestWithUser, res);
 }));
 
 /**
@@ -37,7 +38,7 @@ router.post('/requests', asyncHandler(async (req, res) => {
  *       - bearerAuth: []
  */
 router.get('/requests', asyncHandler(async (req, res) => {
-  return serviceController.getServiceRequests(req, res);
+  return serviceController.getServiceRequests(req as RequestWithUser, res);
 }));
 
 /**
@@ -50,7 +51,7 @@ router.get('/requests', asyncHandler(async (req, res) => {
  *       - bearerAuth: []
  */
 router.post('/requests/:requestId/assign', asyncHandler(async (req, res) => {
-  return serviceController.assignTechnician(req, res);
+  return serviceController.assignTechnician(req as RequestWithUser, res);
 }));
 
 /**
@@ -63,7 +64,7 @@ router.post('/requests/:requestId/assign', asyncHandler(async (req, res) => {
  *       - bearerAuth: []
  */
 router.post('/technicians', asyncHandler(async (req, res) => {
-  return serviceController.createTechnician(req, res);
+  return serviceController.createTechnician(req as RequestWithUser, res);
 }));
 
 /**
@@ -76,7 +77,7 @@ router.post('/technicians', asyncHandler(async (req, res) => {
  *       - bearerAuth: []
  */
 router.get('/technicians', asyncHandler(async (req, res) => {
-  return serviceController.getTechnicians(req, res);
+  return serviceController.getTechnicians(req as RequestWithUser, res);
 }));
 
 /**
@@ -89,7 +90,7 @@ router.get('/technicians', asyncHandler(async (req, res) => {
  *       - bearerAuth: []
  */
 router.post('/maintenance-plans', asyncHandler(async (req, res) => {
-  return serviceController.createMaintenancePlan(req, res);
+  return serviceController.createMaintenancePlan(req as RequestWithUser, res);
 }));
 
 /**
@@ -102,7 +103,7 @@ router.post('/maintenance-plans', asyncHandler(async (req, res) => {
  *       - bearerAuth: []
  */
 router.get('/maintenance-plans', asyncHandler(async (req, res) => {
-  return serviceController.getMaintenancePlans(req, res);
+  return serviceController.getMaintenancePlans(req as RequestWithUser, res);
 }));
 
 export { router as serviceRoutes };

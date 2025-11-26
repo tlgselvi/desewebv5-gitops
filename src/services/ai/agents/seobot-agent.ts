@@ -130,7 +130,7 @@ SEO analizi yap ve şu formatta JSON döndür:
             recommendation: 'Meta description ekleyin',
           },
         ],
-        recommendations: ['Meta description ekleyin', 'Alt text'leri kontrol edin'],
+        recommendations: ['Meta description ekleyin', 'Alt text\'leri kontrol edin'],
         keywords: [],
       };
     } catch (error) {

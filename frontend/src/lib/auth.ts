@@ -1,10 +1,19 @@
 import { decodeJwt } from "jose";
-import { api } from "../api/client";
+import { authenticatedPost } from "./api";
+
+interface LoginResponse {
+  success: boolean;
+  token?: string;
+  access_token?: string;
+  user?: any;
+}
 
 export async function login(username: string, password: string) {
-  const res = await api.post("/auth/login", { username, password });
-  // Backend returns { success: true, token: string, user: {...} }
-  const token = res.data.token || res.data.access_token;
+  // Use authenticatedPost but allow it to work without token for login
+  // The backend login endpoint should be public
+  const res = await authenticatedPost<LoginResponse>("/auth/login", { username, password });
+  
+  const token = res.token || res.access_token;
   if (!token) {
     throw new Error("No token received from server");
   }

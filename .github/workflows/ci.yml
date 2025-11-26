@@ -88,8 +88,8 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-jwt-secret-for-ci' }}
           DISABLE_RATE_LIMIT: 'true'
         run: |
-          # Always pull the latest base images and then build
-          docker compose up --build --pull "always" -d
+          # Always pull the latest base images and build. Start all services including all profiles for E2E tests.
+          docker compose --profile "*" up --build --pull "always" -d
       
       - name: Wait for services to be healthy
         run: |

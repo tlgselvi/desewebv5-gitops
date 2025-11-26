@@ -8,6 +8,7 @@ import { Device, TelemetryData } from "@/types/iot";
 import { DeviceCard } from "@/components/iot/device-card";
 import { TelemetryChart } from "@/components/iot/telemetry-chart";
 import { toast } from "sonner";
+import { CreateDeviceDialog } from "@/components/iot/create-device-dialog";
 
 export default function IoTPage() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -68,12 +69,10 @@ export default function IoTPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={fetchDevices}>
+          <Button variant="outline" size="icon" onClick={fetchDevices} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Cihaz Ekle
-          </Button>
+          <CreateDeviceDialog onSuccess={fetchDevices} />
         </div>
       </div>
       

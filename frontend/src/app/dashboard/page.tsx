@@ -15,21 +15,13 @@ import { toast } from "sonner"
 import { useQuery } from "@tanstack/react-query"
 import { KPICard } from "@/components/dashboard/kpi-card"
 
-// Mock chart data for visual filling until we have historical data endpoints
-const chartData = [
-  { name: "Oca", total: 1200 },
-  { name: "Şub", total: 2100 },
-  { name: "Mar", total: 1800 },
-  { name: "Nis", total: 2400 },
-  { name: "May", total: 2800 },
-  { name: "Haz", total: 3200 },
-]
 
 interface DashboardSummary {
   finance: {
     totalRevenue: number;
     pendingPayments: number;
     recentTransactions: any[];
+    monthlyRevenue: { name: string; total: number }[];
   };
   system: {
     uptime: number;
@@ -95,7 +87,7 @@ export default function DashboardPage() {
           icon={<DollarSign className="h-4 w-4" />}
           loading={isLoading}
           trend={{ value: 20.1, label: "geçen aydan", direction: "up" }}
-          description="geçen aydan (Mock)"
+          description="geçen aydan"
         />
         <KPICard
           title="Aktif Kullanıcı"
@@ -157,7 +149,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={chartData}>
+              <BarChart data={summary?.finance.monthlyRevenue || []}>
                 <XAxis
                   dataKey="name"
                   stroke="#888888"

@@ -80,6 +80,10 @@ export class ServiceService {
         status: 'open',
       }).returning();
 
+      if (!request) {
+        throw new Error('Failed to create service request');
+      }
+
       logger.info('Service request created', {
         requestId: request.id,
         requestNumber: request.requestNumber,
@@ -173,6 +177,10 @@ export class ServiceService {
       isActive: true,
     }).returning();
 
+    if (!technician) {
+      throw new Error('Failed to create technician');
+    }
+
     logger.info('Technician created', {
       technicianId: technician.id,
       userId: data.userId,
@@ -236,6 +244,10 @@ export class ServiceService {
       tasks: data.tasks || [],
       isActive: true,
     }).returning();
+
+    if (!plan) {
+      throw new Error('Failed to create maintenance plan');
+    }
 
     logger.info('Maintenance plan created', {
       planId: plan.id,

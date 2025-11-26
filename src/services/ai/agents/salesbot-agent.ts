@@ -203,11 +203,18 @@ Satış tahmini yap ve şu formatta JSON döndür:
       }
 
       // Mock response
-      const avgRevenue = historicalData?.revenue?.reduce((a, b) => a + b, 0) / (historicalData.revenue.length || 1) || 0;
+      const revenueSum = historicalData?.revenue?.reduce((a, b) => a + b, 0) || 0;
+      const revenueCount = historicalData?.revenue?.length || 1;
+      const avgRevenue = revenueSum / revenueCount;
+      
+      const dealsSum = historicalData?.deals?.reduce((a, b) => a + b, 0) || 0;
+      const dealsCount = historicalData?.deals?.length || 1;
+      const avgDeals = dealsSum / dealsCount;
+      
       return {
         period,
         predictedRevenue: avgRevenue,
-        predictedDeals: historicalData?.deals?.reduce((a, b) => a + b, 0) / (historicalData.deals.length || 1) || 0,
+        predictedDeals: avgDeals,
         confidence: 0.6,
         factors: ['Geçmiş veriler', 'Mevsimsel trendler'],
         reasoning: 'Tahmin geçmiş verilere dayanıyor.',

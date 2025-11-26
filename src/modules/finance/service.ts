@@ -368,55 +368,85 @@ export class FinanceService {
    * Dashboard için Finansal Özet Getir
    */
   async getFinancialSummary(organizationId: string) {
-    // Toplam Ciro (Satış Faturaları)
-    const [salesResult] = await db
-      .select({ 
-        total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
-      })
-      .from(invoices)
-      .where(and(
-        eq(invoices.organizationId, organizationId),
-        eq(invoices.type, 'sales'),
-        eq(invoices.status, 'paid') // Sadece ödenmişler cirodur
-      ));
+    try {
+      // Toplam Ciro (Satış Faturaları)
+      const [salesResult] = await db
+        .select({ 
+          total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
+        })
+        .from(invoices)
+        .where(and(
+          eq(invoices.organizationId, organizationId),
+          eq(invoices.type, 'sales'),
+          eq(invoices.status, 'paid') // Sadece ödenmişler cirodur
+        ));
 
-    // Bekleyen Ödemeler (Tahsil Edilecek)
-    const [pendingResult] = await db
-      .select({ 
-        total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
-      })
-      .from(invoices)
-      .where(and(
-        eq(invoices.organizationId, organizationId),
-        eq(invoices.type, 'sales'),
-        eq(invoices.status, 'sent') // Gönderilmiş ama ödenmemiş
-      ));
+      // Bekleyen Ödemeler (Tahsil Edilecek)
+      const [pendingResult] = await db
+        .select({ 
+          total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
+        })
+        .from(invoices)
+        .where(and(
+          eq(invoices.organizationId, organizationId),
+          eq(invoices.type, 'sales'),
+          eq(invoices.status, 'sent') // Gönderilmiş ama ödenmemiş
+        ));
 
-    // Son 5 İşlem
-    const recentTransactions = await db.select()
-      .from(transactions)
-      .where(eq(transactions.organizationId, organizationId))
-      .orderBy(desc(transactions.date))
-      .limit(5);
+      // Son 5 İşlem
+      const recentTransactions = await db.select()
+        .from(transactions)
+        .where(eq(transactions.organizationId, organizationId))
+        .orderBy(desc(transactions.date))
+        .limit(5);
 
-    // Calculate total expenses (purchase invoices)
-    const [expensesResult] = await db
-      .select({ 
-        total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
-      })
-      .from(invoices)
-      .where(and(
-        eq(invoices.organizationId, organizationId),
-        eq(invoices.type, 'purchase'),
-        eq(invoices.status, 'paid')
-      ));
+      // Calculate total expenses (purchase invoices)
+      const [expensesResult] = await db
+        .select({ 
+          total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
+        })
+        .from(invoices)
+        .where(and(
+          eq(invoices.organizationId, organizationId),
+          eq(invoices.type, 'purchase'),
+          eq(invoices.status, 'paid')
+        ));
 
-    return {
-      totalRevenue: parseFloat(salesResult?.total || '0'),
-      totalExpenses: parseFloat(expensesResult?.total || '0'),
-      pendingPayments: parseFloat(pendingResult?.total || '0'),
-      recentTransactions
-    };
+      // Monthly Revenue Trend (Last 6 months)
+      const monthlyRevenue = await db.execute(sql`
+        SELECT 
+          TO_CHAR(invoice_date, 'Mon') as name,
+          COALESCE(SUM(total), 0) as total
+        FROM invoices
+        WHERE 
+          organization_id = ${organizationId}
+          AND type = 'sales'
+          AND status = 'paid'
+          AND invoice_date >= NOW() - INTERVAL '6 months'
+        GROUP BY TO_CHAR(invoice_date, 'Mon'), DATE_TRUNC('month', invoice_date)
+        ORDER BY DATE_TRUNC('month', invoice_date) ASC
+      `);
+
+      return {
+        totalRevenue: parseFloat(salesResult?.total || '0'),
+        totalExpenses: parseFloat(expensesResult?.total || '0'),
+        pendingPayments: parseFloat(pendingResult?.total || '0'),
+        recentTransactions: recentTransactions || [],
+        monthlyRevenue: monthlyRevenue.map((row: any) => ({
+          name: row.name,
+          total: parseFloat(row.total)
+        }))
+      };
+    } catch (error) {
+      logger.error('[FinanceService] Error in getFinancialSummary', { error, organizationId });
+      // Return empty summary on error (e.g., table doesn't exist yet or query fails)
+      return {
+        totalRevenue: 0,
+        totalExpenses: 0,
+        pendingPayments: 0,
+        recentTransactions: []
+      };
+    }
   }
 
   /**

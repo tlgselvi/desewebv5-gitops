@@ -17,6 +17,8 @@ router.get('/products', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+router.post('/products', (req, res) => inventoryController.createProduct(req, res));
+
 // Stock Movements
 router.post('/movements', (req, res) => inventoryController.addStockMovement(req, res));
 router.post('/transfer', (req, res) => inventoryController.transferStock(req, res));

@@ -1,22 +1,68 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building, Users, CreditCard, Activity, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Building, Users, CreditCard, Activity, MoreHorizontal, Loader2 } from "lucide-react";
+import { organizationService, type Organization, type SystemStats } from "@/services/organization";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function SuperAdminPage() {
-  // Mock data for demonstration
-  const tenants = [
-    { id: 1, name: "Acme Corp", plan: "Enterprise", status: "active", users: 45, mrr: "₺2.500" },
-    { id: 2, name: "Beta Ltd", plan: "Pro", status: "active", users: 12, mrr: "₺799" },
-    { id: 3, name: "Gamma A.Ş.", plan: "Starter", status: "suspended", users: 3, mrr: "₺299" },
-    { id: 4, name: "Delta İnşaat", plan: "Enterprise", status: "active", users: 89, mrr: "₺2.500" },
-    { id: 5, name: "Epsilon Yazılım", plan: "Pro", status: "payment_failed", users: 8, mrr: "₺799" },
-  ];
+  const [isLoading, setIsLoading] = useState(true);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [stats, setStats] = useState<SystemStats | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [orgsData, statsData] = await Promise.all([
+        organizationService.list(),
+        organizationService.getStats()
+      ]);
+      setOrganizations(orgsData);
+      setStats(statsData);
+    } catch (error) {
+      console.error("Failed to load super admin data", error);
+      toast.error("Veriler yüklenirken bir hata oluştu.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await organizationService.updateStatus(id, newStatus);
+      toast.success("Organizasyon durumu güncellendi");
+      loadData(); // Refresh data
+    } catch (error) {
+      toast.error("Durum güncellenemedi");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col space-y-6">
+    <div className="flex flex-col space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">SaaS Yönetim Paneli</h1>
         <Badge variant="secondary" className="text-xs">Super Admin Mode</Badge>
@@ -30,8 +76,10 @@ export default function SuperAdminPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₺45.230</div>
-            <p className="text-xs text-muted-foreground text-green-600">+20% geçen aydan</p>
+            <div className="text-2xl font-bold">
+              ₺{stats?.totalMRR.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground text-green-600">Aylık Tekrarlayan Gelir</p>
           </CardContent>
         </Card>
         <Card>
@@ -40,8 +88,8 @@ export default function SuperAdminPage() {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">128</div>
-            <p className="text-xs text-muted-foreground text-green-600">+12 yeni bu ay</p>
+            <div className="text-2xl font-bold">{stats?.activeOrganizations}</div>
+            <p className="text-xs text-muted-foreground text-green-600">Toplam {organizations.length} kayıtlı</p>
           </CardContent>
         </Card>
         <Card>
@@ -50,8 +98,8 @@ export default function SuperAdminPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,450</div>
-            <p className="text-xs text-muted-foreground">+180 yeni kullanıcı</p>
+            <div className="text-2xl font-bold">{stats?.totalUsers.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Tüm tenantlarda</p>
           </CardContent>
         </Card>
         <Card>
@@ -60,8 +108,8 @@ export default function SuperAdminPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">%99.9</div>
-            <p className="text-xs text-muted-foreground">Tüm sistemler operasyonel</p>
+            <div className="text-2xl font-bold text-green-600">%{stats?.systemHealth}</div>
+            <p className="text-xs text-muted-foreground">Tüm servisler operasyonel</p>
           </CardContent>
         </Card>
       </div>
@@ -84,23 +132,47 @@ export default function SuperAdminPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tenants.map((t) => (
+              {organizations.map((t) => (
                 <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell><Badge variant="outline">{t.plan}</Badge></TableCell>
+                  <TableCell className="font-medium">
+                    <div>{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.slug}</div>
+                  </TableCell>
+                  <TableCell><Badge variant="outline" className="capitalize">{t.plan}</Badge></TableCell>
                   <TableCell>{t.users}</TableCell>
-                  <TableCell>{t.mrr}</TableCell>
+                  <TableCell>₺{t.mrr.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}</TableCell>
                   <TableCell>
                     <Badge 
-                      variant={t.status === 'active' ? 'default' : t.status === 'payment_failed' ? 'destructive' : 'secondary'}
+                      variant={t.status === 'active' ? 'default' : t.status === 'suspended' ? 'destructive' : 'secondary'}
+                      className="capitalize"
                     >
                       {t.status === 'active' && 'Aktif'}
                       {t.status === 'suspended' && 'Askıda'}
-                      {t.status === 'payment_failed' && 'Ödeme Hatası'}
+                      {t.status === 'cancelled' && 'İptal'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <button className="text-sm font-medium text-blue-600 hover:underline">Yönet</button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>İşlemler</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(t.id)}>
+                          ID Kopyala
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleStatusChange(t.id, 'active')}>
+                          Aktif Et
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(t.id, 'suspended')} className="text-red-600">
+                          Askıya Al
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -111,4 +183,3 @@ export default function SuperAdminPage() {
     </div>
   );
 }
-

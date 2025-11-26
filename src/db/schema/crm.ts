@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations, users } from './saas';
+import { organizations, users } from './saas.js';
 
 // Contacts (Kişiler)
 export const contacts = pgTable('contacts', {

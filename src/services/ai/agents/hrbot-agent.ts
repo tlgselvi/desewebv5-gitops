@@ -274,14 +274,37 @@ Performans analizi yap ve şu formatta JSON döndür:
       }
 
       // Mock response
-      const avgScore = employeeData.metrics?.reduce((sum, m) => sum + m.score, 0) / (employeeData.metrics?.length || 1) || 75;
+      const metrics = employeeData.metrics || [];
+      const avgScore = metrics.length > 0 
+        ? metrics.reduce((sum, m) => sum + m.score, 0) / metrics.length 
+        : 75;
+      
+      // Map metrics to categories with feedback field
+      const categories = metrics.length > 0
+        ? metrics.map(m => {
+            let feedback: string;
+            if ('description' in m && typeof m.description === 'string' && m.description) {
+              feedback = m.description;
+            } else if ('feedback' in m && typeof m.feedback === 'string' && m.feedback) {
+              feedback = m.feedback;
+            } else {
+              feedback = 'İyi performans gösteriyor.';
+            }
+            return {
+              category: m.category,
+              score: m.score,
+              feedback,
+            };
+          })
+        : [
+            { category: 'Genel Performans', score: 75, feedback: 'İyi performans gösteriyor.' },
+          ];
+      
       return {
         employeeId: employeeData.employeeId,
         period: employeeData.period,
         overallScore: Math.round(avgScore),
-        categories: employeeData.metrics || [
-          { category: 'Genel Performans', score: 75, feedback: 'İyi performans gösteriyor.' },
-        ],
+        categories,
         strengths: ['Düzenli çalışma', 'Takım çalışması'],
         improvements: ['Zaman yönetimi', 'İletişim becerileri'],
         recommendations: ['Eğitim programlarına katılım', 'Mentorluk desteği'],

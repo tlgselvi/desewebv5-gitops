@@ -56,9 +56,27 @@ export default function IntegrationsPage() {
         setEinvoiceProvider(einvoiceIntegration.provider);
         setEinvoiceSandbox(einvoiceIntegration.config?.sandbox !== false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load integrations", error);
-      toast.error("Entegrasyonlar yüklenirken bir hata oluştu.");
+      
+      // Check if it's an authentication error
+      const isAuthError = error?.message?.includes("401") || 
+                         error?.message?.includes("Session expired") ||
+                         error?.message?.includes("Authentication token not found");
+      
+      if (isAuthError) {
+        // Authentication error - API client will handle redirect
+        // Don't show toast as redirect will happen
+        return;
+      }
+      
+      // For other errors (404, 500, etc.), show warning but allow page to render
+      // This allows users to still use the form even if API endpoint doesn't exist yet
+      console.warn("Integrations API endpoint may not be available yet. Page will still work for form submission.");
+      // Don't show error toast for 404 - it's expected if endpoint doesn't exist
+      if (!error?.message?.includes("404")) {
+        toast.warning("Entegrasyonlar yüklenirken bir hata oluştu. Formu kullanmaya devam edebilirsiniz.");
+      }
     } finally {
       setIsLoading(false);
     }

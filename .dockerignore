@@ -4,7 +4,7 @@ frontend/node_modules/
 
 # Build artifacts
 dist/
-drizzle/
+# drizzle/ - Keep drizzle migrations for Docker build
 frontend/.next/
 frontend/tsconfig.tsbuildinfo
 *.tsbuildinfo

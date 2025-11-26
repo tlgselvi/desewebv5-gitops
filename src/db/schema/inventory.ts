@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations, users } from './saas';
+import { organizations, users } from './saas.js';
 
 // Warehouses (Depolar)
 export const warehouses = pgTable('warehouses', {

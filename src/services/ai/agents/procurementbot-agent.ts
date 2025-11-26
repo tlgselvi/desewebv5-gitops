@@ -9,8 +9,9 @@
  * - Tedarikçi faturalarının takibi
  */
 
-import { AgentId } from '../agent-communication';
-import { genAIAppBuilderService } from '../genai-app-builder';
+import { AgentId } from '../agent-communication.js';
+import { genAIAppBuilderService } from '../genai-app-builder.js';
+import { logger } from '@/utils/logger.js';
 
 export interface ProcurementBotStatus {
   agentId: AgentId;
@@ -99,22 +100,21 @@ export class ProcurementBotAgent {
 
     try {
       // Use GenAI for natural language processing
-      const response = await genAIAppBuilderService.chat({
-        message: `[ProcurementBot] ${message}`,
-        context: {
-          ...context,
-          agent: 'procurementbot',
-          capabilities: [
-            'purchase_order_management',
-            'supplier_management',
-            'rfq_management',
-            'price_comparison',
-            'approval_workflow',
-          ],
-        },
+      const response = await genAIAppBuilderService.chat([
+        { role: 'user', content: `[ProcurementBot] ${message}` }
+      ], {
+        ...context,
+        agent: 'procurementbot',
+        capabilities: [
+          'purchase_order_management',
+          'supplier_management',
+          'rfq_management',
+          'price_comparison',
+          'approval_workflow',
+        ],
       });
 
-      return response || 'I received your message about procurement. How can I help?';
+      return response?.response || 'I received your message about procurement. How can I help?';
     } catch (error) {
       console.error('[ProcurementBot] Error handling message:', error);
       return 'I encountered an error processing your procurement request. Please try again.';
@@ -152,8 +152,11 @@ export class ProcurementBotAgent {
       status: 'draft',
       requestedBy: data.requestedBy,
       createdAt: new Date().toISOString(),
-      expectedDeliveryDate: data.expectedDeliveryDate,
     };
+    
+    if (data.expectedDeliveryDate) {
+      po.expectedDeliveryDate = data.expectedDeliveryDate;
+    }
 
     // TODO: Save to database
     // await db.purchaseOrders.create(po);
@@ -265,13 +268,19 @@ export class ProcurementBotAgent {
       current.unitPrice < best.unitPrice ? current : best
     );
 
-    const recommendation = await genAIAppBuilderService.chat({
-      message: `Compare these supplier quotes for RFQ ${rfqId} and provide a recommendation: ${JSON.stringify(mockResponses)}`,
-      context: {
+    let recommendationText = 'Based on price, delivery time, and quality, I recommend the supplier with the best overall value.';
+    
+    try {
+      const recommendation = await genAIAppBuilderService.chat([
+        { role: 'user', content: `Compare these supplier quotes for RFQ ${rfqId} and provide a recommendation: ${JSON.stringify(mockResponses)}` }
+      ], {
         agent: 'procurementbot',
         action: 'price_comparison',
-      },
-    });
+      });
+      recommendationText = recommendation?.response || recommendationText;
+    } catch (error) {
+      logger.warn('Failed to get AI recommendation, using default', { error });
+    }
 
     return {
       bestPrice: {
@@ -280,7 +289,7 @@ export class ProcurementBotAgent {
         totalPrice: bestPrice.totalPrice,
       },
       allQuotes: mockResponses,
-      recommendation: recommendation || 'Based on price, delivery time, and quality, I recommend the supplier with the best overall value.',
+      recommendation: recommendationText,
     };
   }
 
@@ -347,14 +356,23 @@ export class ProcurementBotAgent {
       qualityScore: 88,
     };
 
-    const recommendations = await genAIAppBuilderService.chat({
-      message: `Analyze supplier performance for ${supplierId} and provide recommendations for improvement.`,
-      context: {
+    let recommendationsList = ['Continue monitoring supplier performance', 'Consider negotiating better terms'];
+    
+    try {
+      const recommendations = await genAIAppBuilderService.chat([
+        { role: 'user', content: `Analyze supplier performance for ${supplierId} and provide recommendations for improvement.` }
+      ], {
         agent: 'procurementbot',
         action: 'supplier_analysis',
         supplier: mockSupplier,
-      },
-    });
+      });
+      
+      if (recommendations?.response) {
+        recommendationsList = recommendations.response.split('\n').filter((line: string) => line.trim());
+      }
+    } catch (error) {
+      logger.warn('Failed to get AI recommendations, using default', { error });
+    }
 
     return {
       supplier: mockSupplier,
@@ -366,9 +384,7 @@ export class ProcurementBotAgent {
         qualityScore: mockSupplier.qualityScore,
         averageRating: mockSupplier.rating,
       },
-      recommendations: recommendations
-        ? recommendations.split('\n').filter((line) => line.trim())
-        : ['Continue monitoring supplier performance', 'Consider negotiating better terms'],
+      recommendations: recommendationsList,
     };
   }
 }

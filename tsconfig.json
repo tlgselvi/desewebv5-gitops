@@ -48,7 +48,8 @@
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "tests/**/*"
+    "tests/**/*",
+    "src/scripts/**/*"
   ],
   "ts-node": {
     "esm": true

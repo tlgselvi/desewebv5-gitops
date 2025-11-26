@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations } from './saas';
+import { organizations } from './saas.js';
 
 // IoT Devices (Cihazlar)
 export const devices = pgTable('devices', {

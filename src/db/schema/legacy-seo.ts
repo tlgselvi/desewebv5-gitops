@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { users } from './saas';
+import { users } from './saas.js';
 
 // SEO Projects
 export const seoProjects = pgTable('seo_projects', {

@@ -99,12 +99,21 @@ export async function authenticatedGet<T>(url: string): Promise<T> {
   const response = await authenticatedFetch(url, { method: "GET" });
 
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
+    // 401 is already handled in authenticatedFetch, but check again for safety
+    if (response.status === 401 && typeof window !== "undefined") {
+      // Don't redirect again if already redirected
+      if (!window.location.href.includes('/login')) {
+        window.location.href = '/login';
+      }
+      throw new Error("Session expired. Please log in again.");
+    }
     if (response.status === 403) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(`Access denied: ${errorData.message || "Forbidden"}`);
     }
-    throw new Error(`API request failed: ${response.status}`);
+    // For 404 and other errors, throw error but don't redirect
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`API request failed: ${response.status} ${errorText || ''}`);
   }
   return response.json() as Promise<T>;
 }

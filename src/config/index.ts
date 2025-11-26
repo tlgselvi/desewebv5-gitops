@@ -1,6 +1,25 @@
 import { config as dotenvConfig } from "dotenv";
 import { z } from "zod";
 
+const DEFAULT_JWT_SECRET =
+  "ea-plan-master-control-v6.8.1-super-secret-jwt-key-min-32-chars";
+const DEFAULT_COOKIE_SECRET =
+  "ea-plan-master-control-v6.8.2-cookie-session-secret-key-min-32-chars";
+const MIN_SECRET_LENGTH = 32;
+
+const sanitizeSecret = (defaultValue: string) =>
+  z.preprocess((val) => {
+    if (typeof val !== "string") {
+      return val;
+    }
+    const trimmed = val.trim();
+    // If empty or too short, use default
+    if (trimmed.length === 0 || trimmed.length < MIN_SECRET_LENGTH) {
+      return defaultValue;
+    }
+    return trimmed;
+  }, z.string().min(MIN_SECRET_LENGTH).default(defaultValue));
+
 // Load environment variables
 dotenvConfig();
 
@@ -14,9 +33,7 @@ const configSchema = z.object({
 
   // Database Configuration
   database: z.object({
-    url: z
-      .string()
-      .default("postgresql://dese:dese123@db:5432/dese_ea_plan_v5"),
+    url: z.string(),
     host: z.string().default("db"),
     port: z.coerce.number().default(5432),
     name: z.string().default("dese_ea_plan_v5"),
@@ -34,21 +51,13 @@ const configSchema = z.object({
 
   // Security Configuration
   security: z.object({
-    jwtSecret: z
-      .string()
-      .default(
-        "ea-plan-master-control-v6.8.1-super-secret-jwt-key-min-32-chars",
-      ),
+    jwtSecret: sanitizeSecret(DEFAULT_JWT_SECRET),
     jwtExpiresIn: z.string().default("24h"),
     bcryptRounds: z.coerce.number().default(12),
     rateLimitWindowMs: z.coerce.number().default(900000), // 15 minutes
     rateLimitMaxRequests: z.coerce.number().default(100),
     enableMockLogin: z.coerce.boolean().default(process.env.ENABLE_MOCK_LOGIN === "true" || process.env.ENABLE_MOCK_LOGIN === "1"), // Added for testing in prod-like envs
-    cookieKey: z
-      .string()
-      .default(
-        "ea-plan-master-control-v6.8.2-cookie-session-secret-key-min-32-chars",
-      ),
+    cookieKey: sanitizeSecret(DEFAULT_COOKIE_SECRET),
   }),
 
   // External APIs
@@ -509,6 +518,28 @@ const rawConfig = {
 
 // Validate configuration
 const config = configSchema.parse(rawConfig);
+
+const providedJwtSecret = process.env.JWT_SECRET?.trim();
+if (!providedJwtSecret || providedJwtSecret.length < MIN_SECRET_LENGTH) {
+  if (providedJwtSecret && providedJwtSecret.length > 0) {
+    console.warn(
+      "[config] JWT_SECRET is shorter than 32 characters. Falling back to default secure secret. Please update your environment configuration.",
+    );
+  }
+  process.env.JWT_SECRET = config.security.jwtSecret;
+  // Update config object to use the fallback secret
+  config.security.jwtSecret = DEFAULT_JWT_SECRET;
+}
+
+const providedCookieKey = process.env.COOKIE_KEY?.trim();
+if (!providedCookieKey || providedCookieKey.length < MIN_SECRET_LENGTH) {
+  if (providedCookieKey && providedCookieKey.length > 0) {
+    console.warn(
+      "[config] COOKIE_KEY is shorter than 32 characters. Falling back to default secure secret. Please update your environment configuration.",
+    );
+  }
+  process.env.COOKIE_KEY = config.security.cookieKey;
+}
 
 export { config };
 

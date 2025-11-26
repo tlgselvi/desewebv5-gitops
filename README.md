@@ -30,6 +30,8 @@ Dese EA Plan, FinBot (finans), MuBot (muhasebe) ve AIOps/Observability modüller
 
 ### Docker ile Kurulum (Önerilen)
 
+#### Clean Install (İlk Kurulum)
+
 ```bash
 git clone https://github.com/dese-ai/dese-ea-plan-v5.git
 cd dese-ea-plan-v5
@@ -37,21 +39,42 @@ cd dese-ea-plan-v5
 # 1. Environment variables ayarlayın
 cp env.example .env
 # .env dosyasını düzenleyin ve gerekli değerleri doldurun
+# Özellikle şu değişkenleri kontrol edin:
+#   - DATABASE_URL
+#   - JWT_SECRET
+#   - POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 
 # 2. Google Cloud credentials hazırlayın (opsiyonel)
 # gcp-credentials.json dosyasını proje root'una koyun
 # Detaylar: docs/DOCKER_GOOGLE_CLOUD_SETUP.md
 
 # 3. Tüm servisleri başlatın
+# Migration ve seed otomatik olarak çalışacaktır
 docker compose up --build -d
 
-# 4. Veritabanı migration'ını çalıştırın (ilk kurulumda)
-docker compose exec app pnpm db:migrate
-
-# 5. Servisleri kontrol edin
+# 4. Servisleri kontrol edin
 docker compose ps
-docker compose logs -f
+docker compose logs -f app  # Backend logs
+docker compose logs -f frontend  # Frontend logs
+
+# 5. Health check
+curl http://localhost:3000/health  # Backend health
+curl http://localhost:3002  # Frontend (port 3002)
 ```
+
+**Not:** İlk kurulumda:
+- ✅ Database migration'ları otomatik çalışır
+- ✅ Seed script'i otomatik çalışır (demo verileri yüklenir)
+- ✅ Tüm servisler health check'ten geçer
+
+#### Servis Portları
+
+- **Backend API:** http://localhost:3000
+- **Frontend UI:** http://localhost:3002
+- **Grafana:** http://localhost:3003 (admin/admin)
+- **Prometheus:** http://localhost:9090
+- **PostgreSQL:** localhost:5432
+- **Redis:** localhost:6379
 
 ### Local Development (Opsiyonel)
 
@@ -112,6 +135,157 @@ pnpm test:auto      # Playwright E2E senaryoları
 - `docs/DOCKER_GOOGLE_CLOUD_SETUP.md` – Google Cloud credentials yapılandırması
 - `docs/DOCKER_QUICK_START.md` – Docker hızlı başlangıç rehberi
 - `docs/KUBERNETES_GOOGLE_CLOUD_SETUP.md` – Kubernetes Google Cloud yapılandırması
+
+---
+
+## 🔧 Troubleshooting
+
+### Migration veya Seed Çalışmıyor
+
+Migration ve seed script'leri container başlatıldığında otomatik çalışır. Eğer çalışmıyorsa:
+
+```bash
+# Container logs'ları kontrol edin
+docker compose logs app
+```
+
+### pnpm "Hayalet" Bağımlılık Sorunları
+
+Bazen `pnpm install` çalıştırsanız bile, eski bir alt-bağımlılık (transitive dependency) kullanılmaya devam edebilir. Bu durum, özellikle Git dalları arasında sıkça geçiş yapıldığında yaşanır.
+
+**Belirtiler:**
+- "module not found" hataları
+- Bir paketin inatla güncellenmemesi
+- `node_modules` silinse bile sorunun devam etmesi
+
+**Çözüm:**
+```powershell
+# Otomatik temizleme script'ini çalıştırın
+.\scripts\clean-pnpm-deps.ps1
+
+# Veya manuel olarak:
+Remove-Item -Recurse -Force -Path "node_modules", "frontend/node_modules" -ErrorAction SilentlyContinue
+pnpm store prune
+Remove-Item -Force -Path "pnpm-lock.yaml" -ErrorAction SilentlyContinue
+pnpm install
+```
+
+### Docker Network Sorunları
+
+Servislerin birbiriyle haberleşememesi veya "service unreachable" hataları alıyorsanız:
+
+**Belirtiler:**
+- `docker compose ps` her şeyi normal gösterir
+- Container'lar çalışıyordur ama aralarındaki iletişim kopuktur
+- App servisi db'ye bağlanamıyor
+
+**Çözüm:**
+```powershell
+# Otomatik temizleme script'ini çalıştırın
+.\scripts\clean-docker-network.ps1
+
+# Veya manuel olarak:
+docker compose down
+docker network prune -f
+docker compose up -d
+```
+
+### docker-compose.override.yml "Unutulması" Sorunu
+
+Lokal geliştirme ortamınızda her şey mükemmel çalışır (hot-reload vs.), ancak CI/CD pipeline'ında veya başka bir geliştiricinin makinesinde bir özellik çalışmaz.
+
+**Neden Olur:**
+- `docker-compose.override.yml` dosyası sadece sizin makinenizde bulunur
+- Git'e gönderilmemiş bir ayar (örneğin environment variable) sadece override dosyasında tanımlıdır
+- Bu ayar başka hiçbir yerde olmadığı için kodunuz başka ortamlarda patlar
+
+**Çözüm:**
+- ✅ `docker-compose.override.yml` dosyası `.gitignore`'da tanımlı (lokal geliştirme için)
+- ⚠️ Tüm ortamlar için geçerli olması gereken yapılandırmaları ana `docker-compose.yml` dosyasına ekleyin
+- 💡 Override dosyasını sadece hot-reload, volume mount gibi lokal geliştirme hızlandırmaları için kullanın
+
+# Manuel olarak migration çalıştırın
+docker compose exec app pnpm db:migrate
+
+# Manuel olarak seed çalıştırın
+docker compose exec app pnpm db:seed:data
+
+# Seed'i atlamak için (eğer zaten veri varsa)
+docker compose exec app sh -c "SKIP_SEED=true pnpm start"
+```
+
+### Database Bağlantı Hatası
+
+```bash
+# Database container'ının çalıştığını kontrol edin
+docker compose ps db
+
+# Database health check
+docker compose exec db pg_isready -U dese
+
+# Database logs
+docker compose logs db
+```
+
+### Port Çakışması
+
+Eğer port'lar kullanılıyorsa, `docker-compose.yml` dosyasındaki port mapping'leri değiştirin:
+
+```yaml
+ports:
+  - "3000:3000"  # Backend
+  - "3002:3000"  # Frontend (host:container)
+  - "3003:3000"  # Grafana
+```
+
+### Environment Variables Eksik
+
+`.env` dosyası yoksa veya eksik değişkenler varsa:
+
+```bash
+# .env dosyasını oluşturun
+cp env.example .env
+
+# Kritik değişkenleri kontrol edin
+grep -E "DATABASE_URL|JWT_SECRET|POSTGRES_" .env
+
+# Container'ı yeniden başlatın
+docker compose down
+docker compose up --build -d
+```
+
+### Monitoring Data Kayboluyor
+
+Monitoring volume'ları (`prometheus_data`, `grafana_data`) tanımlıdır. Eğer data kayboluyorsa:
+
+```bash
+# Volume'ları kontrol edin
+docker volume ls | grep prometheus
+docker volume ls | grep grafana
+
+# Volume'ları temizlemek için (dikkat: tüm data silinir)
+docker compose down -v
+```
+
+### Clean Install Testi
+
+Tamamen temiz bir kurulum testi için:
+
+```bash
+# Tüm container, volume ve image'ları temizle
+docker compose down -v
+docker system prune -a -f
+
+# .env dosyasını sil (opsiyonel, test için)
+# rm .env
+
+# Yeniden başlat
+cp env.example .env
+docker compose up --build -d
+
+# Logs'ları takip et
+docker compose logs -f
+```
 
 ---
 

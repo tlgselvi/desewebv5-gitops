@@ -187,11 +187,13 @@ Sistem analizi yap ve şu formatta JSON döndür:
       const action = this.autoRemediator.suggestAction(issue.component, issue.severity);
       
       // Record remediation event
+      // Map 'critical' to 'high' for RemediationEvent type compatibility
+      const severity: 'low' | 'medium' | 'high' = issue.severity === 'critical' ? 'high' : issue.severity;
       this.autoRemediator.recordEvent({
         timestamp: Date.now(),
         metric: issue.component,
         action,
-        severity: issue.severity,
+        severity,
         status: 'executed',
       });
 
@@ -252,7 +254,7 @@ Sistem analizi yap ve şu formatta JSON döndür:
 
       for (const payload of payloads) {
         try {
-          const result = this.anomalyDetector.detectPercentileAnomaly(payload);
+          const result = this.anomalyDetector.detectp95Anomaly(payload);
           
           if (result.result && result.result.isAnomaly) {
             issues.push({

@@ -1,10 +1,11 @@
 import { Router, type Router as ExpressRouter } from 'express';
-import { inventoryRoutes } from '../modules/inventory/routes';
-import { crmRoutes } from '../modules/crm/routes';
-import { iotRoutes } from '../modules/iot/routes';
-import { seoRoutes } from '../modules/seo/routes';
-import { serviceRoutes } from '../modules/service/routes';
-// Finance routes zaten import edilmiş olabilir ama buraya da ekleyeceğiz
+import { inventoryRoutes } from '../modules/inventory/routes.js';
+import { crmRoutes } from '../modules/crm/routes.js';
+import { iotRoutes } from '../modules/iot/routes.js';
+import { seoRoutes } from '../modules/seo/routes.js';
+import { serviceRoutes } from '../modules/service/routes.js';
+import { integrationRoutes } from '../modules/saas/integration.routes.js';
+import { organizationRoutes } from '../modules/saas/organization.routes.js';
 
 const router: ExpressRouter = Router();
 
@@ -16,7 +17,10 @@ router.use('/inventory', inventoryRoutes);
 router.use('/iot', iotRoutes);
 router.use('/seo', seoRoutes);
 router.use('/service', serviceRoutes);
-// router.use('/finance', financeRoutes); // Finance modülü zaten varsa buraya taşınmalı
+
+// SaaS & Admin Modules
+router.use('/integrations', integrationRoutes);
+router.use('/admin/organizations', organizationRoutes);
 
 export const moduleRoutes = router;
 

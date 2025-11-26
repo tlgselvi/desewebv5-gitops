@@ -163,7 +163,7 @@ export class SeoService {
     }
   }
 
-  async analyzeUrl(url: string, options?: SeoAnalysisRequestSchema['options']): Promise<unknown> {
+  async analyzeUrl(url: string, options?: z.infer<typeof SeoAnalysisRequestSchema>['options']): Promise<unknown> {
     // Import and use seoAnalyzer for analysis
     const { seoAnalyzer } = await import('@/services/seoAnalyzer.js');
     return seoAnalyzer.analyzeUrl(url, options);

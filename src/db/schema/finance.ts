@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations, users } from './saas';
+import { organizations, users } from './saas.js';
 
 // Chart of Accounts (Hesap Planı)
 export const accounts = pgTable('accounts', {

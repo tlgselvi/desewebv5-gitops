@@ -325,8 +325,8 @@ Bakım önerisi yap ve şu formatta JSON döndür:
       const hasAbnormalSensors = deviceData.sensorReadings?.some(s => !s.normal) || false;
       const usageHigh = (deviceData.usageHours || 0) > 1000;
 
-      let recommendation: 'inspection' | 'cleaning' | 'calibration' | 'repair' | 'replacement' = 'inspection';
-      let urgency: 'low' | 'medium' | 'high' | 'critical' = 'low';
+      let recommendation: MaintenanceRecommendation['recommendation'] = 'inspection';
+      let urgency: MaintenanceRecommendation['urgency'] = 'low';
 
       if (hasErrors || hasAbnormalSensors) {
         recommendation = 'repair';
@@ -339,15 +339,31 @@ Bakım önerisi yap ve şu formatta JSON döndür:
       const nextDate = new Date();
       nextDate.setDate(nextDate.getDate() + (urgency === 'critical' ? 1 : urgency === 'high' ? 7 : 30));
 
-      return {
+      // Calculate estimated cost based on recommendation
+      let estimatedCost: number;
+      if (recommendation === 'repair') {
+        estimatedCost = 5000;
+      } else if (recommendation === 'replacement' as MaintenanceRecommendation['recommendation']) {
+        estimatedCost = 10000;
+      } else {
+        estimatedCost = 500;
+      }
+
+      const result: MaintenanceRecommendation = {
         deviceId: deviceData.deviceId,
         deviceName: deviceData.deviceName,
         recommendation,
         urgency,
         reasoning: hasErrors ? 'Yüksek hata sayısı tespit edildi' : usageHigh ? 'Yüksek kullanım saati' : 'Rutin bakım',
-        estimatedCost: recommendation === 'repair' ? 5000 : recommendation === 'replacement' ? 10000 : 500,
-        nextMaintenanceDate: nextDate.toISOString().split('T')[0],
+        estimatedCost,
       };
+      
+      const nextMaintenanceDateStr = nextDate.toISOString().split('T')[0];
+      if (nextMaintenanceDateStr) {
+        result.nextMaintenanceDate = nextMaintenanceDateStr;
+      }
+      
+      return result;
     } catch (error) {
       logger.error('IoTBot Agent: recommendMaintenance failed', {
         error: error instanceof Error ? error.message : String(error),

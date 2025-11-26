@@ -1,14 +1,8 @@
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { serviceService } from './service.js';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { logger } from '@/utils/logger.js';
-
-interface RequestWithUser extends Request {
-  user?: {
-    id: string;
-    organizationId: string;
-  };
-}
+import type { RequestWithUser } from '@/middleware/auth.js';
 
 export class ServiceController {
   async createServiceRequest(req: RequestWithUser, res: Response): Promise<Response> {
@@ -17,17 +11,24 @@ export class ServiceController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const request = await serviceService.createServiceRequest({
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const requestData: Parameters<typeof serviceService.createServiceRequest>[0] = {
       organizationId,
-      contactId: req.body.contactId,
       title: req.body.title,
-      description: req.body.description,
-      priority: req.body.priority,
-      category: req.body.category,
       requestedBy: req.user.id,
-      scheduledDate: req.body.scheduledDate ? new Date(req.body.scheduledDate) : undefined,
-      location: req.body.location,
-    });
+    };
+    
+    if (req.body.contactId) requestData.contactId = req.body.contactId;
+    if (req.body.description) requestData.description = req.body.description;
+    if (req.body.priority) requestData.priority = req.body.priority;
+    if (req.body.category) requestData.category = req.body.category;
+    if (req.body.scheduledDate) requestData.scheduledDate = new Date(req.body.scheduledDate);
+    if (req.body.location) requestData.location = req.body.location;
+    
+    const request = await serviceService.createServiceRequest(requestData);
 
     return res.status(201).json(request);
   }
@@ -55,6 +56,10 @@ export class ServiceController {
 
     const { requestId } = req.params;
     const { technicianId } = req.body;
+
+    if (!requestId || !technicianId) {
+      return res.status(400).json({ error: 'requestId and technicianId are required' });
+    }
 
     const updated = await serviceService.assignTechnician(requestId, technicianId, organizationId);
 
@@ -85,10 +90,17 @@ export class ServiceController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const technicians = await serviceService.getTechnicians(organizationId, {
-      availability: req.query.availability as string,
-      isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
-    });
+    const filter: { availability?: string; isActive?: boolean } = {};
+    if (req.query.availability) {
+      filter.availability = req.query.availability as string;
+    }
+    if (req.query.isActive === 'true') {
+      filter.isActive = true;
+    } else if (req.query.isActive === 'false') {
+      filter.isActive = false;
+    }
+    
+    const technicians = await serviceService.getTechnicians(organizationId, filter);
 
     return res.json({ technicians });
   }
@@ -99,7 +111,7 @@ export class ServiceController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const plan = await serviceService.createMaintenancePlan({
+    const planData: Parameters<typeof serviceService.createMaintenancePlan>[0] = {
       organizationId,
       contactId: req.body.contactId,
       name: req.body.name,
@@ -108,12 +120,16 @@ export class ServiceController {
       frequency: req.body.frequency,
       frequencyValue: req.body.frequencyValue,
       startDate: new Date(req.body.startDate),
-      endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
       assignedTechnicianId: req.body.assignedTechnicianId,
       estimatedDuration: req.body.estimatedDuration,
       estimatedCost: req.body.estimatedCost,
       tasks: req.body.tasks,
-    });
+    };
+    if (req.body.endDate) {
+      planData.endDate = new Date(req.body.endDate);
+    }
+    
+    const plan = await serviceService.createMaintenancePlan(planData);
 
     return res.status(201).json(plan);
   }
@@ -124,10 +140,17 @@ export class ServiceController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const plans = await serviceService.getMaintenancePlans(organizationId, {
-      isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
-      planType: req.query.planType as string,
-    });
+    const filter: Parameters<typeof serviceService.getMaintenancePlans>[1] = {};
+    if (req.query.isActive === 'true') {
+      filter.isActive = true;
+    } else if (req.query.isActive === 'false') {
+      filter.isActive = false;
+    }
+    if (req.query.planType) {
+      filter.planType = req.query.planType as string;
+    }
+    
+    const plans = await serviceService.getMaintenancePlans(organizationId, filter);
 
     return res.json({ plans });
   }

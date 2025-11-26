@@ -2,19 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, RefreshCw, Users, Banknote, Briefcase } from "lucide-react";
+import { Plus, RefreshCw, Users, Banknote, Briefcase, Loader2 } from "lucide-react";
 import { hrService, Employee } from "@/services/hr";
 import { toast } from "sonner";
 import { KPICard } from "@/components/dashboard/kpi-card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table/data-table";
+import { columns } from "./columns";
+import { CreateEmployeeDialog } from "@/components/hr/create-employee-dialog";
 
 export default function HRPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -52,12 +46,10 @@ export default function HRPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={fetchData}>
+          <Button variant="outline" size="icon" onClick={fetchData} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Yeni Personel
-          </Button>
+          <CreateEmployeeDialog onSuccess={fetchData} />
         </div>
       </div>
       
@@ -83,53 +75,16 @@ export default function HRPage() {
         />
       </div>
       
-      {/* Employee List */}
-      <div className="rounded-md border bg-background">
-        <div className="p-4 border-b">
-          <h3 className="font-medium">Personel Listesi</h3>
-        </div>
+      {/* Employee List with DataTable */}
+      <div className="flex-1 overflow-hidden rounded-lg border bg-background shadow-sm">
         {isLoading ? (
-           <div className="flex h-48 items-center justify-center">
-             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-           </div>
-        ) : employees.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-muted-foreground">
-            Henüz personel kaydı bulunmamaktadır.
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ad Soyad</TableHead>
-                <TableHead>Ünvan</TableHead>
-                <TableHead>Departman</TableHead>
-                <TableHead>Başlangıç</TableHead>
-                <TableHead>Maaş</TableHead>
-                <TableHead>Durum</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((emp) => (
-                <TableRow key={emp.id}>
-                  <TableCell className="font-medium">{emp.firstName} {emp.lastName}</TableCell>
-                  <TableCell>{emp.title || '-'}</TableCell>
-                  <TableCell>{emp.departmentId || '-'}</TableCell>
-                  <TableCell>{new Date(emp.startDate).toLocaleDateString('tr-TR')}</TableCell>
-                  <TableCell>
-                    {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: emp.salaryCurrency }).format(emp.salaryAmount)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={emp.status === 'active' ? 'default' : 'secondary'}>
-                      {emp.status === 'active' ? 'Aktif' : emp.status === 'terminated' ? 'Ayrıldı' : 'İzinde'}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable data={employees} columns={columns} searchKey="fullName" searchPlaceholder="Personel ara..." />
         )}
       </div>
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, uuid, varchar, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { seoProjects, seoAlerts, seoReports } from './legacy-seo';
+import { seoProjects, seoAlerts, seoReports } from './legacy-seo.js';
 
 // Multi-tenancy Core: Organizations
 export const organizations = pgTable('organizations', {

@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { asyncHandler } from '@/middleware/errorHandler.js';
 import { authenticate } from '@/middleware/auth.js';
 import { jarvisService } from '@/services/ai/jarvis.js';
 import { agentCommunication, AgentId } from '@/services/ai/agent-communication.js';
 import type { Request, Response } from 'express';
 
-const jarvisRouter = Router();
+const jarvisRouter: ExpressRouter = Router();
 
 /**
  * GET /api/v1/jarvis/status
@@ -82,7 +82,7 @@ jarvisRouter.post(
 
     const answer = await jarvisService.answerUserQuestion(question, context);
     
-    res.json({
+    return res.json({
       question,
       answer,
       timestamp: new Date().toISOString(),

@@ -61,14 +61,16 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
-    profiles: ["monitoring"]
+    profiles: ["monitoring"] # Sadece 'monitoring' profili ile başlatılır
     container_name: prometheus
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
     restart: unless-stopped
     deploy:
       resources:
@@ -78,15 +80,16 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    profiles: ["monitoring"]
+    profiles: ["monitoring"] # Sadece 'monitoring' profili ile başlatılır
     container_name: grafana
     ports:
-      - "3002:3000"
+      - "3003:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
     restart: unless-stopped
@@ -144,7 +147,7 @@ services:
 
   finbot:
     build: .
-    profiles: ["bots"]
+    profiles: ["bots"] # Sadece 'bots' profili ile başlatılır
     command: pnpm mcp:finbot
     env_file:
       - .env
@@ -171,7 +174,7 @@ services:
 
   mubot:
     build: .
-    profiles: ["bots"]
+    profiles: ["bots"] # Sadece 'bots' profili ile başlatılır
     command: pnpm mcp:mubot
     env_file:
       - .env
@@ -198,7 +201,7 @@ services:
 
   dese:
     build: .
-    profiles: ["bots"]
+    profiles: ["bots"] # Sadece 'bots' profili ile başlatılır
     command: pnpm mcp:dese
     env_file:
       - .env
@@ -225,7 +228,7 @@ services:
 
   observability:
     build: .
-    profiles: ["monitoring"]
+    profiles: ["monitoring"] # Sadece 'monitoring' profili ile başlatılır
     command: pnpm mcp:observability
     env_file:
       - .env
@@ -260,16 +263,16 @@ services:
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
-      PORT: 3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
+      PORT: 3000
       NODE_OPTIONS: "--max-old-space-size=512"
     ports:
-      - "3001:3001"
+      - "3002:3000"
     depends_on:
       app:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:3001 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider --timeout=5 --tries=1 http://localhost:3000 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -283,3 +286,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
+  grafana_data:

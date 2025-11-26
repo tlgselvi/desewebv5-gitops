@@ -18,6 +18,7 @@ class MQTTClientService {
     
     logger.info('Connecting to MQTT Broker', { url: brokerUrl });
     
+    // In a real scenario, credentials should be loaded from env
     this.client = mqtt.connect(brokerUrl, {
       reconnectPeriod: 5000, // Reconnect every 5 seconds
       clientId: `dese-backend-${Math.random().toString(16).substr(2, 8)}`,
@@ -30,12 +31,17 @@ class MQTTClientService {
     });
 
     this.client.on('error', (err) => {
-      logger.error('MQTT Connection Error', { error: err.message });
+      // Suppress verbose connection errors during dev if broker is offline
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('MQTT Connection Error:', err.message);
+      } else {
+        logger.error('MQTT Connection Error', { error: err.message });
+      }
     });
 
     this.client.on('close', () => {
       this.isConnected = false;
-      logger.warn('MQTT Connection Closed');
+      // logger.warn('MQTT Connection Closed'); // Too noisy if broker is down
     });
 
     this.client.on('message', (topic, message) => {
@@ -47,7 +53,7 @@ class MQTTClientService {
     if (!this.client) return;
 
     // Subscribe to all telemetry and alert topics
-    // Topic structure: devices/{organizationId}/{deviceId}/{type}
+    // Topic structure: devices/{orgId}/{deviceId}/{type}
     // type: telemetry, alert, status
     const topics = [
       'devices/+/+/telemetry',
@@ -78,7 +84,8 @@ class MQTTClientService {
 
       const payload = JSON.parse(messageStr);
 
-      logger.debug('MQTT Message Received', { topic, type, deviceId });
+      // Verbose logging only in debug mode
+      // logger.debug('MQTT Message Received', { topic, type, deviceId });
 
       switch (type) {
         case 'telemetry':
@@ -98,22 +105,46 @@ class MQTTClientService {
   }
 
   private async processTelemetry(organizationId: string, deviceId: string, data: any) {
-    // 1. Save telemetry to DB
+    // 1. Ensure device exists (auto-create for simulation convenience if dev mode)
+    if (process.env.NODE_ENV === 'development') {
+        await this.ensureDeviceExists(organizationId, deviceId);
+    }
+
+    // 2. Save telemetry to DB
     await db.insert(telemetry).values({
         id: uuidv4(),
         organizationId,
         deviceId,
-        timestamp: new Date(),
+        timestamp: new Date(data.timestamp || new Date()),
         temperature: data.temperature?.toString(),
         ph: data.ph?.toString(),
-        orp: data.orp,
-        tds: data.tds,
+        orp: data.orp?.toString(),
+        tds: data.tds?.toString(),
         flowRate: data.flowRate?.toString(),
         data: data // Store full raw data as well
     });
 
-    // 2. Check Automation Rules
+    // 3. Check Automation Rules
     await this.checkAutomationRules(organizationId, deviceId, data);
+  }
+
+  private async ensureDeviceExists(organizationId: string, deviceId: string) {
+      const [existing] = await db.select().from(devices).where(eq(devices.id, deviceId));
+      if (!existing) {
+          logger.info(`[Auto-Discovery] Creating new device: ${deviceId}`);
+          await db.insert(devices).values({
+              id: deviceId,
+              organizationId,
+              name: `New Device (${deviceId.substring(0,6)})`,
+              serialNumber: deviceId, // Use ID as serial for simplicity
+              type: 'pool_controller',
+              status: 'online',
+              isActive: true
+          });
+      } else {
+          // Update last seen
+          await db.update(devices).set({ lastSeen: new Date(), status: 'online' }).where(eq(devices.id, deviceId));
+      }
   }
 
   private async checkAutomationRules(organizationId: string, deviceId: string, data: any) {
@@ -180,10 +211,9 @@ class MQTTClientService {
     if (this.client && this.isConnected) {
       this.client.publish(topic, message);
     } else {
-      logger.warn('Cannot publish, MQTT client not connected');
+      // logger.warn('Cannot publish, MQTT client not connected');
     }
   }
 }
 
 export const mqttClient = new MQTTClientService();
-
