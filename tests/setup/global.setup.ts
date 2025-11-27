@@ -103,11 +103,13 @@ async function globalSetup(config: FullConfig) {
       
       // Create a mock JWT token for testing
       const jwtSecret = process.env.JWT_SECRET || 'ea-plan-master-control-v6.8.1-super-secret-jwt-key-min-32-chars';
+      const defaultOrgId = '11111111-1111-1111-1111-111111111111';
       const mockToken = jwt.sign(
         {
-          id: 'test-user-id',
+          id: '22222222-2222-2222-2222-222222222222',
           email: testEmail,
           role: 'admin',
+          organizationId: defaultOrgId,
           permissions: ['admin', 'mcp.dashboard.read'],
         },
         jwtSecret,

@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Frontend Sanity Check - Homepage', () => {
-  const FRONTEND_URL = 'http://localhost:3001';
+  // Frontend port: 3002 in Docker, 3001 in local dev
+  // Check environment variable or default to 3002 (Docker default)
+  const FRONTEND_URL = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3002';
 
   test('should load the homepage successfully on port 3001', async ({ page }) => {
     // 1. Go to the frontend (override baseURL for this test)

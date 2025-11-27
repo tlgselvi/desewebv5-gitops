@@ -36,6 +36,7 @@
     "db:migrate": "tsx src/scripts/run-migrations.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed:data": "tsx src/scripts/seed-data.ts",
+    "create:admin": "tsx src/scripts/create-admin-user.ts",
     "rbac:seed": "tsx src/rbac/seed.ts",
     "audit:test": "vitest run -t audit",
     "privacy:test": "vitest run -t privacy",
@@ -131,6 +132,7 @@
     "@google-cloud/aiplatform": "^3.35.0",
     "@google-cloud/documentai": "^8.12.0",
     "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "bull": "^4.16.5",
     "cheerio": "^1.1.2",
     "compression": "^1.8.1",
@@ -169,6 +171,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
+    "@types/bcryptjs": "^3.0.0",
     "@types/compression": "^1.8.1",
     "@types/cookie-session": "^2.0.49",
     "@types/cors": "^2.8.19",
