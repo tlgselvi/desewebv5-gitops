@@ -21,29 +21,38 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
-import { iotService } from "@/services/iot";
+import { useCreateDevice } from "@/hooks/queries/useIoT";
 import { toast } from "sonner";
 
-interface CreateDeviceDTO {
+interface CreateDeviceFormData {
   name: string;
   serialNumber: string;
   type: string;
   model?: string;
 }
 
-export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
+const initialFormData: CreateDeviceFormData = {
+  name: "",
+  serialNumber: "",
+  type: "sensor",
+  model: "",
+};
+
+/**
+ * Dialog component for creating new IoT devices
+ * Uses React Query mutation for automatic cache invalidation
+ */
+export function CreateDeviceDialog() {
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<CreateDeviceDTO>({
-    name: "",
-    serialNumber: "",
-    type: "sensor",
-    model: "",
-  });
+  const [formData, setFormData] = useState<CreateDeviceFormData>(initialFormData);
+
+  // React Query mutation hook
+  const createDevice = useCreateDevice();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation
     if (!formData.name.trim()) {
       toast.error("Cihaz adı zorunludur");
       return;
@@ -54,35 +63,33 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
       return;
     }
 
-    try {
-      setIsLoading(true);
-      await iotService.createDevice({
-        name: formData.name,
-        serialNumber: formData.serialNumber,
+    // Submit using mutation
+    createDevice.mutate(
+      {
+        name: formData.name.trim(),
+        serialNumber: formData.serialNumber.trim(),
         type: formData.type,
-        model: formData.model || undefined,
-      });
-      toast.success("Cihaz başarıyla eklendi");
-      setOpen(false);
-      // Formu sıfırla
-      setFormData({
-        name: "",
-        serialNumber: "",
-        type: "sensor",
-        model: "",
-      });
-      // Callback çağır (sayfa yenileme için)
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      console.error("Failed to create device", error);
-      toast.error("Cihaz eklenirken bir hata oluştu");
-    } finally {
-      setIsLoading(false);
+      },
+      {
+        onSuccess: () => {
+          // Reset form and close dialog
+          setFormData(initialFormData);
+          setOpen(false);
+        },
+      }
+    );
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen && !createDevice.isPending) {
+      // Reset form when closing
+      setFormData(initialFormData);
     }
+    setOpen(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" /> Cihaz Ekle
@@ -104,6 +111,7 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Örn: Havuz Sensör Kiti #1"
+                disabled={createDevice.isPending}
                 required
               />
             </div>
@@ -114,6 +122,7 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
                 value={formData.serialNumber}
                 onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
                 placeholder="Örn: ESP32-001"
+                disabled={createDevice.isPending}
                 required
               />
             </div>
@@ -123,6 +132,7 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value })}
+                  disabled={createDevice.isPending}
                 >
                   <SelectTrigger id="type">
                     <SelectValue />
@@ -144,6 +154,7 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
                   value={formData.model}
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                   placeholder="Örn: ESP32-WROOM-32"
+                  disabled={createDevice.isPending}
                 />
               </div>
             </div>
@@ -152,13 +163,13 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isLoading}
+              onClick={() => handleOpenChange(false)}
+              disabled={createDevice.isPending}
             >
               İptal
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" disabled={createDevice.isPending}>
+              {createDevice.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Kaydediliyor...
@@ -173,4 +184,3 @@ export function CreateDeviceDialog({ onSuccess }: { onSuccess?: () => void }) {
     </Dialog>
   );
 }
-

@@ -40,6 +40,6 @@ export type HomeDashboardDto = {
  * Fetch home dashboard data from the backend
  */
 export const getHomeDashboardData = async (): Promise<HomeDashboardDto> => {
-  return await authenticatedGet<HomeDashboardDto>("/api/v1/dashboard/home");
+  return await authenticatedGet<HomeDashboardDto>("/api/v1/ceo/home");
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  LineChart,
+  LazyLineChart,
   Line,
   XAxis,
   YAxis,
@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend
-} from "recharts";
+} from "@/components/charts/LazyCharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TelemetryData } from "@/types/iot";
 
@@ -32,7 +32,7 @@ export function TelemetryChart({ data, title }: TelemetryChartProps) {
       </CardHeader>
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={chartData}>
+          <LazyLineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
             <XAxis 
               dataKey="time" 
@@ -68,7 +68,7 @@ export function TelemetryChart({ data, title }: TelemetryChartProps) {
               strokeWidth={2}
               dot={false}
             />
-          </LineChart>
+          </LazyLineChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>

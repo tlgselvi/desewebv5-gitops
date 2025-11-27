@@ -1,5 +1,89 @@
+/**
+ * API Client Module
+ * 
+ * Provides authenticated HTTP methods with centralized error handling.
+ * All API requests go through this module for consistent behavior.
+ */
+
 import { getToken } from "./auth";
 import { useStore } from "@/store/useStore";
+import { logger } from "./logger";
+
+// =============================================================================
+// TYPES & INTERFACES
+// =============================================================================
+
+export interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  statusCode?: number;
+  details?: unknown;
+}
+
+// =============================================================================
+// CUSTOM ERROR CLASS
+// =============================================================================
+
+/**
+ * Custom API Error class with status code and structured data
+ */
+export class ApiError extends Error {
+  public readonly status: number;
+  public readonly data?: ApiErrorResponse;
+  public readonly isAuthError: boolean;
+
+  constructor(message: string, status: number, data?: ApiErrorResponse) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+    this.isAuthError = status === 401 || status === 403;
+
+    // Maintains proper stack trace for where our error was thrown
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ApiError);
+    }
+  }
+
+  /**
+   * Check if error is a specific HTTP status
+   */
+  is(status: number): boolean {
+    return this.status === status;
+  }
+
+  /**
+   * Get user-friendly error message
+   */
+  getUserMessage(): string {
+    switch (this.status) {
+      case 400:
+        return this.data?.message || 'Geçersiz istek. Lütfen girdiğiniz bilgileri kontrol edin.';
+      case 401:
+        return 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.';
+      case 403:
+        return this.data?.message || 'Bu işlem için yetkiniz bulunmuyor.';
+      case 404:
+        return this.data?.message || 'İstenen kaynak bulunamadı.';
+      case 409:
+        return this.data?.message || 'Bu kayıt zaten mevcut.';
+      case 422:
+        return this.data?.message || 'Girilen veriler geçersiz.';
+      case 429:
+        return 'Çok fazla istek gönderildi. Lütfen biraz bekleyin.';
+      case 500:
+      case 502:
+      case 503:
+        return 'Sunucu hatası. Lütfen daha sonra tekrar deneyin.';
+      default:
+        return this.data?.message || this.message || 'Bir hata oluştu.';
+    }
+  }
+}
+
+// =============================================================================
+// URL UTILITIES
+// =============================================================================
 
 /**
  * Get the base API URL from environment variable or use default
@@ -12,7 +96,6 @@ import { useStore } from "@/store/useStore";
 const getBaseUrl = (): string => {
   if (typeof window !== "undefined") {
     // Client-side: return empty string to use relative path
-    // The browser will append this to the current origin (e.g. http://localhost:3001)
     return "";
   }
   // Server-side (SSR) - Use internal docker network name
@@ -44,8 +127,96 @@ const resolveUrl = (url: string): string => {
   return `${baseUrl}${path}`;
 };
 
+// =============================================================================
+// RESPONSE HANDLING
+// =============================================================================
+
+/**
+ * Handle redirect to login page
+ */
+function redirectToLogin(reason: string = 'expired'): void {
+  if (typeof window !== "undefined" && !window.location.href.includes('/login')) {
+    localStorage.removeItem("token");
+    window.location.href = `/login?session=${reason}`;
+  }
+}
+
+/**
+ * Centralized response handler
+ * Parses response and throws ApiError for non-OK responses
+ */
+async function handleResponse<T>(response: Response): Promise<T> {
+  // Success cases
+  if (response.ok) {
+    // 204 No Content
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    // Try to parse JSON
+    const text = await response.text();
+    if (!text) {
+      return undefined as T;
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      logger.warn('Response is not valid JSON', { text: text.substring(0, 100) });
+      return text as unknown as T;
+    }
+  }
+
+  // Error cases - parse error response
+  let errorData: ApiErrorResponse = {};
+  try {
+    const text = await response.text();
+    if (text) {
+      errorData = JSON.parse(text);
+    }
+  } catch {
+    // Response is not JSON
+  }
+
+  const errorMessage = errorData.message || errorData.error || `Request failed: ${response.status}`;
+
+  // Handle specific status codes
+  switch (response.status) {
+    case 401:
+      logger.warn('Authentication failed - session expired or invalid token');
+      redirectToLogin('expired');
+      throw new ApiError('Oturumunuz sona erdi.', 401, errorData);
+
+    case 403:
+      logger.warn('Access denied', { url: response.url });
+      throw new ApiError(errorMessage, 403, errorData);
+
+    case 404:
+      throw new ApiError(errorMessage, 404, errorData);
+
+    case 422:
+      throw new ApiError(errorMessage, 422, errorData);
+
+    case 429:
+      logger.warn('Rate limit exceeded');
+      throw new ApiError('Çok fazla istek. Lütfen bekleyin.', 429, errorData);
+
+    default:
+      logger.error('API request failed', new Error(errorMessage), {
+        status: response.status,
+        url: response.url,
+      });
+      throw new ApiError(errorMessage, response.status, errorData);
+  }
+}
+
+// =============================================================================
+// AUTHENTICATED FETCH
+// =============================================================================
+
 /**
  * Authenticated fetch wrapper
+ * Adds Authorization header and organization ID
  */
 export async function authenticatedFetch(
   url: string,
@@ -54,10 +225,8 @@ export async function authenticatedFetch(
   const token = getToken();
 
   if (!token) {
-    return new Response(JSON.stringify({ error: "Authentication token not found." }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    logger.warn('No authentication token found');
+    throw new ApiError('Kimlik doğrulama gerekli.', 401);
   }
 
   const fullUrl = resolveUrl(url);
@@ -68,157 +237,142 @@ export async function authenticatedFetch(
   // Add Organization ID from store if available (Client-side only)
   if (typeof window !== "undefined") {
     try {
-      // Use getState to avoid React hook rules outside components
       const orgId = useStore.getState().user?.organizationId;
       if (orgId) {
         headers.set("x-organization-id", orgId);
       }
-    } catch (e) {
+    } catch {
       // Ignore store errors during SSR or initialization
     }
   }
+
+  logger.debug('API Request', { method: options.method || 'GET', url: fullUrl });
 
   const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
 
-  if (response.status === 401) {
-    console.warn("Session expired or token is invalid. Clearing token.");
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-      window.location.href = '/login?session=expired';
-    }
-    throw new Error("Session expired. Please log in again.");
-  }
-
   return response;
 }
 
+// =============================================================================
+// HTTP METHODS
+// =============================================================================
+
+/**
+ * Authenticated GET request
+ */
 export async function authenticatedGet<T>(url: string): Promise<T> {
   const response = await authenticatedFetch(url, { method: "GET" });
-
-  if (!response.ok) {
-    // 401 is already handled in authenticatedFetch, but check again for safety
-    if (response.status === 401 && typeof window !== "undefined") {
-      // Don't redirect again if already redirected
-      if (!window.location.href.includes('/login')) {
-        window.location.href = '/login';
-      }
-      throw new Error("Session expired. Please log in again.");
-    }
-    if (response.status === 403) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Access denied: ${errorData.message || "Forbidden"}`);
-    }
-    // For 404 and other errors, throw error but don't redirect
-    const errorText = await response.text().catch(() => '');
-    throw new Error(`API request failed: ${response.status} ${errorText || ''}`);
-  }
-  return response.json() as Promise<T>;
+  return handleResponse<T>(response);
 }
 
+/**
+ * Authenticated POST request
+ */
 export async function authenticatedPost<T>(url: string, body?: unknown): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "POST",
     body: body ? JSON.stringify(body) : undefined,
   });
-
-  if (!response.ok) {
-     if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
-     throw new Error(`API request failed: ${response.status}`);
-  }
-  return response.json() as Promise<T>;
+  return handleResponse<T>(response);
 }
 
+/**
+ * Authenticated PUT request
+ */
 export async function authenticatedPut<T>(url: string, body?: unknown): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "PUT",
     body: body ? JSON.stringify(body) : undefined,
   });
-
-  if (!response.ok) {
-    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
-    throw new Error(`API request failed: ${response.status}`);
-  }
-  return response.json() as Promise<T>;
+  return handleResponse<T>(response);
 }
 
+/**
+ * Authenticated PATCH request
+ */
 export async function authenticatedPatch<T>(url: string, body?: unknown): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "PATCH",
     body: body ? JSON.stringify(body) : undefined,
   });
-
-  if (!response.ok) {
-    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
-    throw new Error(`API request failed: ${response.status}`);
-  }
-  return response.json() as Promise<T>;
+  return handleResponse<T>(response);
 }
 
-export async function authenticatedDelete(url: string): Promise<void> {
+/**
+ * Authenticated DELETE request
+ */
+export async function authenticatedDelete<T = void>(url: string): Promise<T> {
   const response = await authenticatedFetch(url, {
     method: "DELETE",
   });
-
-  if (!response.ok) {
-    if (response.status === 401 && typeof window !== "undefined") window.location.href = '/login';
-    if (response.status === 403) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Access denied: ${errorData.message || "Forbidden"}`);
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-  
-  // DELETE requests may not have a body
-  if (response.status === 204) {
-    return;
-  }
-  
-  // If there's a body, try to parse it (some APIs return data on DELETE)
-  const text = await response.text();
-  if (text) {
-    try {
-      return JSON.parse(text) as void;
-    } catch {
-      return;
-    }
-  }
+  return handleResponse<T>(response);
 }
 
+// =============================================================================
+// PUBLIC API (No Auth Required)
+// =============================================================================
+
+/**
+ * Public API methods (no authentication required)
+ */
 export const api = {
-  post: async (url: string, body: any) => {
+  /**
+   * Public POST request
+   */
+  post: async <T>(url: string, body: unknown): Promise<{ data: T }> => {
     const fullUrl = resolveUrl(url);
-    console.log("Making API request to:", fullUrl);
+    logger.debug('Public API POST', { url: fullUrl });
     
-    try {
-      const response = await fetch(fullUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Request failed with status ${response.status}`);
-      }
-      return { data: await response.json() };
-    } catch (err) {
-      console.error("API request failed:", err);
-      throw err;
-    }
+    const response = await fetch(fullUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    
+    const data = await handleResponse<T>(response);
+    return { data };
   },
-  get: async (url: string) => {
+
+  /**
+   * Public GET request
+   */
+  get: async <T>(url: string): Promise<{ data: T }> => {
     const fullUrl = resolveUrl(url);
+    logger.debug('Public API GET', { url: fullUrl });
+    
     const response = await fetch(fullUrl, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
     
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    return { data: await response.json() };
-  }
+    const data = await handleResponse<T>(response);
+    return { data };
+  },
 };
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+/**
+ * Check if an error is an ApiError
+ */
+export function isApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError;
+}
+
+/**
+ * Get user-friendly error message from any error
+ */
+export function getErrorMessage(error: unknown): string {
+  if (isApiError(error)) {
+    return error.getUserMessage();
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Beklenmeyen bir hata oluştu.';
+}

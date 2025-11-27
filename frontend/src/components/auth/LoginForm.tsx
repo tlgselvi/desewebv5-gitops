@@ -91,9 +91,11 @@ export function LoginForm() {
         throw new Error(data.message || data.error || "Giriş başarısız");
       }
 
-      // Save token to localStorage
+      // Save token to localStorage and cookie (for middleware)
       if (data.token) {
         localStorage.setItem("token", data.token);
+        // Set cookie for middleware authentication
+        document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       } else {
         throw new Error("Token alınamadı");
       }

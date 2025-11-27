@@ -1,7 +1,8 @@
 "use client";
 
 import {
-  LineChart,
+  LazyLineChart,
+  LazyAreaChart,
   Line,
   XAxis,
   YAxis,
@@ -9,12 +10,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  AreaChart,
   Area,
-  BarChart,
-  Bar,
   ReferenceLine,
-} from "recharts";
+} from "@/components/charts/LazyCharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -337,7 +335,7 @@ export function TelemetryVisualization({
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={filteredData}>
+                <LazyAreaChart data={filteredData}>
                   <defs>
                     <linearGradient id="tempGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
@@ -401,7 +399,7 @@ export function TelemetryVisualization({
                   />
                   <ReferenceLine yAxisId="right" y={7.0} stroke="#10b981" strokeDasharray="3 3" label={{ value: "pH Min", position: "topRight" }} />
                   <ReferenceLine yAxisId="right" y={7.8} stroke="#10b981" strokeDasharray="3 3" label={{ value: "pH Max", position: "topRight" }} />
-                </AreaChart>
+                </LazyAreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
@@ -415,7 +413,7 @@ export function TelemetryVisualization({
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={filteredData}>
+                  <LazyLineChart data={filteredData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                     <XAxis dataKey="time" stroke="#888888" fontSize={11} tickLine={false} />
                     <YAxis stroke="#888888" fontSize={11} tickLine={false} />
@@ -428,7 +426,7 @@ export function TelemetryVisualization({
                       strokeWidth={2}
                       dot={false}
                     />
-                  </LineChart>
+                  </LazyLineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -439,7 +437,7 @@ export function TelemetryVisualization({
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={filteredData}>
+                  <LazyLineChart data={filteredData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                     <XAxis dataKey="time" stroke="#888888" fontSize={11} tickLine={false} />
                     <YAxis stroke="#888888" fontSize={11} tickLine={false} />
@@ -454,7 +452,7 @@ export function TelemetryVisualization({
                     />
                     <ReferenceLine y={7.0} stroke="#10b981" strokeDasharray="3 3" />
                     <ReferenceLine y={7.8} stroke="#10b981" strokeDasharray="3 3" />
-                  </LineChart>
+                  </LazyLineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -467,7 +465,7 @@ export function TelemetryVisualization({
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={filteredData}>
+                  <LazyLineChart data={filteredData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                     <XAxis dataKey="time" stroke="#888888" fontSize={11} tickLine={false} />
                     <YAxis yAxisId="left" stroke="#888888" fontSize={11} tickLine={false} />
@@ -494,7 +492,7 @@ export function TelemetryVisualization({
                         dot={false}
                       />
                     )}
-                  </LineChart>
+                  </LazyLineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>

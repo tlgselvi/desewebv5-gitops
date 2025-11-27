@@ -11,8 +11,8 @@ interface McpLayoutProps {
 
 export function McpLayout({
   children,
-  title = "Dese EA Plan v6.8.1",
-  subtitle = "Kyverno Stabilizasyonu & MCP Faz 1 Revizyonu",
+  title = "Dese EA Plan v7.1.0",
+  subtitle = "Enterprise SaaS Platform & Production Ready",
   footerNote = "© 2025 Dese MCP",
 }: McpLayoutProps) {
   return (

@@ -225,7 +225,7 @@ router.get('/', async (req: Request, res: Response) => {
     const response: FullHealthResponse = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      version: process.env.APP_VERSION || '7.0.0',
+      version: process.env.APP_VERSION || '7.1.0',
       uptime: process.uptime(),
       checks: {
         database: dbCheck,

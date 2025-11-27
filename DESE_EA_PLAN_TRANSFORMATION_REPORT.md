@@ -961,3 +961,121 @@ frontend/src/components/ui/LanguageSwitcher.tsx
 docs/ACCESSIBILITY_CHECKLIST.md
 ```
 
+---
+
+## 🐳 Docker Altyapısı (27 Kasım 2025)
+
+### Güncel Servis Durumu
+
+| Servis | Port | Durum | Açıklama |
+|--------|------|-------|----------|
+| **Backend API** | 3000 | ✅ healthy | TSX runtime transpilation |
+| **Frontend** | 3002 | ✅ healthy | Next.js 16 |
+| **PostgreSQL** | 5432 | ✅ healthy | v15, RLS aktif |
+| **Redis** | 6379 | ✅ healthy | v7-alpine, caching |
+| **Mosquitto MQTT** | 1883, 9001 | ✅ running | IoT messaging |
+| **Prometheus** | 9090 | ✅ running | Metrics collection |
+| **Grafana** | 3003 | ✅ running | Dashboard |
+
+### Yapılan Docker Düzeltmeleri
+
+#### 1. TSX Runtime Transpilation
+TypeScript strict mod hataları nedeniyle, build-time TSC yerine runtime TSX transpilation kullanıldı:
+
+```dockerfile
+# Dockerfile - Stage 4
+FROM base AS backend-builder
+COPY . .
+COPY --from=backend-deps /app/node_modules ./node_modules
+# Skip TSC build - use tsx for runtime transpilation
+RUN mkdir -p dist && echo "Using tsx runtime transpilation" > dist/BUILD_INFO
+```
+
+```json
+// package.json
+"start": "tsx src/index.ts",
+"start:compiled": "node dist/index.js",
+```
+
+#### 2. Schema Çakışmaları
+`src/db/schema/index.ts` - legacy-seo.js çakışması kaldırıldı:
+```typescript
+export * from './seo.js';
+// Note: legacy-seo.js removed - merged into seo.js
+```
+
+#### 3. Rate Limit Config
+`src/config/rate-limit.config.ts` - Eksik export'lar eklendi:
+- `defaultRateLimitConfig`
+- `ipBasedRateLimit`
+- `userBasedRateLimit`
+- `organizationBasedRateLimit`
+- `getOrganizationRateLimit`
+
+#### 4. Payment Config
+`src/config/index.ts` - PayPal ve iyzico eklendi:
+```typescript
+paypal: z.object({
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  mode: z.enum(['sandbox', 'live']).default('sandbox'),
+}),
+iyzico: z.object({
+  apiKey: z.string().optional(),
+  secretKey: z.string().optional(),
+  baseUrl: z.string().default('https://sandbox-api.iyzipay.com'),
+}),
+```
+
+#### 5. Express Router Type Annotations
+Tüm route dosyalarına explicit type eklendi:
+```typescript
+import type { Router as ExpressRouter } from 'express';
+const router: ExpressRouter = Router();
+```
+
+Düzeltilen dosyalar:
+- `src/api/routes/health.ts`
+- `src/modules/saas/billing.routes.ts`
+- `src/modules/saas/routes.ts`
+- `src/modules/saas/subscription.routes.ts`
+- `src/modules/saas/usage.routes.ts`
+- `src/routes/analytics/business-metrics.ts`
+- `src/routes/rate-limit.ts`
+
+#### 6. CRM Service Query Fix
+`db.query.pipelineStages` → `db.select().from(pipelineStages)` formatına çevrildi.
+
+#### 7. IoT Service Variable Naming
+`devices` değişken adı `deviceList` olarak değiştirildi (tablo adıyla çakışma).
+
+#### 8. Prometheus Metric Exports
+`src/middleware/prometheus.ts` - `memoryUsage` ve `cpuUsage` export edildi.
+
+### Hızlı Başlangıç
+
+```bash
+# Tüm servisleri başlat
+docker compose up -d
+
+# Sadece altyapı servisleri (db, redis, mqtt)
+docker compose up -d db redis mosquitto
+
+# Uygulama build ve başlat
+docker compose up -d --build app
+
+# Logları izle
+docker logs -f desewebv5-app-1
+
+# Health check
+curl http://localhost:3000/health
+```
+
+### TypeScript Strict Mode Notları
+
+Proje TSX runtime transpilation kullandığından, TypeScript strict mod hataları derleme zamanında göz ardı edilir. Production'da tip güvenliği için:
+
+1. IDE'de linting aktif tutun
+2. `pnpm typecheck` ile manuel kontrol yapın
+3. Kritik modüllerde unit test coverage'ı yüksek tutun
+

@@ -221,7 +221,7 @@ export default function FinBotPage() {
               variant="outline"
               className="justify-center border-blue-200 text-blue-700 dark:border-blue-500/40 dark:text-blue-200"
             >
-              Finans raporu · v6.8.1
+              Finans raporu · v7.1.0
             </Badge>
           </div>
         </McpSection>

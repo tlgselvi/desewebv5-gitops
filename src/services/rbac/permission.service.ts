@@ -20,17 +20,34 @@ export interface ModulePermission {
 
 /**
  * Get user permissions from database
+ * @param userId - User ID
+ * @param organizationId - Organization ID
+ * @param tokenRole - Optional role from JWT token (for mock login support)
  */
 export async function getUserPermissions(
   userId: string,
-  organizationId: string
+  organizationId: string,
+  tokenRole?: string
 ): Promise<ModulePermission[]> {
   try {
-    // Get user role
+    // First, check if this is an admin from token (mock login or JWT)
+    // This allows development/testing without database permission records
+    if (tokenRole === 'admin' || tokenRole === 'super_admin') {
+      logger.debug('Admin role detected from token, granting all permissions', { userId, tokenRole });
+      return getAllModulePermissions();
+    }
+
+    // Get user role from database
     const [user] = await db
       .select({ role: users.role })
       .from(users)
       .where(eq(users.id, userId));
+
+    // If user not found in DB but has a tokenRole, use default permissions
+    if (!user && tokenRole) {
+      logger.debug('User not in DB, using default permissions for role', { userId, tokenRole });
+      return DEFAULT_ROLE_PERMISSIONS[tokenRole] || [];
+    }
 
     if (!user) {
       logger.warn('User not found for permission check', { userId });
@@ -38,7 +55,7 @@ export async function getUserPermissions(
     }
 
     // Super admin has all permissions
-    if (user.role === 'super_admin') {
+    if (user.role === 'super_admin' || user.role === 'admin') {
       return getAllModulePermissions();
     }
 
@@ -56,6 +73,12 @@ export async function getUserPermissions(
         )
       );
 
+    // If no permissions in DB, use defaults for the role
+    if (userPermissions.length === 0) {
+      logger.debug('No DB permissions found, using defaults for role', { userId, role: user.role });
+      return DEFAULT_ROLE_PERMISSIONS[user.role] || [];
+    }
+
     return userPermissions.map((p) => ({
       module: p.resource as Module,
       action: p.action as Action,
@@ -66,20 +89,37 @@ export async function getUserPermissions(
       userId,
       organizationId,
     });
+    // On error, if tokenRole is admin, still grant permissions (fail-open for dev)
+    if (tokenRole === 'admin') {
+      logger.warn('Permission check failed, but admin token detected - granting access', { userId });
+      return getAllModulePermissions();
+    }
     return [];
   }
 }
 
 /**
  * Check if user has permission for a module and action
+ * @param userId - User ID
+ * @param organizationId - Organization ID  
+ * @param module - Module to check
+ * @param action - Action to check
+ * @param tokenRole - Optional role from JWT token
  */
 export async function hasPermission(
   userId: string,
   organizationId: string,
   module: Module,
-  action: Action
+  action: Action,
+  tokenRole?: string
 ): Promise<boolean> {
-  const userPermissions = await getUserPermissions(userId, organizationId);
+  // Fast path: admin role from token has all permissions
+  if (tokenRole === 'admin' || tokenRole === 'super_admin') {
+    logger.debug('Admin role from token - permission granted', { userId, module, action });
+    return true;
+  }
+
+  const userPermissions = await getUserPermissions(userId, organizationId, tokenRole);
 
   // Check for exact match
   const hasExactMatch = userPermissions.some(

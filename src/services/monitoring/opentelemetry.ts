@@ -73,7 +73,7 @@ class OpenTelemetryService {
 
   constructor() {
     this.serviceName = process.env.OTEL_SERVICE_NAME || 'dese-ea-plan';
-    this.serviceVersion = process.env.npm_package_version || '7.0.0';
+    this.serviceVersion = process.env.npm_package_version || '7.1.0';
     this.environment = config.nodeEnv;
     this.exportEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://tempo:4318/v1/traces';
   }

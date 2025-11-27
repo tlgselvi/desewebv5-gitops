@@ -70,7 +70,7 @@ export default function MainNavigation() {
               className="flex items-center gap-3 text-lg font-semibold text-gray-900"
             >
               Dese EA Plan
-              <Badge variant="outline">v6.8.1</Badge>
+              <Badge variant="outline">v7.1.0</Badge>
             </Link>
           </div>
         </div>

@@ -16,16 +16,12 @@ import {
   Briefcase,
 } from "lucide-react"
 
-interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
-  items: {
-    href: string
-    title: string
-    icon: React.ComponentType<{ className?: string }>
-    roles?: string[] // Optional: restricted to these roles
-  }[]
+interface AppSidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Callback when navigation occurs (used for mobile menu close) */
+  onNavigate?: () => void;
 }
 
-export function AppSidebar({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function AppSidebar({ className, onNavigate, ...props }: AppSidebarProps) {
   const pathname = usePathname()
   const user = useStore((state) => state.user)
 
@@ -129,7 +125,11 @@ export function AppSidebar({ className, ...props }: React.HTMLAttributes<HTMLDiv
             )}
             asChild
           >
-            <Link href={item.href} prefetch={false}>
+            <Link 
+              href={item.href} 
+              prefetch={false}
+              onClick={onNavigate}
+            >
               <IconComponent className={iconClassName} />
               {item.title}
             </Link>

@@ -6,8 +6,31 @@ import Providers from "./providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Dese EA Plan v5",
-  description: "CPT Optimization Domain & AIOps Platform",
+  title: {
+    default: "Dese EA Plan v7.1 | Enterprise SaaS Platform",
+    template: "%s | Dese EA Plan",
+  },
+  description: "GitOps ve AIOps operasyonlarınızı tek panelden yönetin. FinBot, MuBot, IoT ve CRM modülleri ile kurumsal planlama.",
+  keywords: ["ERP", "SaaS", "AIOps", "GitOps", "Finans", "IoT", "CRM", "MCP", "Enterprise"],
+  authors: [{ name: "Dese Digital Team" }],
+  creator: "Dese Digital",
+  publisher: "Dese Digital",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    siteName: "Dese EA Plan",
+    title: "Dese EA Plan v7.1 | Enterprise SaaS Platform",
+    description: "GitOps ve AIOps operasyonlarınızı tek panelden yönetin",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dese EA Plan v7.1",
+    description: "Enterprise SaaS Platform - GitOps & AIOps",
+  },
 }
 
 export default function RootLayout({
@@ -18,8 +41,7 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
-        {/* Accessibility: Skip to main content link */}
-        <link rel="preload" href="/" as="document" />
+        {/* Favicon and meta tags are handled by Next.js metadata */}
       </head>
       <body className={inter.className} suppressHydrationWarning>
         {/* ARIA live region for screen reader announcements */}

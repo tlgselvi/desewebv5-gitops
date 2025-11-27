@@ -310,11 +310,11 @@ setImmediate(() => {
 
 // Start server with database connection test
 const server = httpServer.listen(config.port, async () => {
-  logger.info(`🚀 Dese EA Plan v7.0.0 server started`, {
+  logger.info(`🚀 Dese EA Plan v7.1.0 server started`, {
     port: config.port,
     environment: config.nodeEnv,
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "7.0.0",
+      process.env.APP_VERSION || process.env.npm_package_version || "7.1.0",
     domain: "cpt-optimization",
   });
 

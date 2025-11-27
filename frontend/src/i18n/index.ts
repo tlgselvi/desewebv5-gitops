@@ -1,8 +1,17 @@
 /**
- * Internationalization (i18n) Configuration
- * DESE EA PLAN v7.0
+ * Internationalization (i18n) System
+ * DESE EA PLAN v7.1
  * 
- * Supports: Turkish (tr), English (en)
+ * Provides multi-language support with Zustand-based state management.
+ * Supports Turkish (tr) and English (en) locales.
+ * 
+ * @example
+ * import { useI18n } from '@/i18n';
+ * 
+ * function MyComponent() {
+ *   const { t, locale, setLocale } = useI18n();
+ *   return <h1>{t('common.welcome')}</h1>;
+ * }
  */
 
 import { create } from 'zustand';
@@ -18,373 +27,223 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   en: 'English',
 };
 
-// Translation types
-type NestedTranslations = {
-  [key: string]: string | NestedTranslations;
+// Translation keys type
+type TranslationKey = string;
+
+// Translations dictionary
+const translations: Record<Locale, Record<TranslationKey, string>> = {
+  tr: {
+    // Common
+    'common.welcome': 'Hoş Geldiniz',
+    'common.search': 'Ara...',
+    'common.searchPlaceholder': 'Ara... (Ctrl+K veya /)',
+    'common.loading': 'Yükleniyor...',
+    'common.error': 'Bir hata oluştu',
+    'common.retry': 'Tekrar Dene',
+    'common.save': 'Kaydet',
+    'common.cancel': 'İptal',
+    'common.delete': 'Sil',
+    'common.edit': 'Düzenle',
+    'common.create': 'Oluştur',
+    'common.close': 'Kapat',
+    'common.confirm': 'Onayla',
+    'common.back': 'Geri',
+    'common.next': 'İleri',
+    'common.yes': 'Evet',
+    'common.no': 'Hayır',
+    'common.noResults': 'Sonuç bulunamadı',
+    'common.actions': 'İşlemler',
+    
+    // Auth
+    'auth.login': 'Giriş Yap',
+    'auth.logout': 'Çıkış Yap',
+    'auth.email': 'E-posta',
+    'auth.password': 'Şifre',
+    'auth.forgotPassword': 'Şifremi Unuttum',
+    'auth.loginSuccess': 'Giriş başarılı!',
+    'auth.loginFailed': 'Giriş başarısız',
+    'auth.invalidCredentials': 'Geçersiz e-posta veya şifre',
+    'auth.sessionExpired': 'Oturum süresi doldu. Lütfen tekrar giriş yapın.',
+    'auth.googleLogin': 'Google ile Giriş Yap',
+    
+    // Navigation
+    'nav.dashboard': 'Dashboard',
+    'nav.home': 'Ana Sayfa',
+    'nav.settings': 'Ayarlar',
+    'nav.profile': 'Profil',
+    'nav.help': 'Yardım',
+    'nav.modules': 'Modüller',
+    
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.welcome': 'Hoş Geldiniz',
+    'dashboard.overview': 'Genel Bakış',
+    'dashboard.recentActivity': 'Son Aktiviteler',
+    'dashboard.performance': 'Performans Metrikleri',
+    
+    // MCP Modules
+    'mcp.finbot': 'FinBot MCP',
+    'mcp.finbot.description': 'Finansal planlama ve gelir projeksiyonları',
+    'mcp.mubot': 'MuBot MCP',
+    'mcp.mubot.description': 'Muhasebe ve ERP entegrasyonları',
+    'mcp.aiops': 'Jarvis AIOps MCP',
+    'mcp.aiops.description': 'Operasyon kontrol merkezi',
+    'mcp.iot': 'IoT MCP',
+    'mcp.iot.description': 'IoT cihaz yönetimi',
+    'mcp.hr': 'HR MCP',
+    'mcp.hr.description': 'İnsan kaynakları yönetimi',
+    'mcp.crm': 'CRM MCP',
+    'mcp.crm.description': 'Müşteri ilişkileri yönetimi',
+    'mcp.inventory': 'Inventory MCP',
+    'mcp.inventory.description': 'Stok ve envanter yönetimi',
+    
+    // Settings
+    'settings.title': 'Ayarlar',
+    'settings.language': 'Dil',
+    'settings.theme': 'Tema',
+    'settings.themeLight': 'Açık',
+    'settings.themeDark': 'Koyu',
+    'settings.themeSystem': 'Sistem',
+    'settings.notifications': 'Bildirimler',
+    'settings.integrations': 'Entegrasyonlar',
+    
+    // Errors
+    'error.generic': 'Beklenmeyen bir hata oluştu',
+    'error.network': 'Ağ bağlantısı hatası',
+    'error.notFound': 'Sayfa bulunamadı',
+    'error.unauthorized': 'Yetkisiz erişim',
+    'error.forbidden': 'Erişim reddedildi',
+    'error.serverError': 'Sunucu hatası',
+    'error.tryAgain': 'Lütfen tekrar deneyin',
+    
+    // Tables
+    'table.noData': 'Veri bulunamadı',
+    'table.loading': 'Veriler yükleniyor...',
+    'table.rowsPerPage': 'Sayfa başına satır',
+    'table.of': '/',
+    'table.page': 'Sayfa',
+    
+    // Forms
+    'form.required': 'Bu alan zorunludur',
+    'form.invalidEmail': 'Geçerli bir e-posta adresi giriniz',
+    'form.minLength': 'En az {min} karakter olmalıdır',
+    'form.maxLength': 'En fazla {max} karakter olabilir',
+  },
+  
+  en: {
+    // Common
+    'common.welcome': 'Welcome',
+    'common.search': 'Search...',
+    'common.searchPlaceholder': 'Search... (Ctrl+K or /)',
+    'common.loading': 'Loading...',
+    'common.error': 'An error occurred',
+    'common.retry': 'Retry',
+    'common.save': 'Save',
+    'common.cancel': 'Cancel',
+    'common.delete': 'Delete',
+    'common.edit': 'Edit',
+    'common.create': 'Create',
+    'common.close': 'Close',
+    'common.confirm': 'Confirm',
+    'common.back': 'Back',
+    'common.next': 'Next',
+    'common.yes': 'Yes',
+    'common.no': 'No',
+    'common.noResults': 'No results found',
+    'common.actions': 'Actions',
+    
+    // Auth
+    'auth.login': 'Login',
+    'auth.logout': 'Logout',
+    'auth.email': 'Email',
+    'auth.password': 'Password',
+    'auth.forgotPassword': 'Forgot Password',
+    'auth.loginSuccess': 'Login successful!',
+    'auth.loginFailed': 'Login failed',
+    'auth.invalidCredentials': 'Invalid email or password',
+    'auth.sessionExpired': 'Session expired. Please log in again.',
+    'auth.googleLogin': 'Login with Google',
+    
+    // Navigation
+    'nav.dashboard': 'Dashboard',
+    'nav.home': 'Home',
+    'nav.settings': 'Settings',
+    'nav.profile': 'Profile',
+    'nav.help': 'Help',
+    'nav.modules': 'Modules',
+    
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.welcome': 'Welcome',
+    'dashboard.overview': 'Overview',
+    'dashboard.recentActivity': 'Recent Activity',
+    'dashboard.performance': 'Performance Metrics',
+    
+    // MCP Modules
+    'mcp.finbot': 'FinBot MCP',
+    'mcp.finbot.description': 'Financial planning and revenue projections',
+    'mcp.mubot': 'MuBot MCP',
+    'mcp.mubot.description': 'Accounting and ERP integrations',
+    'mcp.aiops': 'Jarvis AIOps MCP',
+    'mcp.aiops.description': 'Operations control center',
+    'mcp.iot': 'IoT MCP',
+    'mcp.iot.description': 'IoT device management',
+    'mcp.hr': 'HR MCP',
+    'mcp.hr.description': 'Human resources management',
+    'mcp.crm': 'CRM MCP',
+    'mcp.crm.description': 'Customer relationship management',
+    'mcp.inventory': 'Inventory MCP',
+    'mcp.inventory.description': 'Stock and inventory management',
+    
+    // Settings
+    'settings.title': 'Settings',
+    'settings.language': 'Language',
+    'settings.theme': 'Theme',
+    'settings.themeLight': 'Light',
+    'settings.themeDark': 'Dark',
+    'settings.themeSystem': 'System',
+    'settings.notifications': 'Notifications',
+    'settings.integrations': 'Integrations',
+    
+    // Errors
+    'error.generic': 'An unexpected error occurred',
+    'error.network': 'Network connection error',
+    'error.notFound': 'Page not found',
+    'error.unauthorized': 'Unauthorized access',
+    'error.forbidden': 'Access denied',
+    'error.serverError': 'Server error',
+    'error.tryAgain': 'Please try again',
+    
+    // Tables
+    'table.noData': 'No data found',
+    'table.loading': 'Loading data...',
+    'table.rowsPerPage': 'Rows per page',
+    'table.of': 'of',
+    'table.page': 'Page',
+    
+    // Forms
+    'form.required': 'This field is required',
+    'form.invalidEmail': 'Please enter a valid email address',
+    'form.minLength': 'Must be at least {min} characters',
+    'form.maxLength': 'Must be at most {max} characters',
+  },
 };
 
-// Translations store
-interface I18nStore {
+// i18n Store Interface
+interface I18nState {
   locale: Locale;
-  translations: Record<Locale, NestedTranslations>;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-// Turkish translations
-const tr: NestedTranslations = {
-  common: {
-    save: 'Kaydet',
-    cancel: 'İptal',
-    delete: 'Sil',
-    edit: 'Düzenle',
-    add: 'Ekle',
-    search: 'Ara',
-    filter: 'Filtrele',
-    export: 'Dışa Aktar',
-    import: 'İçe Aktar',
-    loading: 'Yükleniyor...',
-    error: 'Hata',
-    success: 'Başarılı',
-    warning: 'Uyarı',
-    info: 'Bilgi',
-    yes: 'Evet',
-    no: 'Hayır',
-    confirm: 'Onayla',
-    back: 'Geri',
-    next: 'İleri',
-    finish: 'Bitir',
-    close: 'Kapat',
-    submit: 'Gönder',
-    reset: 'Sıfırla',
-    all: 'Tümü',
-    none: 'Hiçbiri',
-    select: 'Seç',
-    noData: 'Veri bulunamadı',
-    actions: 'İşlemler',
-  },
-  auth: {
-    login: 'Giriş Yap',
-    logout: 'Çıkış Yap',
-    register: 'Kayıt Ol',
-    forgotPassword: 'Şifremi Unuttum',
-    resetPassword: 'Şifre Sıfırla',
-    email: 'E-posta',
-    password: 'Şifre',
-    confirmPassword: 'Şifre Tekrar',
-    rememberMe: 'Beni Hatırla',
-    loginSuccess: 'Başarıyla giriş yapıldı',
-    loginError: 'Giriş yapılamadı',
-    logoutSuccess: 'Başarıyla çıkış yapıldı',
-    invalidCredentials: 'Geçersiz e-posta veya şifre',
-  },
-  nav: {
-    dashboard: 'Gösterge Paneli',
-    finance: 'Finans',
-    crm: 'CRM',
-    inventory: 'Envanter',
-    hr: 'İnsan Kaynakları',
-    iot: 'IoT',
-    service: 'Servis',
-    settings: 'Ayarlar',
-    profile: 'Profil',
-    help: 'Yardım',
-  },
-  finance: {
-    title: 'Finans Yönetimi',
-    accounts: 'Hesaplar',
-    invoices: 'Faturalar',
-    transactions: 'İşlemler',
-    reports: 'Raporlar',
-    newAccount: 'Yeni Hesap',
-    newInvoice: 'Yeni Fatura',
-    totalBalance: 'Toplam Bakiye',
-    income: 'Gelir',
-    expense: 'Gider',
-    profit: 'Kar',
-  },
-  crm: {
-    title: 'Müşteri İlişkileri',
-    contacts: 'Kişiler',
-    deals: 'Fırsatlar',
-    pipeline: 'Pipeline',
-    activities: 'Aktiviteler',
-    newContact: 'Yeni Kişi',
-    newDeal: 'Yeni Fırsat',
-    totalContacts: 'Toplam Kişi',
-    activeDeals: 'Aktif Fırsatlar',
-    wonDeals: 'Kazanılan',
-    lostDeals: 'Kaybedilen',
-  },
-  inventory: {
-    title: 'Envanter Yönetimi',
-    products: 'Ürünler',
-    stock: 'Stok',
-    warehouses: 'Depolar',
-    movements: 'Hareketler',
-    newProduct: 'Yeni Ürün',
-    lowStock: 'Düşük Stok',
-    outOfStock: 'Stokta Yok',
-    totalProducts: 'Toplam Ürün',
-  },
-  hr: {
-    title: 'İnsan Kaynakları',
-    employees: 'Çalışanlar',
-    departments: 'Departmanlar',
-    payroll: 'Bordro',
-    leaves: 'İzinler',
-    newEmployee: 'Yeni Çalışan',
-    totalEmployees: 'Toplam Çalışan',
-    activeEmployees: 'Aktif Çalışan',
-  },
-  iot: {
-    title: 'IoT Yönetimi',
-    devices: 'Cihazlar',
-    telemetry: 'Telemetri',
-    alerts: 'Uyarılar',
-    rules: 'Kurallar',
-    newDevice: 'Yeni Cihaz',
-    online: 'Çevrimiçi',
-    offline: 'Çevrimdışı',
-    totalDevices: 'Toplam Cihaz',
-  },
-  service: {
-    title: 'Servis Yönetimi',
-    requests: 'Talepler',
-    technicians: 'Teknisyenler',
-    visits: 'Ziyaretler',
-    maintenance: 'Bakım',
-    newRequest: 'Yeni Talep',
-    pending: 'Beklemede',
-    inProgress: 'Devam Ediyor',
-    completed: 'Tamamlandı',
-  },
-  settings: {
-    title: 'Ayarlar',
-    general: 'Genel',
-    organization: 'Organizasyon',
-    users: 'Kullanıcılar',
-    roles: 'Roller',
-    integrations: 'Entegrasyonlar',
-    billing: 'Faturalama',
-    security: 'Güvenlik',
-    notifications: 'Bildirimler',
-    language: 'Dil',
-    theme: 'Tema',
-    timezone: 'Saat Dilimi',
-  },
-  validation: {
-    required: 'Bu alan zorunludur',
-    email: 'Geçerli bir e-posta adresi girin',
-    minLength: 'En az {min} karakter olmalıdır',
-    maxLength: 'En fazla {max} karakter olabilir',
-    min: 'En az {min} olmalıdır',
-    max: 'En fazla {max} olabilir',
-    pattern: 'Geçersiz format',
-    unique: 'Bu değer zaten kullanılıyor',
-  },
-  errors: {
-    generic: 'Bir hata oluştu',
-    network: 'Ağ hatası',
-    unauthorized: 'Yetkisiz erişim',
-    forbidden: 'Erişim reddedildi',
-    notFound: 'Bulunamadı',
-    serverError: 'Sunucu hatası',
-    timeout: 'İstek zaman aşımına uğradı',
-  },
-  dates: {
-    today: 'Bugün',
-    yesterday: 'Dün',
-    tomorrow: 'Yarın',
-    thisWeek: 'Bu Hafta',
-    thisMonth: 'Bu Ay',
-    thisYear: 'Bu Yıl',
-    lastWeek: 'Geçen Hafta',
-    lastMonth: 'Geçen Ay',
-    lastYear: 'Geçen Yıl',
-  },
-};
-
-// English translations
-const en: NestedTranslations = {
-  common: {
-    save: 'Save',
-    cancel: 'Cancel',
-    delete: 'Delete',
-    edit: 'Edit',
-    add: 'Add',
-    search: 'Search',
-    filter: 'Filter',
-    export: 'Export',
-    import: 'Import',
-    loading: 'Loading...',
-    error: 'Error',
-    success: 'Success',
-    warning: 'Warning',
-    info: 'Info',
-    yes: 'Yes',
-    no: 'No',
-    confirm: 'Confirm',
-    back: 'Back',
-    next: 'Next',
-    finish: 'Finish',
-    close: 'Close',
-    submit: 'Submit',
-    reset: 'Reset',
-    all: 'All',
-    none: 'None',
-    select: 'Select',
-    noData: 'No data found',
-    actions: 'Actions',
-  },
-  auth: {
-    login: 'Log In',
-    logout: 'Log Out',
-    register: 'Register',
-    forgotPassword: 'Forgot Password',
-    resetPassword: 'Reset Password',
-    email: 'Email',
-    password: 'Password',
-    confirmPassword: 'Confirm Password',
-    rememberMe: 'Remember Me',
-    loginSuccess: 'Successfully logged in',
-    loginError: 'Login failed',
-    logoutSuccess: 'Successfully logged out',
-    invalidCredentials: 'Invalid email or password',
-  },
-  nav: {
-    dashboard: 'Dashboard',
-    finance: 'Finance',
-    crm: 'CRM',
-    inventory: 'Inventory',
-    hr: 'Human Resources',
-    iot: 'IoT',
-    service: 'Service',
-    settings: 'Settings',
-    profile: 'Profile',
-    help: 'Help',
-  },
-  finance: {
-    title: 'Finance Management',
-    accounts: 'Accounts',
-    invoices: 'Invoices',
-    transactions: 'Transactions',
-    reports: 'Reports',
-    newAccount: 'New Account',
-    newInvoice: 'New Invoice',
-    totalBalance: 'Total Balance',
-    income: 'Income',
-    expense: 'Expense',
-    profit: 'Profit',
-  },
-  crm: {
-    title: 'Customer Relations',
-    contacts: 'Contacts',
-    deals: 'Deals',
-    pipeline: 'Pipeline',
-    activities: 'Activities',
-    newContact: 'New Contact',
-    newDeal: 'New Deal',
-    totalContacts: 'Total Contacts',
-    activeDeals: 'Active Deals',
-    wonDeals: 'Won',
-    lostDeals: 'Lost',
-  },
-  inventory: {
-    title: 'Inventory Management',
-    products: 'Products',
-    stock: 'Stock',
-    warehouses: 'Warehouses',
-    movements: 'Movements',
-    newProduct: 'New Product',
-    lowStock: 'Low Stock',
-    outOfStock: 'Out of Stock',
-    totalProducts: 'Total Products',
-  },
-  hr: {
-    title: 'Human Resources',
-    employees: 'Employees',
-    departments: 'Departments',
-    payroll: 'Payroll',
-    leaves: 'Leaves',
-    newEmployee: 'New Employee',
-    totalEmployees: 'Total Employees',
-    activeEmployees: 'Active Employees',
-  },
-  iot: {
-    title: 'IoT Management',
-    devices: 'Devices',
-    telemetry: 'Telemetry',
-    alerts: 'Alerts',
-    rules: 'Rules',
-    newDevice: 'New Device',
-    online: 'Online',
-    offline: 'Offline',
-    totalDevices: 'Total Devices',
-  },
-  service: {
-    title: 'Service Management',
-    requests: 'Requests',
-    technicians: 'Technicians',
-    visits: 'Visits',
-    maintenance: 'Maintenance',
-    newRequest: 'New Request',
-    pending: 'Pending',
-    inProgress: 'In Progress',
-    completed: 'Completed',
-  },
-  settings: {
-    title: 'Settings',
-    general: 'General',
-    organization: 'Organization',
-    users: 'Users',
-    roles: 'Roles',
-    integrations: 'Integrations',
-    billing: 'Billing',
-    security: 'Security',
-    notifications: 'Notifications',
-    language: 'Language',
-    theme: 'Theme',
-    timezone: 'Timezone',
-  },
-  validation: {
-    required: 'This field is required',
-    email: 'Enter a valid email address',
-    minLength: 'Must be at least {min} characters',
-    maxLength: 'Must be at most {max} characters',
-    min: 'Must be at least {min}',
-    max: 'Must be at most {max}',
-    pattern: 'Invalid format',
-    unique: 'This value is already in use',
-  },
-  errors: {
-    generic: 'An error occurred',
-    network: 'Network error',
-    unauthorized: 'Unauthorized access',
-    forbidden: 'Access denied',
-    notFound: 'Not found',
-    serverError: 'Server error',
-    timeout: 'Request timed out',
-  },
-  dates: {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    tomorrow: 'Tomorrow',
-    thisWeek: 'This Week',
-    thisMonth: 'This Month',
-    thisYear: 'This Year',
-    lastWeek: 'Last Week',
-    lastMonth: 'Last Month',
-    lastYear: 'Last Year',
-  },
-};
-
-// i18n store
-export const useI18n = create<I18nStore>()(
+/**
+ * i18n Hook with Zustand
+ * Provides locale state and translation function
+ */
+export const useI18n = create<I18nState>()(
   persist(
     (set, get) => ({
-      locale: 'tr' as Locale,
-      translations: { tr, en },
+      locale: 'tr',
       
       setLocale: (locale: Locale) => {
         set({ locale });
@@ -394,84 +253,44 @@ export const useI18n = create<I18nStore>()(
         }
       },
       
-      t: (key: string, params?: Record<string, string | number>): string => {
-        const { locale, translations } = get();
-        const keys = key.split('.');
+      t: (key: string, params?: Record<string, string | number>) => {
+        const { locale } = get();
+        let translation = translations[locale][key];
         
-        let value: string | NestedTranslations = translations[locale];
-        
-        for (const k of keys) {
-          if (typeof value === 'object' && value !== null) {
-            value = value[k];
-          } else {
-            return key; // Key not found
-          }
+        // Fallback to English if key not found
+        if (!translation) {
+          translation = translations.en[key];
         }
         
-        if (typeof value !== 'string') {
+        // Return key if translation not found
+        if (!translation) {
+          console.warn(`Translation missing for key: ${key}`);
           return key;
         }
         
         // Replace parameters
         if (params) {
-          return Object.entries(params).reduce(
-            (str, [paramKey, paramValue]) => 
-              str.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue)),
-            value
-          );
+          Object.entries(params).forEach(([paramKey, value]) => {
+            translation = translation.replace(`{${paramKey}}`, String(value));
+          });
         }
         
-        return value;
+        return translation;
       },
     }),
     {
-      name: 'i18n-storage',
+      name: 'dese-i18n',
       partialize: (state) => ({ locale: state.locale }),
     }
   )
 );
 
-// Utility hooks
-export const useTranslation = () => {
-  const { t, locale, setLocale } = useI18n();
-  return { t, locale, setLocale };
-};
+/**
+ * Get translation without hook (for non-React contexts)
+ */
+export function getTranslation(key: string, locale?: Locale): string {
+  const currentLocale = locale || useI18n.getState().locale;
+  return translations[currentLocale][key] || translations.en[key] || key;
+}
 
-// Format utilities
-export const formatDate = (date: Date, locale: Locale): string => {
-  return new Intl.DateTimeFormat(locale === 'tr' ? 'tr-TR' : 'en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(date);
-};
-
-export const formatDateTime = (date: Date, locale: Locale): string => {
-  return new Intl.DateTimeFormat(locale === 'tr' ? 'tr-TR' : 'en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-};
-
-export const formatCurrency = (amount: number, currency: string, locale: Locale): string => {
-  return new Intl.NumberFormat(locale === 'tr' ? 'tr-TR' : 'en-US', {
-    style: 'currency',
-    currency,
-  }).format(amount);
-};
-
-export const formatNumber = (num: number, locale: Locale): string => {
-  return new Intl.NumberFormat(locale === 'tr' ? 'tr-TR' : 'en-US').format(num);
-};
-
-export const formatPercent = (num: number, locale: Locale): string => {
-  return new Intl.NumberFormat(locale === 'tr' ? 'tr-TR' : 'en-US', {
-    style: 'percent',
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(num / 100);
-};
-
+export default useI18n;

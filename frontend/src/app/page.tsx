@@ -27,9 +27,10 @@ import { Card } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { getHomeDashboardData, HomeDashboardDto } from "@/lib/dashboard-service";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { LucideIcon } from "lucide-react";
 
-// Map icon strings to components
-const ICON_MAP: Record<string, any> = {
+// Map icon strings to components - properly typed
+const ICON_MAP: Record<string, LucideIcon> = {
   Activity,
   ShieldCheck,
   Zap,
@@ -223,7 +224,7 @@ export default function Home() {
               <div className="space-y-4">
                 <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
                   <Sparkles className="mr-2 h-3 w-3" />
-                  v6.8.1 - Kyverno Stabilizasyonu
+                  v7.1.0 - Enterprise SaaS Platform
                 </Badge>
                 <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
                   GitOps ve AIOps operasyonlarınızı tek panelden yönetin
@@ -265,16 +266,16 @@ export default function Home() {
                 ) : (
                   <>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{data?.kpis[0]?.value || "99.9%"}</div>
-                      <div className="text-xs text-blue-200">Uptime</div>
+                      <div className="text-2xl font-bold text-white">{data?.kpis[0]?.value || "₺0"}</div>
+                      <div className="text-xs text-blue-200">Toplam Gelir</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{data?.kpis[1]?.value || "24/24"}</div>
-                      <div className="text-xs text-blue-200">Policies</div>
+                      <div className="text-2xl font-bold text-white">{data?.kpis[1]?.value || "₺0"}</div>
+                      <div className="text-xs text-blue-200">Toplam Gider</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-white">{data?.kpis[2]?.value || "12m"}</div>
-                      <div className="text-xs text-blue-200">Deploy Time</div>
+                      <div className="text-2xl font-bold text-white">{data?.kpis[2]?.value || "₺0"}</div>
+                      <div className="text-xs text-blue-200">Net Kar</div>
                     </div>
                   </>
                 )}
@@ -385,7 +386,7 @@ export default function Home() {
               Modül Ekosistemi
             </h2>
             <p className="mt-2 text-base text-gray-600">
-              MCP sunucuları ve analitik katmanları v6.8.1 revizyonuna göre gruplandı
+              MCP sunucuları ve analitik katmanları v7.1.0 revizyonuna göre gruplandı
             </p>
           </div>
           <Button variant="outline" size="sm" className="self-start sm:self-auto" asChild>

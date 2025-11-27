@@ -8,8 +8,8 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Dese EA Plan v7.0 Enterprise API",
-      version: "7.0.0",
+      title: "Dese EA Plan v7.1 Enterprise API",
+      version: "7.1.0",
       description:
         "Enterprise ERP & AI Platform (Finance, CRM, IoT, SaaS) API Documentation",
       contact: {

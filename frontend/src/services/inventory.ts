@@ -1,49 +1,31 @@
 import { authenticatedGet, authenticatedPost } from "@/lib/api";
+import { logger } from "@/lib/logger";
+import type {
+  Product,
+  CreateProductDTO,
+  UpdateProductDTO,
+  Warehouse,
+  StockLevel,
+  StockMovement,
+  StockMovementDTO,
+  TransferStockDTO,
+  InventorySummary,
+  LowStockAlert,
+} from "@/types/inventory";
 
-export interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  category?: string;
-  description?: string;
-  unit?: string;
-  price?: number;
-  organizationId: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface StockLevel {
-  productName: string;
-  sku: string;
-  warehouse: string;
-  quantity: number;
-}
-
-export interface CreateProductDTO {
-  name: string;
-  sku: string;
-  category?: string;
-  description?: string;
-  unit?: string;
-  price?: number;
-}
-
-export interface StockMovementDTO {
-  warehouseId: string;
-  productId: string;
-  type: 'in' | 'out' | 'adjustment';
-  quantity: number;
-  notes?: string;
-  referenceId?: string;
-}
-
-export interface TransferStockDTO {
-  fromWarehouseId: string;
-  toWarehouseId: string;
-  productId: string;
-  quantity: number;
-}
+// Re-export types for backward compatibility
+export type {
+  Product,
+  CreateProductDTO,
+  UpdateProductDTO,
+  Warehouse,
+  StockLevel,
+  StockMovement,
+  StockMovementDTO,
+  TransferStockDTO,
+  InventorySummary,
+  LowStockAlert,
+} from "@/types/inventory";
 
 export const inventoryService = {
   /**

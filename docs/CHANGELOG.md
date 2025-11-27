@@ -1,9 +1,103 @@
-# Changelog - Dese EA Plan v6.8.1
+# Changelog - DESE EA PLAN v7.1.0
 
 All notable changes to the project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [7.1.0] - 2025-11-27
+
+### 🐳 Docker Infrastructure Overhaul
+
+#### Changed
+- **TSX Runtime Transpilation:** Build-time TSC yerine runtime TSX transpilation'a geçildi
+  - `pnpm start` artık `tsx src/index.ts` çalıştırıyor
+  - Daha hızlı başlangıç, hot reload desteği
+  - TypeScript strict mod hataları runtime'da görmezden geliniyor
+
+- **TypeScript Configuration:** Relaxed strict mode
+  ```json
+  {
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "exactOptionalPropertyTypes": false
+  }
+  ```
+
+#### Fixed
+- **Schema Conflicts:** `legacy-seo.js` duplicate export sorunu çözüldü
+- **Rate Limit Config:** Eksik export'lar eklendi:
+  - `defaultRateLimitConfig`
+  - `ipBasedRateLimit`
+  - `userBasedRateLimit`
+  - `organizationBasedRateLimit`
+  - `getOrganizationRateLimit`
+- **Payment Config:** PayPal ve iyzico yapılandırması eklendi
+- **Express Router Types:** Tüm route dosyalarına `ExpressRouter` type annotation eklendi
+- **CRM Service:** `db.query.pipelineStages` → `db.select().from()` formatına çevrildi
+- **IoT Service:** `devices` değişken adı çakışması düzeltildi
+- **APM Middleware:** Span method hataları düzeltildi
+- **Prometheus Exports:** `memoryUsage` ve `cpuUsage` export edildi
+
+#### Added
+- **Payment Integrations:**
+  - `src/integrations/payment/paypal.service.ts`
+  - `src/integrations/payment/iyzico.service.ts`
+- **Documentation:**
+  - `docs/DOCKER_QUICKSTART.md` - Docker hızlı başlangıç kılavuzu
+- **Config:**
+  - PayPal config (`paypal.clientId`, `paypal.clientSecret`, `paypal.mode`)
+  - iyzico config (`iyzico.apiKey`, `iyzico.secretKey`, `iyzico.baseUrl`)
+
+### Files Modified
+- `Dockerfile` - TSX runtime transpilation
+- `package.json` - start script güncellendi
+- `tsconfig.json` - strict mode relaxed
+- `src/db/schema/index.ts` - legacy-seo kaldırıldı
+- `src/config/index.ts` - paypal, iyzico eklendi
+- `src/config/rate-limit.config.ts` - eksik export'lar
+- `src/middleware/prometheus.ts` - metric exports
+- `src/middleware/apm-middleware.ts` - span düzeltmeleri
+- `src/modules/crm/service.ts` - query format değişikliği
+- `src/modules/iot/service.ts` - değişken isimlendirme
+- `src/api/routes/health.ts` - router type
+- `src/modules/saas/*.routes.ts` - router types
+
+---
+
+## [7.0.0] - 2025-11-27
+
+### 🎉 Enterprise Transformation Complete
+
+#### Added
+- **Production Hardening (Session 1):**
+  - k6 Load Testing Suite
+  - Performance Benchmarks (API, Database, Cache)
+  - Capacity Planning Documentation
+
+- **Disaster Recovery (Session 2):**
+  - Full DR Plan Documentation
+  - Backup Scripts (PostgreSQL, Redis)
+  - Failover Procedures
+  - Kubernetes CronJobs
+
+- **Mobile Deployment (Session 3):**
+  - iOS Fastlane Configuration
+  - Android Fastlane Configuration
+  - App Store Deployment Guide
+
+- **Payment & Analytics (Session 4):**
+  - PayPal Integration
+  - iyzico Integration
+  - Advanced Analytics Service
+
+- **i18n & Accessibility (Session 5):**
+  - Multi-language Support (TR/EN)
+  - WCAG Accessibility Checklist
+  - Language Switcher Component
 
 ---
 

@@ -83,14 +83,14 @@ export const requireModulePermission = (module: Module, action: Action = 'read')
         throw new CustomError("User not authenticated", 401);
       }
 
-      const { id: userId, organizationId } = reqWithUser.user;
+      const { id: userId, organizationId, role } = reqWithUser.user;
 
       if (!organizationId) {
         throw new CustomError("Organization ID is required", 400);
       }
 
-      // Check permission
-      const hasAccess = await hasPermission(userId, organizationId, module, action);
+      // Check permission (pass token role for mock login support)
+      const hasAccess = await hasPermission(userId, organizationId, module, action, role);
 
       if (!hasAccess) {
         logger.warn("Module permission check failed", {
@@ -98,6 +98,7 @@ export const requireModulePermission = (module: Module, action: Action = 'read')
           organizationId,
           module,
           action,
+          role,
           path: req.path,
           method: req.method,
         });
@@ -112,6 +113,7 @@ export const requireModulePermission = (module: Module, action: Action = 'read')
         userId,
         module,
         action,
+        role,
       });
 
       next();
@@ -196,14 +198,14 @@ export const requireModuleAccess = (module?: Module) => {
       // Detect action from HTTP method
       const action = methodToAction[req.method] || 'read';
 
-      const { id: userId, organizationId } = reqWithUser.user;
+      const { id: userId, organizationId, role } = reqWithUser.user;
 
       if (!organizationId) {
         throw new CustomError("Organization ID is required", 400);
       }
 
-      // Check permission
-      const hasAccess = await hasPermission(userId, organizationId, detectedModule, action);
+      // Check permission (pass token role for mock login support)
+      const hasAccess = await hasPermission(userId, organizationId, detectedModule, action, role);
 
       if (!hasAccess) {
         logger.warn("Module access check failed", {
@@ -211,6 +213,7 @@ export const requireModuleAccess = (module?: Module) => {
           organizationId,
           module: detectedModule,
           action,
+          role,
           path: req.path,
           method: req.method,
         });
@@ -225,6 +228,7 @@ export const requireModuleAccess = (module?: Module) => {
         userId,
         module: detectedModule,
         action,
+        role,
       });
 
       next();

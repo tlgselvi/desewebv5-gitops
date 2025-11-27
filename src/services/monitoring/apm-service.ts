@@ -25,7 +25,7 @@ interface ApmConfig {
 
 const defaultConfig: ApmConfig = {
   serviceName: process.env.OTEL_SERVICE_NAME || 'dese-ea-plan',
-  serviceVersion: process.env.npm_package_version || '7.0.0',
+  serviceVersion: process.env.npm_package_version || '7.1.0',
   environment: config.nodeEnv,
   enabled: process.env.ENABLE_APM === 'true' || config.nodeEnv === 'production',
   sampleRate: parseFloat(process.env.APM_SAMPLE_RATE || '1.0'),

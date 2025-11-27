@@ -104,7 +104,7 @@ export default function AIOpsPage() {
       <div className="space-y-12">
         <McpSection
           variant="primary"
-          kicker="Kyverno Stabilizasyonu · v6.8.1"
+          kicker="Enterprise SaaS Platform · v7.1.0"
           title="Jarvis AIOps Kontrol Merkezi"
           description="Kyverno politikaları, ArgoCD senkronizasyonu ve Prometheus alarm zincirini tek ekranda takip edin. İşletim sürprizlerini azaltmak için drift ve otomasyon sinyallerini gerçek zamanlı olarak yönetin."
           actions={

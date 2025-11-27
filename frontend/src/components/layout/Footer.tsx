@@ -9,7 +9,7 @@ export default function Footer() {
             Dese Web Platform · EA Plan Infrastructure
           </p>
           <p>
-            v6.8.1 · Kyverno Stabilizasyonu &amp; MCP Faz 1 Revizyonu · ©2025
+            v7.1.0 · Enterprise SaaS Platform · ©2025
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-gray-400 dark:text-slate-500">

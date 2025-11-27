@@ -32,8 +32,8 @@ export function setupRoutes(app: Application): void {
   app.get('/', (req, res) => {
     res.json({
       name: 'Dese EA Plan API',
-      version: 'v7.0.0',
-      description: 'Enterprise ERP & IoT Platform API (v7.0)',
+      version: 'v7.1.0',
+      description: 'Enterprise ERP & IoT Platform API (v7.1)',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),
       endpoints: {
@@ -94,8 +94,8 @@ export function setupRoutes(app: Application): void {
   // Root API endpoint (most general, last)
   app.get(apiPrefix, (req, res) => {
     res.json({
-      name: 'Dese EA Plan v7.0 API',
-      version: '7.0.0',
+      name: 'Dese EA Plan v7.1 API',
+      version: '7.1.0',
       description: 'Enterprise ERP, CRM & IoT Platform API',
       environment: config.nodeEnv,
       timestamp: new Date().toISOString(),

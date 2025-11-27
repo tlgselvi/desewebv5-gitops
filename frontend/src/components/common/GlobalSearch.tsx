@@ -9,7 +9,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useKeyboardNavigation, COMMON_SHORTCUTS } from '@/hooks/useKeyboardNavigation';
+import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export interface SearchResult {
   id: string;
@@ -34,6 +35,9 @@ export function GlobalSearch({
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Debounce search query to prevent excessive API calls
+  const debouncedQuery = useDebounce(query, 300);
 
   // Keyboard shortcuts
   useKeyboardNavigation([
@@ -65,17 +69,33 @@ export function GlobalSearch({
     },
   ]);
 
+  // Search effect - only triggers after debounce delay
   useEffect(() => {
-    if (query.trim() && onSearch) {
+    if (debouncedQuery.trim() && onSearch) {
       setIsLoading(true);
-      onSearch(query).then((searchResults) => {
-        setResults(searchResults);
-        setIsLoading(false);
-      });
+      onSearch(debouncedQuery)
+        .then((searchResults) => {
+          setResults(searchResults);
+        })
+        .catch((error) => {
+          console.error('Search error:', error);
+          setResults([]);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     } else {
       setResults([]);
+      setIsLoading(false);
     }
-  }, [query, onSearch]);
+  }, [debouncedQuery, onSearch]);
+
+  // Show loading indicator while typing (before debounce completes)
+  useEffect(() => {
+    if (query.trim() && query !== debouncedQuery) {
+      setIsLoading(true);
+    }
+  }, [query, debouncedQuery]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

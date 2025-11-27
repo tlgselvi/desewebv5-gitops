@@ -2,14 +2,17 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Bar,
-  BarChart,
+  LazyBarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
-import { Activity, CreditCard, DollarSign, Users, Loader2, Sparkles, AlertTriangle } from "lucide-react"
+  Bar,
+  preloadCharts,
+} from "@/components/charts/LazyCharts"
+import { Activity, CreditCard, DollarSign, Users, Sparkles, AlertTriangle } from "lucide-react"
+import { useEffect } from "react"
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton"
 import { authenticatedGet } from "@/lib/api"
 import { toast } from "sonner"
 import { useQuery } from "@tanstack/react-query"
@@ -56,6 +59,11 @@ export default function DashboardPage() {
     refetchOnWindowFocus: true,
   });
 
+  // Preload charts when component mounts for faster rendering
+  useEffect(() => {
+    preloadCharts();
+  }, []);
+
   if (isError) {
     return (
       <div className="flex h-[calc(100vh-4rem)] items-center justify-center flex-col gap-4">
@@ -68,11 +76,7 @@ export default function DashboardPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -149,7 +153,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={summary?.finance.monthlyRevenue || []}>
+              <LazyBarChart data={summary?.finance.monthlyRevenue || []}>
                 <XAxis
                   dataKey="name"
                   stroke="#888888"
@@ -169,7 +173,7 @@ export default function DashboardPage() {
                   itemStyle={{ color: "#fff" }}
                 />
                 <Bar dataKey="total" fill="#adfa1d" radius={[4, 4, 0, 0]} />
-              </BarChart>
+              </LazyBarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
