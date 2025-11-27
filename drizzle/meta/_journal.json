@@ -36,6 +36,20 @@
       "when": 1764030781239,
       "tag": "0004_flippant_mimic",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1738000000000,
+      "tag": "0005_enable_rls_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1738000001000,
+      "tag": "0006_add_seo_organization_id",
+      "breakpoints": true
     }
   ]
 }

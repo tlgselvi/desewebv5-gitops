@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { users } from './saas.js';
+import { users } from './saas/core.js';
 import { contacts } from './crm.js';
 
 // Service Requests (Servis Talepleri)

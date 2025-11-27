@@ -39,6 +39,11 @@ const configSchema = z.object({
     name: z.string().default("dese_ea_plan_v5"),
     user: z.string().default("dese"),
     password: z.string().default("dese123"),
+    // Replication settings
+    readReplicaUrls: z.array(z.string()).default([]),
+    maxPoolSize: z.coerce.number().default(20),
+    replicationLagThreshold: z.coerce.number().default(1000),
+    enableReadReplica: z.coerce.boolean().default(false),
   }),
 
   // Redis Configuration
@@ -47,6 +52,24 @@ const configSchema = z.object({
     host: z.string().default("redis"),
     port: z.coerce.number().default(6379),
     password: z.string().optional(),
+    // Cluster settings
+    clusterEnabled: z.coerce.boolean().default(false),
+    clusterNodes: z.array(z.string()).default([]),
+    maxRetryDelay: z.coerce.number().default(2000),
+  }),
+
+  // Storage Configuration
+  storage: z.object({
+    provider: z.enum(["aws", "minio", "digitalocean"]).default("aws"),
+    enabled: z.coerce.boolean().default(false),
+    region: z.string().default("us-east-1"),
+    bucket: z.string().default("dese-storage"),
+    accessKeyId: z.string().optional(),
+    secretAccessKey: z.string().optional(),
+    endpoint: z.string().optional(),
+    forcePathStyle: z.coerce.boolean().default(false),
+    cdnEnabled: z.coerce.boolean().default(false),
+    cdnUrl: z.string().optional(),
   }),
 
   // Security Configuration
@@ -292,11 +315,57 @@ const configSchema = z.object({
     phoneNumber: z.string().optional(),
   }),
 
-  // Payment Configuration (Stripe)
+  // Payment Configuration (Stripe, PayPal, iyzico)
   payment: z.object({
     stripeSecretKey: z.string().optional(),
     stripePublishableKey: z.string().optional(),
     stripeWebhookSecret: z.string().optional(),
+  }),
+  
+  // PayPal Configuration
+  paypal: z.object({
+    clientId: z.string().optional(),
+    clientSecret: z.string().optional(),
+    mode: z.enum(['sandbox', 'live']).default('sandbox'),
+  }),
+  
+  // iyzico Configuration
+  iyzico: z.object({
+    apiKey: z.string().optional(),
+    secretKey: z.string().optional(),
+    baseUrl: z.string().default('https://sandbox-api.iyzipay.com'),
+  }),
+
+  // Vector DB Configuration
+  vectorDb: z.object({
+    provider: z.enum(["pinecone", "weaviate", "qdrant", "chroma"]).optional(),
+    apiKey: z.string().optional(),
+    environment: z.string().optional(), // For Pinecone
+    indexName: z.string().default("dese-index"),
+    dimension: z.coerce.number().default(1536), // OpenAI embeddings default
+    metric: z.enum(["cosine", "euclidean", "dot"]).default("cosine"),
+    url: z.string().optional(), // For self-hosted (Weaviate, Qdrant, Chroma)
+    timeout: z.coerce.number().default(30000), // 30 seconds
+    maxRetries: z.coerce.number().default(3),
+  }),
+
+  // Embedding Configuration
+  embedding: z.object({
+    model: z.enum(["openai", "sentence-transformers", "custom"]).default("openai"),
+    modelName: z.string().default("text-embedding-3-small"),
+    dimension: z.coerce.number().default(1536),
+    cacheEnabled: z.coerce.boolean().default(true),
+    cacheTtl: z.coerce.number().default(86400), // 24 hours
+  }),
+
+  // RAG Configuration
+  rag: z.object({
+    llmProvider: z.enum(["openai", "anthropic"]).default("openai"),
+    llmModel: z.string().default("gpt-4-turbo-preview"),
+    maxContextTokens: z.coerce.number().default(8000),
+    topK: z.coerce.number().default(5),
+    temperature: z.coerce.number().min(0).max(2).default(0.7),
+    enableStreaming: z.coerce.boolean().default(false),
   }),
 });
 
@@ -317,6 +386,10 @@ const rawConfig = {
     name: process.env.DB_NAME || (isTest ? 'dese_ea_plan_v5_test' : 'dese_ea_plan_v5'),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
+    readReplicaUrls: process.env.DATABASE_READ_REPLICA_URLS?.split(',').filter(Boolean) || [],
+    maxPoolSize: process.env.DATABASE_MAX_POOL_SIZE,
+    replicationLagThreshold: process.env.DATABASE_REPLICATION_LAG_THRESHOLD_MS,
+    enableReadReplica: process.env.DATABASE_ENABLE_READ_REPLICA,
   },
   redis: {
     url: process.env.REDIS_URL || (isTest 
@@ -325,6 +398,21 @@ const rawConfig = {
     host: process.env.REDIS_HOST || (isTest ? 'localhost' : 'redis'),
     port: process.env.REDIS_PORT,
     password: process.env.REDIS_PASSWORD,
+    clusterEnabled: process.env.REDIS_CLUSTER_ENABLED,
+    clusterNodes: process.env.REDIS_CLUSTER_NODES?.split(',').filter(Boolean) || [],
+    maxRetryDelay: process.env.REDIS_CLUSTER_RETRY_STRATEGY_MAX_DELAY,
+  },
+  storage: {
+    provider: process.env.S3_PROVIDER,
+    enabled: process.env.S3_ENABLED,
+    region: process.env.S3_REGION,
+    bucket: process.env.S3_BUCKET_NAME,
+    accessKeyId: process.env.S3_ACCESS_KEY_ID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    endpoint: process.env.S3_ENDPOINT,
+    forcePathStyle: process.env.S3_FORCE_PATH_STYLE,
+    cdnEnabled: process.env.S3_CDN_ENABLED,
+    cdnUrl: process.env.S3_CDN_URL,
   },
   security: {
     jwtSecret: process.env.JWT_SECRET,
@@ -514,6 +602,42 @@ const rawConfig = {
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   },
+  paypal: {
+    clientId: process.env.PAYPAL_CLIENT_ID,
+    clientSecret: process.env.PAYPAL_CLIENT_SECRET,
+    mode: process.env.PAYPAL_MODE as 'sandbox' | 'live',
+  },
+  iyzico: {
+    apiKey: process.env.IYZICO_API_KEY,
+    secretKey: process.env.IYZICO_SECRET_KEY,
+    baseUrl: process.env.IYZICO_BASE_URL,
+  },
+  vectorDb: {
+    provider: process.env.VECTOR_DB_PROVIDER,
+    apiKey: process.env.VECTOR_DB_API_KEY,
+    environment: process.env.VECTOR_DB_ENVIRONMENT,
+    indexName: process.env.VECTOR_DB_INDEX_NAME,
+    dimension: process.env.VECTOR_DB_DIMENSION,
+    metric: process.env.VECTOR_DB_METRIC,
+    url: process.env.VECTOR_DB_URL,
+    timeout: process.env.VECTOR_DB_TIMEOUT,
+    maxRetries: process.env.VECTOR_DB_MAX_RETRIES,
+  },
+  embedding: {
+    model: process.env.EMBEDDING_MODEL,
+    modelName: process.env.EMBEDDING_MODEL_NAME,
+    dimension: process.env.EMBEDDING_DIMENSION,
+    cacheEnabled: process.env.EMBEDDING_CACHE_ENABLED,
+    cacheTtl: process.env.EMBEDDING_CACHE_TTL,
+  },
+  rag: {
+    llmProvider: process.env.RAG_LLM_PROVIDER,
+    llmModel: process.env.RAG_LLM_MODEL,
+    maxContextTokens: process.env.RAG_MAX_CONTEXT_TOKENS,
+    topK: process.env.RAG_TOP_K,
+    temperature: process.env.RAG_TEMPERATURE,
+    enableStreaming: process.env.RAG_ENABLE_STREAMING,
+  },
 };
 
 // Validate configuration
@@ -546,7 +670,12 @@ export { config };
 // Type exports
 export type Config = z.infer<typeof configSchema>;
 export type DatabaseConfig = Config["database"];
+export type RedisConfig = Config["redis"];
+export type StorageConfig = Config["storage"];
 export type SecurityConfig = Config["security"];
 export type SeoConfig = Config["seo"];
 export type ContentConfig = Config["content"];
 export type MonitoringConfig = Config["monitoring"];
+export type VectorDbConfig = Config["vectorDb"];
+export type EmbeddingConfig = Config["embedding"];
+export type RagConfig = Config["rag"];

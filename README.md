@@ -1,8 +1,8 @@
-# Dese EA Plan v6.8.2
+# Dese EA Plan v7.0.0
 
-> **Durum:** Sistem üretimde ve bakım modunda. v6.8.2 ile WebSocket gözlemlenebilirliği eklendi. Güncel operasyon süreci için `docs/OPERATIONS_GUIDE.md` dokümanını takip edin.
+> **Durum:** Enterprise SaaS Transformation tamamlandı. v7.0.0 ile Multi-tenancy, RBAC ve RLS (Row-Level Security) aktif. Güncel operasyon süreci için `docs/OPERATIONS_GUIDE.md` dokümanını takip edin.
 
-Dese EA Plan, FinBot (finans), MuBot (muhasebe) ve AIOps/Observability modüllerini bir araya getiren kurumsal planlama platformudur. v6.8.1 sürümüyle tüm MCP katmanı gerçek veri kaynaklarına bağlıdır ve Redis + Prometheus ile izlenmektedir.
+Dese EA Plan, FinBot (finans), MuBot (muhasebe), SalesBot (CRM), IoT Gateway ve AIOps/Observability modüllerini bir araya getiren kurumsal ERP platformudur. v7.0.0 sürümüyle Multi-tenant SaaS altyapısı, modül bazlı RBAC ve PostgreSQL RLS politikaları aktif edilmiştir.
 
 ---
 
@@ -126,8 +126,8 @@ pnpm test:auto      # Playwright E2E senaryoları
 ### Operasyonel
 - `PROJECT_MASTER_DOC.md` – Canlı durumun tek kaynağı  
 - `docs/OPERATIONS_GUIDE.md` – On-call prosedürleri ve sorun giderme  
-- `docs/SPRINT_PLAN_v6.9.0.md` – Bir sonraki sprint için plan taslağı  
-- `RELEASE_NOTES_v6.8.1.md` – Son sürümdeki değişiklikler ve öğrenilenler
+- `DESE_EA_PLAN_TRANSFORMATION_REPORT.md` – v7.0 Enterprise Transformation Planı
+- `RELEASE_NOTES_v7.0.0.md` – v7.0 sürümündeki değişiklikler
 
 ### Docker & Deployment
 - `docs/DOCKER_COMPOSE_FULL_SETUP.md` – Docker Compose tam yapılandırma rehberi

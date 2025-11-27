@@ -1,0 +1,208 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgresql-backup
+  namespace: dese-ea-plan
+spec:
+  schedule: "0 2 * * *"  # Daily at 02:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              DATE=$(date +%Y%m%d_%H%M%S)
+              
+              echo "Starting PostgreSQL backup..."
+              
+              # Create backup
+              pg_dump \
+                -h $DB_HOST \
+                -U $DB_USER \
+                -d $DB_NAME \
+                --format=custom \
+                --compress=9 \
+                -f /backups/dump_$DATE.dump
+              
+              # Upload to S3 (using aws cli)
+              aws s3 cp /backups/dump_$DATE.dump s3://$S3_BUCKET/postgresql/dump_$DATE.dump
+              
+              # Cleanup local
+              rm -f /backups/dump_$DATE.dump
+              
+              echo "Backup completed: dump_$DATE.dump"
+            env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: username
+            - name: DB_NAME
+              value: dese_ea_plan_v5
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: password
+            - name: S3_BUCKET
+              value: dese-backups
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: secret-key
+            volumeMounts:
+            - name: backup-volume
+              mountPath: /backups
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-volume
+            emptyDir: {}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+  namespace: dese-ea-plan
+spec:
+  schedule: "0 */6 * * *"  # Every 6 hours
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: redis:7-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              DATE=$(date +%Y%m%d_%H%M%S)
+              
+              echo "Triggering Redis BGSAVE..."
+              redis-cli -h $REDIS_HOST -a $REDIS_PASSWORD BGSAVE
+              sleep 10
+              
+              echo "Copying RDB file..."
+              redis-cli -h $REDIS_HOST -a $REDIS_PASSWORD --rdb /backups/dump_$DATE.rdb
+              
+              # Compress
+              gzip /backups/dump_$DATE.rdb
+              
+              # Upload to S3
+              aws s3 cp /backups/dump_$DATE.rdb.gz s3://$S3_BUCKET/redis/dump_$DATE.rdb.gz
+              
+              echo "Redis backup completed"
+            env:
+            - name: REDIS_HOST
+              value: redis-cluster
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
+            - name: S3_BUCKET
+              value: dese-backups
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: secret-key
+            volumeMounts:
+            - name: backup-volume
+              mountPath: /backups
+          restartPolicy: OnFailure
+          volumes:
+          - name: backup-volume
+            emptyDir: {}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-verification
+  namespace: dese-ea-plan
+spec:
+  schedule: "0 6 * * *"  # Daily at 06:00 UTC (after backup)
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: verify
+            image: postgres:15-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              echo "Verifying PostgreSQL backup..."
+              
+              # List recent backups
+              LATEST=$(aws s3 ls s3://$S3_BUCKET/postgresql/ | sort | tail -1 | awk '{print $4}')
+              
+              if [ -z "$LATEST" ]; then
+                echo "ERROR: No backups found!"
+                exit 1
+              fi
+              
+              # Download
+              aws s3 cp s3://$S3_BUCKET/postgresql/$LATEST /tmp/backup.dump
+              
+              # Test restore (dry run)
+              pg_restore --list /tmp/backup.dump > /dev/null
+              
+              if [ $? -eq 0 ]; then
+                echo "Backup verification PASSED: $LATEST"
+                
+                # Update Prometheus metric
+                curl -X POST http://pushgateway:9091/metrics/job/backup_verification \
+                  -d "backup_verification_success 1"
+              else
+                echo "Backup verification FAILED: $LATEST"
+                curl -X POST http://pushgateway:9091/metrics/job/backup_verification \
+                  -d "backup_verification_success 0"
+                exit 1
+              fi
+            env:
+            - name: S3_BUCKET
+              value: dese-backups
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: secret-key
+          restartPolicy: OnFailure
+

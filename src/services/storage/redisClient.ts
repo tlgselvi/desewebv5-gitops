@@ -1,22 +1,35 @@
 import Redis from 'ioredis';
 import { logger } from '../../utils/logger.js';
+import { redisCluster } from '../redis/cluster-client.js';
+import { config } from '@/config/index.js';
 
-// Redis connection
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  retryStrategy: (times: number) => {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-  maxRetriesPerRequest: 3,
-});
+// Use cluster client if enabled, otherwise use single instance
+// This provides backward compatibility while supporting cluster mode
+let redis: Redis;
 
-redis.on('error', (err) => {
-  logger.error('Redis connection error', { error: err });
-});
+if (config.redis.clusterEnabled) {
+  // Use cluster client
+  redis = redisCluster.getClient() as Redis;
+  logger.info('Using Redis cluster client');
+} else {
+  // Use single instance (backward compatible)
+  redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    password: config.redis.password,
+    retryStrategy: (times: number) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+    maxRetriesPerRequest: 3,
+  });
 
-redis.on('connect', () => {
-  logger.info('Redis connected successfully');
-});
+  redis.on('error', (err) => {
+    logger.error('Redis connection error', { error: err });
+  });
+
+  redis.on('connect', () => {
+    logger.info('Redis connected successfully');
+  });
+}
 
 export interface FeedbackEntry {
   timestamp: number;

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Console
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - dese-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}) do
+        echo 'Waiting for MinIO...'
+        sleep 2
+      done
+      /usr/bin/mc mb minio/dese-storage || true
+      /usr/bin/mc anonymous set download minio/dese-storage || true
+      echo 'MinIO bucket created and configured!'
+      "
+    networks:
+      - dese-network
+    profiles:
+      - minio-init
+
+networks:
+  dese-network:
+    driver: bridge
+
+volumes:
+  minio_data:
+

@@ -5,8 +5,14 @@ import { eq } from "drizzle-orm";
 import { asyncHandler } from "@/middleware/errorHandler.js";
 import { logger } from "@/utils/logger.js";
 import type { RequestWithUser } from "@/middleware/auth.js";
+import { setRLSContextMiddleware } from "@/middleware/rls.js";
 
 const adminRouter: Router = Router();
+
+// Apply RLS middleware to all admin routes for tenant isolation
+// Note: Admin routes may need to access cross-tenant data, but RLS context
+// should still be set for audit logging and security tracking
+adminRouter.use(setRLSContextMiddleware);
 
 /**
  * User response type

@@ -134,17 +134,31 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit)} 
+          className="space-y-4"
+          aria-label="Giriş formu"
+          noValidate
+        >
           <div className="space-y-2">
             <Label htmlFor="email">E-posta</Label>
             <Input
               id="email"
               type="email"
               placeholder="ornek@dese.ai"
+              aria-label="E-posta adresi"
+              aria-required="true"
+              aria-invalid={form.formState.errors.email ? "true" : "false"}
+              aria-describedby={form.formState.errors.email ? "email-error" : undefined}
               {...form.register("email")}
             />
             {form.formState.errors.email && (
-              <p className="text-sm text-destructive text-red-500">
+              <p 
+                id="email-error" 
+                className="text-sm text-destructive text-red-500"
+                role="alert"
+                aria-live="polite"
+              >
                 {form.formState.errors.email.message}
               </p>
             )}
@@ -154,16 +168,31 @@ export function LoginForm() {
             <Input
               id="password"
               type="password"
+              aria-label="Şifre"
+              aria-required="true"
+              aria-invalid={form.formState.errors.password ? "true" : "false"}
+              aria-describedby={form.formState.errors.password ? "password-error" : undefined}
               {...form.register("password")}
             />
             {form.formState.errors.password && (
-              <p className="text-sm text-destructive text-red-500">
+              <p 
+                id="password-error"
+                className="text-sm text-destructive text-red-500"
+                role="alert"
+                aria-live="polite"
+              >
                 {form.formState.errors.password.message}
               </p>
             )}
           </div>
-          <Button className="w-full" type="submit" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button 
+            className="w-full" 
+            type="submit" 
+            disabled={isLoading}
+            aria-busy={isLoading}
+            aria-label={isLoading ? "Giriş yapılıyor..." : "Giriş yap"}
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
             Giriş Yap
           </Button>
         </form>

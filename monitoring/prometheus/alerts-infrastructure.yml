@@ -1,0 +1,149 @@
+groups:
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # Database Replication Alerts
+      - alert: DatabaseReplicationLagHigh
+        expr: pg_replication_lag_ms > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database replication lag is high"
+          description: "Replication lag is {{ $value }}ms, threshold is 1000ms. Primary: {{ $labels.instance }}"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool is nearly exhausted"
+          description: "Connection pool usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      - alert: DatabasePrimaryDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database primary instance is down"
+          description: "Primary database instance {{ $labels.instance }} is not responding"
+
+      - alert: DatabaseReplicaDown
+        expr: up{job="postgres-exporter",role="replica"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database replica instance is down"
+          description: "Replica database instance {{ $labels.instance }} is not responding"
+
+      # Redis Cluster Alerts
+      - alert: RedisClusterNodeDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: redis
+        annotations:
+          summary: "Redis cluster node is down"
+          description: "Redis cluster node {{ $labels.instance }} is not responding"
+
+      - alert: RedisClusterMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis cluster memory usage is high"
+          description: "Redis cluster node {{ $labels.instance }} memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: RedisClusterReplicationLag
+        expr: redis_replication_lag > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis cluster replication lag is high"
+          description: "Redis cluster replication lag is {{ $value }} seconds on {{ $labels.instance }}"
+
+      - alert: RedisClusterTooManyConnections
+        expr: redis_connected_clients > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis cluster has too many connections"
+          description: "Redis cluster node {{ $labels.instance }} has {{ $value }} connected clients"
+
+      # Storage (S3) Alerts
+      - alert: S3UploadFailureRate
+        expr: rate(s3_upload_errors_total[5m]) / rate(s3_upload_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "S3 upload failure rate is high"
+          description: "S3 upload failure rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      - alert: S3DownloadFailureRate
+        expr: rate(s3_download_errors_total[5m]) / rate(s3_download_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "S3 download failure rate is high"
+          description: "S3 download failure rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      - alert: S3StorageQuotaExceeded
+        expr: s3_bucket_size_bytes / s3_bucket_quota_bytes > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "S3 storage quota nearly exceeded"
+          description: "S3 bucket {{ $labels.bucket }} is {{ $value | humanizePercentage }} full"
+
+      # Connection Pool Alerts
+      - alert: ConnectionPoolLeakDetected
+        expr: increase(connection_pool_leaks_total[10m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Connection pool leak detected"
+          description: "{{ $value }} connection leaks detected in the last 10 minutes"
+
+      # Performance Alerts
+      - alert: DatabaseQueryLatencyHigh
+        expr: histogram_quantile(0.95, rate(pg_stat_statements_query_duration_seconds_bucket[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database query latency is high"
+          description: "95th percentile query latency is {{ $value }}s on {{ $labels.instance }}"
+
+      - alert: RedisOperationLatencyHigh
+        expr: histogram_quantile(0.95, rate(redis_operation_duration_seconds_bucket[5m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: redis
+        annotations:
+          summary: "Redis operation latency is high"
+          description: "95th percentile Redis operation latency is {{ $value }}s on {{ $labels.instance }}"
+

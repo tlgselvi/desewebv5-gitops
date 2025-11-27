@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/dese-web/middleware.ts"],"sourcesContent":["import { NextResponse } from 'next/server'\r\nimport type { NextRequest } from 'next/server'\r\nimport { getToken } from 'next-auth/jwt'\r\n\r\nexport async function middleware(req: NextRequest) {\r\n\tconst token = await getToken({ req, secret: process.env.JWT_SECRET })\r\n\tconst { pathname } = req.nextUrl\r\n\r\n\tif (!token && pathname.startsWith('/aiops')) {\r\n\t\tconst loginUrl = new URL('/login', req.url)\r\n\t\treturn NextResponse.redirect(loginUrl)\r\n\t}\r\n\r\n\treturn NextResponse.next()\r\n}\r\n\r\nexport const config = {\r\n\tmatcher: ['/aiops/:path*', '/anomalies/:path*', '/feedback/:path*'],\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAA;AAAA;AAEA;;;AAEO,eAAe,WAAW,GAAgB;IAChD,MAAM,QAAQ,MAAM,IAAA,+KAAQ,EAAC;QAAE;QAAK,QAAQ,QAAQ,GAAG,CAAC,UAAU;IAAC;IACnE,MAAM,EAAE,QAAQ,EAAE,GAAG,IAAI,OAAO;IAEhC,IAAI,CAAC,SAAS,SAAS,UAAU,CAAC,WAAW;QAC5C,MAAM,WAAW,IAAI,IAAI,UAAU,IAAI,GAAG;QAC1C,OAAO,+MAAY,CAAC,QAAQ,CAAC;IAC9B;IAEA,OAAO,+MAAY,CAAC,IAAI;AACzB;AAEO,MAAM,SAAS;IACrB,SAAS;QAAC;QAAiB;QAAqB;KAAmB;AACpE"}}]
-}

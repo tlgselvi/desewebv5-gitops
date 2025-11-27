@@ -15,7 +15,12 @@ export default function DashboardLayout({
             <AppSidebar />
           </div>
         </aside>
-        <main className="flex w-full flex-col overflow-hidden py-6 lg:py-8">
+        <main 
+          id="main-content"
+          className="flex w-full flex-col overflow-hidden py-6 lg:py-8"
+          role="main"
+          aria-label="Ana içerik"
+        >
           {children}
         </main>
       </div>

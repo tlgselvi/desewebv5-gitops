@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations, users } from './saas.js';
+import { organizations, users } from './saas/core.js';
 
 // Contacts (Kişiler)
 export const contacts = pgTable('contacts', {
@@ -60,6 +60,11 @@ export const deals = pgTable('deals', {
   stageIdx: index('deals_stage_idx').on(table.stageId),
   statusIdx: index('deals_status_idx').on(table.status),
   closeDateIdx: index('deals_close_date_idx').on(table.expectedCloseDate),
+  contactIdx: index('deals_contact_idx').on(table.contactId),
+  assignedIdx: index('deals_assigned_idx').on(table.assignedTo),
+  orgStatusIdx: index('deals_org_status_idx').on(table.organizationId, table.status),
+  // Composite index for kanban board queries
+  orgStageIdx: index('deals_org_stage_idx').on(table.organizationId, table.stageId),
 }));
 
 // Activities (CRM Aktiviteleri)
@@ -84,6 +89,12 @@ export const activities = pgTable('activities', {
   orgIdx: index('activities_org_idx').on(table.organizationId),
   dealIdx: index('activities_deal_idx').on(table.dealId),
   typeIdx: index('activities_type_idx').on(table.type),
+  contactIdx: index('activities_contact_idx').on(table.contactId),
+  statusIdx: index('activities_status_idx').on(table.status),
+  dueDateIdx: index('activities_due_date_idx').on(table.dueDate),
+  // Composite indexes for common query patterns
+  orgDealIdx: index('activities_org_deal_idx').on(table.organizationId, table.dealId),
+  orgTypeIdx: index('activities_org_type_idx').on(table.organizationId, table.type),
 }));
 
 // Relations

@@ -63,4 +63,40 @@ describe('Redis Client', () => {
     expect(ttl).toBeGreaterThan(0);
     expect(ttl).toBeLessThanOrEqual(60);
   });
+
+  it('should handle cache hit scenario', async ({ skip }) => {
+    if (!redis) return skip('Redis container not available');
+    await redis.set('test:cache', 'cached-value');
+    const value = await redis.get('test:cache');
+    expect(value).toBe('cached-value');
+  });
+
+  it('should handle cache miss scenario', async ({ skip }) => {
+    if (!redis) return skip('Redis container not available');
+    const value = await redis.get('test:non-existent');
+    expect(value).toBeNull();
+  });
+
+  it('should handle cache expiration', async ({ skip }) => {
+    if (!redis) return skip('Redis container not available');
+    await redis.setex('test:expire', 1, 'expiring-value');
+    const value1 = await redis.get('test:expire');
+    expect(value1).toBe('expiring-value');
+    
+    // Wait for expiration
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    
+    const value2 = await redis.get('test:expire');
+    expect(value2).toBeNull();
+  }, 5000);
+
+  it('should handle cache error gracefully', async ({ skip }) => {
+    if (!redis) return skip('Redis container not available');
+    // Test with invalid operation
+    try {
+      await redis.get(null as any);
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+  });
 });

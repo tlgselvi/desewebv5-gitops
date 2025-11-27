@@ -1,0 +1,434 @@
+# =============================================================================
+# Kubernetes CronJobs for Automated Backups
+# DESE EA PLAN v7.0 - Disaster Recovery
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-scripts
+  namespace: dese-ea-plan
+data:
+  postgresql-backup.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="/backups/postgresql_${POSTGRES_DB}_${TIMESTAMP}.sql.gz"
+    
+    echo "[$(date)] Starting PostgreSQL backup..."
+    
+    PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump \
+      -h "${POSTGRES_HOST}" \
+      -p "${POSTGRES_PORT:-5432}" \
+      -U "${POSTGRES_USER}" \
+      -d "${POSTGRES_DB}" \
+      --no-owner \
+      --no-acl | gzip > "${BACKUP_FILE}"
+    
+    # Generate checksum
+    sha256sum "${BACKUP_FILE}" > "${BACKUP_FILE}.sha256"
+    
+    # Upload to S3
+    if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+      aws s3 cp "${BACKUP_FILE}" "s3://${S3_BUCKET}/postgresql/daily/"
+      aws s3 cp "${BACKUP_FILE}.sha256" "s3://${S3_BUCKET}/postgresql/daily/"
+    fi
+    
+    # Cleanup old backups (keep 7 days)
+    find /backups -name "postgresql_*.sql.gz" -mtime +7 -delete
+    
+    echo "[$(date)] PostgreSQL backup completed: ${BACKUP_FILE}"
+    
+  redis-backup.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="/backups/redis_${TIMESTAMP}.rdb.gz"
+    
+    echo "[$(date)] Starting Redis backup..."
+    
+    # Trigger BGSAVE
+    if [ -n "${REDIS_PASSWORD:-}" ]; then
+      redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT:-6379}" -a "${REDIS_PASSWORD}" --no-auth-warning BGSAVE
+    else
+      redis-cli -h "${REDIS_HOST}" -p "${REDIS_PORT:-6379}" BGSAVE
+    fi
+    
+    # Wait for BGSAVE
+    sleep 10
+    
+    # Copy and compress RDB file
+    cp /redis-data/dump.rdb /tmp/dump.rdb
+    gzip -c /tmp/dump.rdb > "${BACKUP_FILE}"
+    
+    # Upload to S3
+    if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+      aws s3 cp "${BACKUP_FILE}" "s3://${S3_BUCKET}/redis/rdb/"
+    fi
+    
+    # Cleanup old backups
+    find /backups -name "redis_*.rdb.gz" -mtime +7 -delete
+    
+    echo "[$(date)] Redis backup completed: ${BACKUP_FILE}"
+    
+  backup-verification.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    echo "[$(date)] Starting backup verification..."
+    
+    # Verify latest PostgreSQL backup
+    if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+      LATEST_PG=$(aws s3 ls "s3://${S3_BUCKET}/postgresql/daily/" | sort | tail -1 | awk '{print $4}')
+      aws s3 cp "s3://${S3_BUCKET}/postgresql/daily/${LATEST_PG}" /tmp/
+      
+      if gunzip -t "/tmp/${LATEST_PG}"; then
+        echo "✅ PostgreSQL backup verification PASSED"
+      else
+        echo "❌ PostgreSQL backup verification FAILED"
+        exit 1
+      fi
+    fi
+    
+    # Verify latest Redis backup
+    if [ -n "${AWS_ACCESS_KEY_ID:-}" ]; then
+      LATEST_REDIS=$(aws s3 ls "s3://${S3_BUCKET}/redis/rdb/" | sort | tail -1 | awk '{print $4}')
+      aws s3 cp "s3://${S3_BUCKET}/redis/rdb/${LATEST_REDIS}" /tmp/
+      
+      if gunzip -t "/tmp/${LATEST_REDIS}"; then
+        echo "✅ Redis backup verification PASSED"
+      else
+        echo "❌ Redis backup verification FAILED"
+        exit 1
+      fi
+    fi
+    
+    echo "[$(date)] Backup verification completed"
+
+---
+# PostgreSQL Daily Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgresql-backup-daily
+  namespace: dese-ea-plan
+  labels:
+    app: backup
+    component: postgresql
+spec:
+  schedule: "0 2 * * *"  # Every day at 02:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 3600  # 1 hour timeout
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: backup
+            component: postgresql
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-sa
+          containers:
+          - name: pg-backup
+            image: postgres:15-alpine
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                apk add --no-cache aws-cli
+                /scripts/postgresql-backup.sh
+            envFrom:
+            - secretRef:
+                name: dese-secrets
+            env:
+            - name: S3_BUCKET
+              value: "dese-backups"
+            - name: AWS_DEFAULT_REGION
+              value: "eu-west-1"
+            volumeMounts:
+            - name: backup-scripts
+              mountPath: /scripts
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "1Gi"
+                cpu: "500m"
+          volumes:
+          - name: backup-scripts
+            configMap:
+              name: backup-scripts
+              defaultMode: 0755
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+
+---
+# PostgreSQL Weekly Full Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgresql-backup-weekly
+  namespace: dese-ea-plan
+  labels:
+    app: backup
+    component: postgresql
+spec:
+  schedule: "0 3 * * 0"  # Every Sunday at 03:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 7200  # 2 hour timeout
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: backup
+            component: postgresql
+            type: weekly
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-sa
+          containers:
+          - name: pg-backup
+            image: postgres:15-alpine
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                apk add --no-cache aws-cli
+                export BACKUP_TYPE=weekly
+                /scripts/postgresql-backup.sh
+            envFrom:
+            - secretRef:
+                name: dese-secrets
+            env:
+            - name: S3_BUCKET
+              value: "dese-backups"
+            - name: AWS_DEFAULT_REGION
+              value: "eu-west-1"
+            volumeMounts:
+            - name: backup-scripts
+              mountPath: /scripts
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "200m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          volumes:
+          - name: backup-scripts
+            configMap:
+              name: backup-scripts
+              defaultMode: 0755
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+
+---
+# Redis Backup CronJob (Every 30 minutes)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+  namespace: dese-ea-plan
+  labels:
+    app: backup
+    component: redis
+spec:
+  schedule: "*/30 * * * *"  # Every 30 minutes
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 900  # 15 minutes timeout
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: backup
+            component: redis
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-sa
+          containers:
+          - name: redis-backup
+            image: redis:7-alpine
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                apk add --no-cache aws-cli
+                /scripts/redis-backup.sh
+            envFrom:
+            - secretRef:
+                name: dese-secrets
+            env:
+            - name: S3_BUCKET
+              value: "dese-backups"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: AWS_DEFAULT_REGION
+              value: "eu-west-1"
+            volumeMounts:
+            - name: backup-scripts
+              mountPath: /scripts
+            - name: backup-storage
+              mountPath: /backups
+            - name: redis-data
+              mountPath: /redis-data
+              readOnly: true
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "50m"
+              limits:
+                memory: "512Mi"
+                cpu: "200m"
+          volumes:
+          - name: backup-scripts
+            configMap:
+              name: backup-scripts
+              defaultMode: 0755
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: redis-data
+            persistentVolumeClaim:
+              claimName: redis-data-pvc
+
+---
+# Backup Verification CronJob (Daily)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-verification
+  namespace: dese-ea-plan
+  labels:
+    app: backup
+    component: verification
+spec:
+  schedule: "0 6 * * *"  # Every day at 06:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 1800  # 30 minutes timeout
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: backup
+            component: verification
+        spec:
+          restartPolicy: Never
+          serviceAccountName: backup-sa
+          containers:
+          - name: verification
+            image: amazon/aws-cli:latest
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                yum install -y gzip
+                /scripts/backup-verification.sh
+            envFrom:
+            - secretRef:
+                name: dese-secrets
+            env:
+            - name: S3_BUCKET
+              value: "dese-backups"
+            - name: AWS_DEFAULT_REGION
+              value: "eu-west-1"
+            volumeMounts:
+            - name: backup-scripts
+              mountPath: /scripts
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "50m"
+              limits:
+                memory: "512Mi"
+                cpu: "200m"
+          volumes:
+          - name: backup-scripts
+            configMap:
+              name: backup-scripts
+              defaultMode: 0755
+
+---
+# ServiceAccount for backup jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-sa
+  namespace: dese-ea-plan
+
+---
+# PVC for backup storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-storage-pvc
+  namespace: dese-ea-plan
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+
+---
+# PrometheusRule for backup alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: backup-alerts
+  namespace: dese-ea-plan
+  labels:
+    app: backup
+spec:
+  groups:
+  - name: backup-alerts
+    rules:
+    - alert: BackupJobFailed
+      expr: kube_job_status_failed{job_name=~".*backup.*"} > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Backup job failed"
+        description: "Backup job {{ $labels.job_name }} has failed"
+    
+    - alert: BackupNotRunning
+      expr: time() - kube_cronjob_status_last_successful_time{cronjob=~".*backup.*"} > 86400
+      for: 1h
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup hasn't run in 24 hours"
+        description: "CronJob {{ $labels.cronjob }} hasn't completed successfully in 24 hours"
+    
+    - alert: BackupStorageLow
+      expr: kubelet_volume_stats_available_bytes{persistentvolumeclaim="backup-storage-pvc"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="backup-storage-pvc"} < 0.2
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup storage is running low"
+        description: "Backup storage has less than 20% free space"
+

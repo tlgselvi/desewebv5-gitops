@@ -5,6 +5,7 @@ import { adminRouter } from "@/routes/v1/admin.js";
 import { ceoRouter } from "@/routes/v1/ceo.js";
 import { jarvisRouter } from "@/routes/v1/jarvis.js";
 import { genaiRoutes } from "@/routes/v1/genai.js";
+import { aiRouter } from "@/routes/v1/ai.js";
 import { financeRoutes } from "@/modules/finance/routes.js";
 import { crmRoutes } from "@/modules/crm/routes.js";
 import { inventoryRoutes } from "@/modules/inventory/routes.js";
@@ -30,6 +31,7 @@ v1Router.use("/dashboard", authenticate, ceoRouter);
 // AI & Automation
 v1Router.use("/jarvis", jarvisRouter);
 v1Router.use("/genai", genaiRoutes);
+v1Router.use("/ai", authenticate, aiRouter);
 
 // Enterprise Modules
 v1Router.use("/finance", financeRoutes);

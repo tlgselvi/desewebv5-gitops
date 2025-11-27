@@ -1,0 +1,214 @@
+# DESE EA PLAN - iOS Fastlane Configuration
+# 
+# Usage:
+#   fastlane beta     - Build and upload to TestFlight
+#   fastlane release  - Deploy to App Store
+#   fastlane metadata - Update metadata only
+
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    setup_ci if ENV['CI']
+  end
+
+  # ==================== CERTIFICATES ====================
+  
+  desc "Sync certificates and profiles"
+  lane :certificates do
+    match(
+      type: "appstore",
+      app_identifier: "com.dese.eaplan",
+      readonly: is_ci
+    )
+  end
+
+  # ==================== BUILD ====================
+  
+  desc "Build the app"
+  lane :build do
+    certificates
+    
+    increment_build_number(
+      xcodeproj: "DeseEAPlan.xcodeproj",
+      build_number: ENV['BUILD_NUMBER'] || (latest_testflight_build_number + 1)
+    )
+    
+    build_app(
+      workspace: "DeseEAPlan.xcworkspace",
+      scheme: "DeseEAPlan",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "DeseEAPlan.ipa",
+      clean: true,
+      include_symbols: true,
+      include_bitcode: false
+    )
+  end
+
+  # ==================== TESTING ====================
+  
+  desc "Run tests"
+  lane :test do
+    run_tests(
+      workspace: "DeseEAPlan.xcworkspace",
+      scheme: "DeseEAPlanTests",
+      devices: ["iPhone 15 Pro"],
+      code_coverage: true
+    )
+  end
+
+  # ==================== DEPLOYMENT ====================
+  
+  desc "Upload to TestFlight for internal testing"
+  lane :internal do
+    build
+    
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+    
+    slack_notification("iOS Internal build uploaded to TestFlight")
+  end
+
+  desc "Upload to TestFlight for beta testing"
+  lane :beta do
+    build
+    
+    upload_to_testflight(
+      skip_waiting_for_build_processing: false,
+      distribute_external: true,
+      groups: ["Beta Testers"],
+      changelog: File.read("../CHANGELOG.md").split("\n\n").first
+    )
+    
+    slack_notification("iOS Beta build uploaded to TestFlight")
+  end
+
+  desc "Deploy to App Store"
+  lane :release do
+    # Ensure we're on main branch
+    ensure_git_branch(branch: "main")
+    ensure_git_status_clean
+    
+    build
+    
+    upload_to_app_store(
+      submit_for_review: true,
+      automatic_release: false,
+      force: true,
+      skip_screenshots: false,
+      skip_metadata: false,
+      precheck_include_in_app_purchases: false,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false
+      }
+    )
+    
+    # Tag release
+    version = get_version_number(xcodeproj: "DeseEAPlan.xcodeproj")
+    build = get_build_number(xcodeproj: "DeseEAPlan.xcodeproj")
+    add_git_tag(tag: "ios-v#{version}-#{build}")
+    push_git_tags
+    
+    slack_notification("iOS #{version} (#{build}) submitted to App Store")
+  end
+
+  # ==================== METADATA ====================
+  
+  desc "Update App Store metadata"
+  lane :metadata do
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      force: true,
+      
+      # Localized info
+      name: {
+        "tr" => "DESE EA Plan",
+        "en-US" => "DESE EA Plan"
+      },
+      subtitle: {
+        "tr" => "Kurumsal Yönetim Platformu",
+        "en-US" => "Enterprise Management Platform"
+      },
+      description: {
+        "tr" => read_description("tr"),
+        "en-US" => read_description("en")
+      },
+      keywords: {
+        "tr" => "erp,crm,finans,muhasebe,stok,envanter,ik,iot,havuz,işletme",
+        "en-US" => "erp,crm,finance,accounting,inventory,hr,iot,pool,business"
+      },
+      promotional_text: {
+        "tr" => "İşletmenizi tek platformdan yönetin!",
+        "en-US" => "Manage your business from one platform!"
+      },
+      
+      # URLs
+      support_url: "https://support.dese.ai",
+      marketing_url: "https://dese.ai",
+      privacy_url: "https://dese.ai/privacy",
+      
+      # Categories
+      primary_category: "Business",
+      secondary_category: "Productivity",
+      
+      # App Review Information
+      app_review_information: {
+        first_name: "DESE",
+        last_name: "Support",
+        phone_number: "+90 555 555 5555",
+        email_address: "appstore@dese.ai",
+        demo_user: "demo@dese.ai",
+        demo_password: "Demo123!",
+        notes: "Demo account for App Review team"
+      }
+    )
+  end
+
+  desc "Upload screenshots"
+  lane :screenshots do
+    capture_screenshots(
+      workspace: "DeseEAPlan.xcworkspace",
+      scheme: "DeseEAPlanUITests"
+    )
+    
+    upload_to_app_store(
+      skip_binary_upload: true,
+      skip_metadata: true,
+      overwrite_screenshots: true
+    )
+  end
+
+  # ==================== HELPERS ====================
+  
+  def read_description(locale)
+    file_path = "./metadata/#{locale}/description.txt"
+    if File.exist?(file_path)
+      File.read(file_path)
+    else
+      "DESE EA Plan - Enterprise Management Platform"
+    end
+  end
+  
+  def slack_notification(message)
+    if ENV['SLACK_WEBHOOK_URL']
+      slack(
+        message: message,
+        success: true,
+        slack_url: ENV['SLACK_WEBHOOK_URL'],
+        default_payloads: [:git_branch, :git_author]
+      )
+    end
+  end
+
+  # ==================== ERROR HANDLING ====================
+  
+  error do |lane, exception|
+    slack_notification("iOS build failed: #{exception.message}") if ENV['SLACK_WEBHOOK_URL']
+  end
+end
+

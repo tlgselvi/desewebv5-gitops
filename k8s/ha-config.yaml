@@ -1,0 +1,524 @@
+# =============================================================================
+# High Availability Configuration
+# DESE EA PLAN v7.0 - Disaster Recovery & HA
+# =============================================================================
+
+---
+# PodDisruptionBudget for API
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dese-ea-plan-pdb
+  namespace: dese-ea-plan
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dese-ea-plan
+
+---
+# PodDisruptionBudget for Frontend
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: dese-ea-plan
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: frontend
+
+---
+# PodDisruptionBudget for PostgreSQL
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgresql-pdb
+  namespace: dese-ea-plan
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: postgresql
+
+---
+# Enhanced API Deployment with HA settings
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dese-ea-plan-ha
+  namespace: dese-ea-plan
+  labels:
+    app: dese-ea-plan
+    version: v7.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: dese-ea-plan
+  template:
+    metadata:
+      labels:
+        app: dese-ea-plan
+        version: v7.0.0
+    spec:
+      # Spread pods across nodes
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: dese-ea-plan
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: dese-ea-plan
+      
+      # Anti-affinity to spread across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - dese-ea-plan
+              topologyKey: kubernetes.io/hostname
+      
+      terminationGracePeriodSeconds: 60
+      
+      containers:
+      - name: api
+        image: dese-ea-plan:v7.0.0
+        ports:
+        - containerPort: 3000
+          name: http
+        
+        # Readiness probe - determines if pod should receive traffic
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health/ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Liveness probe - determines if pod should be restarted
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Startup probe - allows slow starting containers
+        startupProbe:
+          httpGet:
+            path: /api/v1/health/live
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30  # 30 * 5 = 150 seconds max startup time
+        
+        # Lifecycle hooks
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]  # Allow time for deregistration
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        
+        envFrom:
+        - secretRef:
+            name: dese-secrets
+        - configMapRef:
+            name: dese-config
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: dese-ea-plan-hpa
+  namespace: dese-ea-plan
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: dese-ea-plan-ha
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "1000"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 4
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 120
+      selectPolicy: Min
+
+---
+# Enhanced Health Check Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: dese-ea-plan-health
+  namespace: dese-ea-plan
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app: dese-ea-plan
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+  sessionAffinity: None
+
+---
+# Headless Service for StatefulSet (PostgreSQL)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-headless
+  namespace: dese-ea-plan
+spec:
+  clusterIP: None
+  selector:
+    app: postgresql
+  ports:
+  - port: 5432
+    targetPort: 5432
+
+---
+# PostgreSQL StatefulSet with HA
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  namespace: dese-ea-plan
+spec:
+  serviceName: postgresql-headless
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: postgresql
+      
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - postgresql
+            topologyKey: kubernetes.io/hostname
+      
+      containers:
+      - name: postgresql
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - secretRef:
+            name: postgresql-secrets
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+        
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: config
+          mountPath: /etc/postgresql/conf.d
+      
+      volumes:
+      - name: config
+        configMap:
+          name: postgresql-config
+  
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: premium-rwo
+      resources:
+        requests:
+          storage: 100Gi
+
+---
+# PostgreSQL Config for HA/Replication
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: dese-ea-plan
+data:
+  postgresql.conf: |
+    # Replication settings
+    wal_level = replica
+    max_wal_senders = 10
+    max_replication_slots = 10
+    hot_standby = on
+    wal_keep_size = 1GB
+    
+    # Performance tuning
+    shared_buffers = 1GB
+    effective_cache_size = 3GB
+    maintenance_work_mem = 256MB
+    checkpoint_completion_target = 0.9
+    wal_buffers = 64MB
+    default_statistics_target = 100
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    work_mem = 16MB
+    huge_pages = off
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+    max_connections = 200
+    
+    # Logging
+    log_destination = 'stderr'
+    logging_collector = on
+    log_directory = '/var/log/postgresql'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_rotation_age = 1d
+    log_rotation_size = 100MB
+    log_min_duration_statement = 1000
+    log_checkpoints = on
+    log_connections = on
+    log_disconnections = on
+    log_lock_waits = on
+    log_temp_files = 0
+
+---
+# Redis Sentinel for HA
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sentinel
+  namespace: dese-ea-plan
+spec:
+  serviceName: redis-sentinel
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis-sentinel
+  template:
+    metadata:
+      labels:
+        app: redis-sentinel
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: redis-sentinel
+      
+      containers:
+      - name: sentinel
+        image: redis:7-alpine
+        ports:
+        - containerPort: 26379
+        command:
+        - redis-sentinel
+        - /etc/redis/sentinel.conf
+        volumeMounts:
+        - name: config
+          mountPath: /etc/redis
+        - name: data
+          mountPath: /data
+        
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -p
+            - "26379"
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -p
+            - "26379"
+            - ping
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      
+      volumes:
+      - name: config
+        configMap:
+          name: redis-sentinel-config
+  
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
+
+---
+# Redis Sentinel ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-sentinel-config
+  namespace: dese-ea-plan
+data:
+  sentinel.conf: |
+    port 26379
+    sentinel monitor mymaster redis-master 6379 2
+    sentinel down-after-milliseconds mymaster 5000
+    sentinel failover-timeout mymaster 60000
+    sentinel parallel-syncs mymaster 1
+
+---
+# NetworkPolicy for database access
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-access
+  namespace: dese-ea-plan
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: dese-ea-plan
+    - podSelector:
+        matchLabels:
+          app: finbot
+    - podSelector:
+        matchLabels:
+          app: mubot
+    - podSelector:
+        matchLabels:
+          app: backup
+    ports:
+    - protocol: TCP
+      port: 5432
+

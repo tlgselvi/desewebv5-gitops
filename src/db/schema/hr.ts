@@ -1,5 +1,5 @@
-import { pgTable, uuid, varchar, timestamp, decimal, boolean, text, date } from 'drizzle-orm/pg-core';
-import { organizations } from './saas.js';
+import { pgTable, uuid, varchar, timestamp, decimal, boolean, text, date, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { organizations } from './saas/core.js';
 
 export const departments = pgTable('departments', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -8,7 +8,10 @@ export const departments = pgTable('departments', {
   managerId: uuid('manager_id'), // Self-reference to employees table can be tricky with circular deps, will handle in service
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+  orgIdx: index('departments_org_idx').on(table.organizationId),
+  managerIdx: index('departments_manager_idx').on(table.managerId),
+}));
 
 export const employees = pgTable('employees', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -35,7 +38,13 @@ export const employees = pgTable('employees', {
   
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+  orgIdx: index('employees_org_idx').on(table.organizationId),
+  departmentIdx: index('employees_department_idx').on(table.departmentId),
+  statusIdx: index('employees_status_idx').on(table.status),
+  emailIdx: uniqueIndex('employees_email_org_idx').on(table.organizationId, table.email),
+  tcknIdx: uniqueIndex('employees_tckn_org_idx').on(table.organizationId, table.tckn),
+}));
 
 export const payrolls = pgTable('payrolls', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -66,5 +75,11 @@ export const payrolls = pgTable('payrolls', {
   paymentDate: timestamp('payment_date'),
   
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => ({
+  orgIdx: index('payrolls_org_idx').on(table.organizationId),
+  employeeIdx: index('payrolls_employee_idx').on(table.employeeId),
+  periodIdx: index('payrolls_period_idx').on(table.period),
+  statusIdx: index('payrolls_status_idx').on(table.status),
+  employeePeriodIdx: uniqueIndex('payrolls_employee_period_idx').on(table.employeeId, table.period),
+}));
 

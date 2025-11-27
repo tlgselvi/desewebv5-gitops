@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations, users } from './saas.js';
+import { organizations, users } from './saas/core.js';
 
 // Warehouses (Depolar)
 export const warehouses = pgTable('warehouses', {
@@ -47,6 +47,9 @@ export const products = pgTable('products', {
   orgIdx: index('products_org_idx').on(table.organizationId),
   skuIdx: uniqueIndex('products_sku_idx').on(table.organizationId, table.sku),
   barcodeIdx: index('products_barcode_idx').on(table.organizationId, table.barcode),
+  categoryIdx: index('products_category_idx').on(table.category),
+  isActiveIdx: index('products_is_active_idx').on(table.isActive),
+  orgActiveIdx: index('products_org_active_idx').on(table.organizationId, table.isActive),
 }));
 
 // Stock Levels (Depo Bazlı Stok Miktarları)
@@ -62,6 +65,8 @@ export const stockLevels = pgTable('stock_levels', {
 }, (table) => ({
   orgIdx: index('stock_levels_org_idx').on(table.organizationId),
   productWarehouseIdx: uniqueIndex('stock_levels_pw_idx').on(table.warehouseId, table.productId),
+  // Composite index for organization-based queries
+  orgProductIdx: index('stock_levels_org_product_idx').on(table.organizationId, table.productId),
 }));
 
 // Stock Movements (Stok Hareketleri)
@@ -85,6 +90,10 @@ export const stockMovements = pgTable('stock_movements', {
   orgIdx: index('stock_movements_org_idx').on(table.organizationId),
   productIdx: index('stock_movements_product_idx').on(table.productId),
   dateIdx: index('stock_movements_date_idx').on(table.createdAt),
+  warehouseIdx: index('stock_movements_warehouse_idx').on(table.warehouseId),
+  typeIdx: index('stock_movements_type_idx').on(table.type),
+  referenceIdx: index('stock_movements_reference_idx').on(table.referenceId, table.referenceType),
+  orgDateIdx: index('stock_movements_org_date_idx').on(table.organizationId, table.createdAt),
 }));
 
 // Relations

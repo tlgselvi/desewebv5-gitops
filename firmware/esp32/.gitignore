@@ -1,0 +1,10 @@
+.pio
+.vscode
+*.bin
+*.elf
+*.map
+*.log
+*.swp
+*.swo
+*~
+

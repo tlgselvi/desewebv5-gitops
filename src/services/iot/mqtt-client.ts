@@ -1,7 +1,7 @@
 import mqtt, { MqttClient } from 'mqtt';
 import { logger } from '@/utils/logger.js';
 import { db } from '@/db/index.js';
-import { telemetry, deviceAlerts, automationRules, devices } from '@/db/schema/index.js';
+import { telemetry, deviceAlerts, automationRules, devices, deviceCommands, deviceStatusHistory } from '@/db/schema/index.js';
 import { eq, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -54,11 +54,12 @@ class MQTTClientService {
 
     // Subscribe to all telemetry and alert topics
     // Topic structure: devices/{orgId}/{deviceId}/{type}
-    // type: telemetry, alert, status
+    // type: telemetry, alert, status, command_response
     const topics = [
       'devices/+/+/telemetry',
       'devices/+/+/alert',
-      'devices/+/+/status'
+      'devices/+/+/status',
+      'devices/+/+/command_response'
     ];
 
     this.client.subscribe(topics, (err) => {
@@ -95,7 +96,10 @@ class MQTTClientService {
           await this.processAlert(organizationId, deviceId, payload);
           break;
         case 'status':
-          await this.updateDeviceStatus(deviceId, payload.status);
+          await this.updateDeviceStatus(organizationId, deviceId, payload);
+          break;
+        case 'command_response':
+          await this.processCommandResponse(organizationId, deviceId, payload);
           break;
       }
 
@@ -105,27 +109,108 @@ class MQTTClientService {
   }
 
   private async processTelemetry(organizationId: string, deviceId: string, data: any) {
-    // 1. Ensure device exists (auto-create for simulation convenience if dev mode)
+    // 1. Validate telemetry data
+    if (!this.validateTelemetryData(data)) {
+        logger.warn('Invalid telemetry data received', { deviceId, data });
+        return;
+    }
+
+    // 2. Ensure device exists (auto-create for simulation convenience if dev mode)
     if (process.env.NODE_ENV === 'development') {
         await this.ensureDeviceExists(organizationId, deviceId);
     }
 
-    // 2. Save telemetry to DB
+    // 3. Extract sensor data from sensors object or direct fields
+    const sensors = data.sensors || {};
+    const metadata = data.metadata || {};
+
+    // 4. Save telemetry to DB
     await db.insert(telemetry).values({
         id: uuidv4(),
         organizationId,
         deviceId,
         timestamp: new Date(data.timestamp || new Date()),
-        temperature: data.temperature?.toString(),
-        ph: data.ph?.toString(),
-        orp: data.orp?.toString(),
-        tds: data.tds?.toString(),
-        flowRate: data.flowRate?.toString(),
+        temperature: sensors.temperature?.toString() || data.temperature?.toString(),
+        ph: sensors.ph?.toString() || data.ph?.toString(),
+        orp: sensors.orp?.toString() || data.orp?.toString(),
+        tds: sensors.tds?.toString() || data.tds?.toString(),
+        flowRate: sensors.flow_rate?.toString() || data.flowRate?.toString(),
         data: data // Store full raw data as well
     });
 
-    // 3. Check Automation Rules
-    await this.checkAutomationRules(organizationId, deviceId, data);
+    // 5. Check Automation Rules (pass full data including sensors object)
+    await this.checkAutomationRules(organizationId, deviceId, { ...data, sensors });
+
+    // 6. Check for alert conditions
+    await this.checkAlertConditions(organizationId, deviceId, sensors, metadata);
+  }
+
+  private validateTelemetryData(data: any): boolean {
+    // Validate required fields
+    if (!data.device_id && !data.deviceId) {
+        return false;
+    }
+    if (!data.organization_id && !data.organizationId) {
+        return false;
+    }
+    if (!data.timestamp) {
+        return false;
+    }
+
+    // Validate sensor data exists
+    const sensors = data.sensors || data;
+    if (!sensors.ph && !sensors.temperature && !sensors.chlorine) {
+        // At least one sensor reading should be present
+        return false;
+    }
+
+    return true;
+  }
+
+  private async checkAlertConditions(organizationId: string, deviceId: string, sensors: any, metadata: any) {
+    // Check for critical sensor values
+    if (sensors.ph !== undefined) {
+        const ph = Number(sensors.ph);
+        if (ph < 6.5 || ph > 8.5) {
+            await db.insert(deviceAlerts).values({
+                id: uuidv4(),
+                organizationId,
+                deviceId,
+                severity: ph < 6.0 || ph > 9.0 ? 'critical' : 'warning',
+                message: `pH level out of range: ${ph.toFixed(2)}`,
+                isResolved: false
+            });
+        }
+    }
+
+    if (sensors.temperature !== undefined) {
+        const temp = Number(sensors.temperature);
+        if (temp < 10 || temp > 40) {
+            await db.insert(deviceAlerts).values({
+                id: uuidv4(),
+                organizationId,
+                deviceId,
+                severity: temp < 5 || temp > 45 ? 'critical' : 'warning',
+                message: `Temperature out of range: ${temp.toFixed(2)}°C`,
+                isResolved: false
+            });
+        }
+    }
+
+    // Check battery level
+    if (metadata.battery !== undefined) {
+        const battery = Number(metadata.battery);
+        if (battery < 20) {
+            await db.insert(deviceAlerts).values({
+                id: uuidv4(),
+                organizationId,
+                deviceId,
+                severity: battery < 10 ? 'critical' : 'warning',
+                message: `Low battery: ${battery}%`,
+                isResolved: false
+            });
+        }
+    }
   }
 
   private async ensureDeviceExists(organizationId: string, deviceId: string) {
@@ -148,7 +233,7 @@ class MQTTClientService {
   }
 
   private async checkAutomationRules(organizationId: string, deviceId: string, data: any) {
-    // Simple rule engine
+    // Enhanced rule engine with better condition parsing
     const rules = await db.select().from(automationRules)
         .where(and(
             eq(automationRules.organizationId, organizationId),
@@ -157,37 +242,131 @@ class MQTTClientService {
         ));
 
     for (const rule of rules) {
-        // Safe eval or parsing logic here. For MVP we support simple comparisons like "ph > 7.6"
-        // This is a simplified example.
         try {
-            const [metric, operator, value] = rule.condition.split(' ');
-            if (!metric || !operator || !value) continue;
-            const metricValue = data[metric as keyof typeof data];
-            if (metricValue === undefined) continue;
-            
+            // Parse condition - support: "ph > 7.6", "temperature < 25", "ph >= 7.0", etc.
+            const condition = rule.condition.trim();
+            const operators = ['>=', '<=', '==', '!=', '>', '<'];
+            let operator = '';
+            let parts: string[] = [];
+
+            for (const op of operators) {
+                if (condition.includes(op)) {
+                    operator = op;
+                    parts = condition.split(op).map(p => p.trim());
+                    break;
+                }
+            }
+
+            if (!operator || parts.length !== 2) {
+                logger.warn('Invalid rule condition format', { ruleId: rule.id, condition });
+                continue;
+            }
+
+            const metric = parts[0];
+            const threshold = Number(parts[1]);
+
+            if (isNaN(threshold)) {
+                logger.warn('Invalid threshold value in rule', { ruleId: rule.id, threshold: parts[1] });
+                continue;
+            }
+
+            // Get metric value from sensors object or direct data
+            let metricValue: number | undefined;
+            if (data.sensors && data.sensors[metric]) {
+                metricValue = Number(data.sensors[metric]);
+            } else if (data[metric]) {
+                metricValue = Number(data[metric]);
+            }
+
+            if (metricValue === undefined) {
+                continue; // Metric not available in this reading
+            }
+
+            // Evaluate condition
             let triggered = false;
-            if (operator === '>' && Number(metricValue) > Number(value)) triggered = true;
-            if (operator === '<' && Number(metricValue) < Number(value)) triggered = true;
-            
+            switch (operator) {
+                case '>':
+                    triggered = metricValue > threshold;
+                    break;
+                case '<':
+                    triggered = metricValue < threshold;
+                    break;
+                case '>=':
+                    triggered = metricValue >= threshold;
+                    break;
+                case '<=':
+                    triggered = metricValue <= threshold;
+                    break;
+                case '==':
+                    triggered = Math.abs(metricValue - threshold) < 0.01; // Float comparison
+                    break;
+                case '!=':
+                    triggered = Math.abs(metricValue - threshold) >= 0.01;
+                    break;
+            }
+
             if (triggered) {
-                logger.info('Automation Rule Triggered', { ruleId: rule.id, action: rule.action });
-                await this.executeAction(organizationId, deviceId, rule.action);
+                logger.info('Automation Rule Triggered', { 
+                    ruleId: rule.id, 
+                    action: rule.action,
+                    condition: rule.condition,
+                    metricValue,
+                    threshold
+                });
+                await this.executeAction(organizationId, deviceId, rule.action, rule.id);
             }
         } catch (e) {
-            logger.warn('Failed to evaluate rule', { ruleId: rule.id });
+            logger.warn('Failed to evaluate rule', { 
+                ruleId: rule.id, 
+                error: e instanceof Error ? e.message : String(e) 
+            });
         }
     }
   }
 
-  private async executeAction(organizationId: string, deviceId: string, action: string) {
-      // Publish command back to device
-      // Topic: devices/{orgId}/{deviceId}/command
-      const topic = `devices/${organizationId}/${deviceId}/command`;
-      const payload = JSON.stringify({ action, timestamp: new Date().toISOString() });
+  private async executeAction(organizationId: string, deviceId: string, action: string, ruleId?: string) {
+      // Parse action - format: "command_name:param1=value1,param2=value2"
+      const actionParts = action.split(':');
+      const command = actionParts[0];
+      const params: Record<string, unknown> = {};
+
+      if (actionParts.length > 1) {
+          const paramString = actionParts[1];
+          const paramPairs = paramString.split(',');
+          for (const pair of paramPairs) {
+              const [key, value] = pair.split('=');
+              if (key && value) {
+                  // Try to parse as number, otherwise keep as string
+                  const numValue = Number(value);
+                  params[key] = isNaN(numValue) ? value : numValue;
+              }
+          }
+      }
+
+      // Publish command to device via MQTT
+      const topic = `devices/${organizationId}/${deviceId}/commands`;
+      const commandId = `auto-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      
+      const payload = JSON.stringify({
+          command_id: commandId,
+          device_id: deviceId,
+          command,
+          parameters: params,
+          timestamp: new Date().toISOString(),
+          source: 'automation',
+          rule_id: ruleId
+      });
       
       this.publish(topic, payload);
       
-      // Log action (could be a separate table 'actions_log')
+      logger.info('Automation action executed', {
+          organizationId,
+          deviceId,
+          command,
+          params,
+          ruleId,
+          commandId
+      });
   }
 
   private async processAlert(organizationId: string, deviceId: string, data: any) {
@@ -201,10 +380,70 @@ class MQTTClientService {
       });
   }
 
-  private async updateDeviceStatus(deviceId: string, status: string) {
+  private async updateDeviceStatus(organizationId: string, deviceId: string, payload: any) {
+      const status = payload.status || 'online';
+      const batteryLevel = payload.battery;
+      const signalStrength = payload.signal_strength;
+      const firmwareVersion = payload.firmware_version;
+
+      // Update device status
       await db.update(devices)
-        .set({ status, lastSeen: new Date() })
+        .set({ 
+          status, 
+          lastSeen: new Date(),
+          firmwareVersion: firmwareVersion || undefined
+        })
         .where(eq(devices.id, deviceId));
+
+      // Save status history
+      await db.insert(deviceStatusHistory).values({
+        id: uuidv4(),
+        organizationId,
+        deviceId,
+        status,
+        batteryLevel: batteryLevel ? parseInt(String(batteryLevel)) : undefined,
+        signalStrength: signalStrength ? parseInt(String(signalStrength)) : undefined,
+        firmwareVersion,
+        metadata: payload,
+        timestamp: new Date()
+      });
+  }
+
+  private async processCommandResponse(organizationId: string, deviceId: string, payload: any) {
+      const commandId = payload.command_id;
+      if (!commandId) {
+        logger.warn('Command response missing command_id', { deviceId, payload });
+        return;
+      }
+
+      // Find command record
+      const [command] = await db.select()
+        .from(deviceCommands)
+        .where(and(
+          eq(deviceCommands.commandId, commandId),
+          eq(deviceCommands.deviceId, deviceId),
+          eq(deviceCommands.organizationId, organizationId)
+        ))
+        .limit(1);
+
+      if (!command) {
+        logger.warn('Command not found for response', { commandId, deviceId });
+        return;
+      }
+
+      // Update command status
+      const status = payload.success ? 'executed' : 'failed';
+      await db.update(deviceCommands)
+        .set({
+          status,
+          response: payload.response || payload,
+          error: payload.error || null,
+          executedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(deviceCommands.id, command.id));
+
+      logger.info('Command response processed', { commandId, status, deviceId });
   }
 
   public publish(topic: string, message: string) {

@@ -1,11 +1,17 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
+import { z } from "zod"; // Import Zod
 import { config } from "@/config/index.js";
 import { logger } from "@/utils/logger.js";
 import { asyncHandler, createError } from "@/middleware/errorHandler.js";
 
 const authRouter: Router = Router();
+
+// Validation schema for login
+const LoginSchema = z.object({
+  username: z.string().email("Invalid email format"),
+});
 
 /**
  * Handle GET requests to /login endpoint
@@ -22,6 +28,21 @@ authRouter.get("/login", (req: Request, res: Response): void => {
 });
 
 authRouter.post("/login", asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // Validate request body
+  const validation = LoginSchema.safeParse(req.body);
+  
+  if (!validation.success) {
+    res.status(400).json({
+      success: false,
+      error: "validation_error",
+      message: "Invalid input",
+      details: validation.error.errors,
+    });
+    return;
+  }
+
+  const { username } = validation.data;
+
   // Mock login is allowed in development or if explicitly enabled in config
   const isMockLoginAllowed = config.nodeEnv === "development" || config.security.enableMockLogin;
   
@@ -48,8 +69,6 @@ authRouter.post("/login", asyncHandler(async (req: Request, res: Response): Prom
     });
     return;
   }
-
-  const { username = "admin@example.com" } = req.body ?? {};
 
   // Validate JWT secret is configured
   if (!config.security.jwtSecret || config.security.jwtSecret.length < 32) {
@@ -95,6 +114,7 @@ authRouter.post("/login", asyncHandler(async (req: Request, res: Response): Prom
   }
 }));
 
+// ... (rest of the file remains unchanged)
 /**
  * @swagger
  * /auth/google:
@@ -249,6 +269,78 @@ authRouter.get(
   },
 );
 
+/**
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Mock login (development only)
+ *     tags: [Auth]
+ *     description: Mock login endpoint for development. Disabled in production. Use Google OAuth instead.
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 default: admin@example.com
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *       403:
+ *         description: Mock login disabled (production)
+ *       405:
+ *         description: Method not allowed (GET)
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     tags: [Auth]
+ *     description: Returns user info from session or JWT token
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     organizationId:
+ *                       type: string
+ *                       format: uuid
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 /**
  * Get current authenticated user
  * Returns user info from session or JWT token

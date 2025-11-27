@@ -109,6 +109,8 @@ export function AppSidebar({ className, ...props }: React.HTMLAttributes<HTMLDiv
         "flex flex-col space-y-1", // Her zaman dikey (yukarıdan aşağıya)
         className
       )}
+      role="navigation"
+      aria-label="Ana navigasyon menüsü"
       {...props}
     >
       {filteredNavItems.map((item) => {

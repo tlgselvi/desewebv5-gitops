@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations, users } from './saas.js';
+import { organizations, users } from './saas/core.js';
 
 // Chart of Accounts (Hesap Planı)
 export const accounts = pgTable('accounts', {
@@ -49,6 +49,11 @@ export const invoices = pgTable('invoices', {
   numberIdx: uniqueIndex('invoices_number_idx').on(table.organizationId, table.invoiceNumber),
   dateIdx: index('invoices_date_idx').on(table.invoiceDate),
   statusIdx: index('invoices_status_idx').on(table.status),
+  accountIdx: index('invoices_account_idx').on(table.accountId),
+  orgStatusIdx: index('invoices_org_status_idx').on(table.organizationId, table.status),
+  orgDateIdx: index('invoices_org_date_idx').on(table.organizationId, table.invoiceDate),
+  // Composite index for type + status queries (getFinancialSummary)
+  orgTypeStatusIdx: index('invoices_org_type_status_idx').on(table.organizationId, table.type, table.status),
 }));
 
 // Invoice Items (Fatura Kalemleri)
@@ -61,7 +66,9 @@ export const invoiceItems = pgTable('invoice_items', {
   taxRate: integer('tax_rate').default(20).notNull(), // %1, %10, %20
   taxAmount: decimal('tax_amount', { precision: 15, scale: 2 }).notNull(),
   total: decimal('total', { precision: 15, scale: 2 }).notNull(),
-});
+}, (table) => ({
+  invoiceIdx: index('invoice_items_invoice_idx').on(table.invoiceId),
+}));
 
 // Financial Transactions (Kasa/Banka Hareketleri - Tek Taraflı)
 export const transactions = pgTable('transactions', {
@@ -84,6 +91,8 @@ export const transactions = pgTable('transactions', {
   dateIdx: index('transactions_date_idx').on(table.date),
   accountIdx: index('transactions_account_idx').on(table.accountId),
   categoryIdx: index('transactions_category_idx').on(table.category),
+  orgDateIdx: index('transactions_org_date_idx').on(table.organizationId, table.date),
+  referenceIdx: index('transactions_reference_idx').on(table.referenceId, table.referenceType),
 }));
 
 // General Ledger (Yevmiye Defteri - Çift Taraflı)
@@ -107,7 +116,9 @@ export const ledgers = pgTable('ledgers', {
   orgIdx: index('ledgers_org_idx').on(table.organizationId),
   dateIdx: index('ledgers_date_idx').on(table.date),
   journalIdx: uniqueIndex('ledgers_journal_idx').on(table.organizationId, table.journalNumber),
-}));
+    // Composite index for date range queries
+    orgDateIdx: index('ledgers_org_date_idx').on(table.organizationId, table.date),
+  }));
 
 // Ledger Entries (Yevmiye Maddeleri)
 export const ledgerEntries = pgTable('ledger_entries', {

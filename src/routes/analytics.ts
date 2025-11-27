@@ -172,9 +172,21 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promi
     startDate: startDate.toISOString(),
   });
 
-  // Get overview metrics
-  const overview = await db
-    .select({
+  // Optimized: Execute all independent queries in parallel
+  const previousStartDate = new Date(startDate.getTime() - periodDays * 24 * 60 * 60 * 1000);
+  
+  const [
+    overview,
+    contentCount,
+    alertsCount,
+    recentMetrics,
+    recentContent,
+    alerts,
+    currentPeriodMetrics,
+    previousPeriodMetrics
+  ] = await Promise.all([
+    // Overview metrics
+    db.select({
       totalAnalyses: sql<number>`count(*)`,
       avgPerformance: sql<number>`avg(${seoMetrics.performance})`,
       avgAccessibility: sql<number>`avg(${seoMetrics.accessibility})`,
@@ -184,39 +196,35 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promi
     .from(seoMetrics)
     .where(
       sql`${seoMetrics.projectId} = ${projectId} AND ${seoMetrics.measuredAt} >= ${startDate}`
-    );
-
-  // Get content count
-  const contentCount = await db
-    .select({
+    ),
+    
+    // Content count
+    db.select({
       count: sql<number>`count(*)`,
     })
     .from(generatedContent)
     .where(
       sql`${generatedContent.projectId} = ${projectId} AND ${generatedContent.createdAt} >= ${startDate}`
-    );
-
-  // Get active alerts count
-  const alertsCount = await db
-    .select({
+    ),
+    
+    // Active alerts count
+    db.select({
       count: sql<number>`count(*)`,
     })
     .from(seoAlerts)
     .where(
       sql`${seoAlerts.projectId} = ${projectId} AND ${seoAlerts.isResolved} = false`
-    );
-
-  // Get recent metrics
-  const recentMetrics = await db
-    .select()
+    ),
+    
+    // Recent metrics
+    db.select()
     .from(seoMetrics)
     .where(eq(seoMetrics.projectId, projectId))
     .orderBy(desc(seoMetrics.measuredAt))
-    .limit(10);
-
-  // Get recent content
-  const recentContent = await db
-    .select({
+    .limit(10),
+    
+    // Recent content
+    db.select({
       id: generatedContent.id,
       title: generatedContent.title,
       contentType: generatedContent.contentType,
@@ -227,11 +235,10 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promi
     .from(generatedContent)
     .where(eq(generatedContent.projectId, projectId))
     .orderBy(desc(generatedContent.createdAt))
-    .limit(5);
-
-  // Get recent alerts
-  const alerts = await db
-    .select({
+    .limit(5),
+    
+    // Recent alerts
+    db.select({
       id: seoAlerts.id,
       type: seoAlerts.type,
       severity: seoAlerts.severity,
@@ -243,13 +250,10 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promi
     .from(seoAlerts)
     .where(eq(seoAlerts.projectId, projectId))
     .orderBy(desc(seoAlerts.createdAt))
-    .limit(10);
-
-  // Calculate trends (compare current period with previous period)
-  const previousStartDate = new Date(startDate.getTime() - periodDays * 24 * 60 * 60 * 1000);
-  
-  const currentPeriodMetrics = await db
-    .select({
+    .limit(10),
+    
+    // Current period metrics
+    db.select({
       avgPerformance: sql<number>`avg(${seoMetrics.performance})`,
       avgAccessibility: sql<number>`avg(${seoMetrics.accessibility})`,
       avgSeo: sql<number>`avg(${seoMetrics.seo})`,
@@ -257,10 +261,10 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promi
     .from(seoMetrics)
     .where(
       sql`${seoMetrics.projectId} = ${projectId} AND ${seoMetrics.measuredAt} >= ${startDate}`
-    );
-
-  const previousPeriodMetrics = await db
-    .select({
+    ),
+    
+    // Previous period metrics
+    db.select({
       avgPerformance: sql<number>`avg(${seoMetrics.performance})`,
       avgAccessibility: sql<number>`avg(${seoMetrics.accessibility})`,
       avgSeo: sql<number>`avg(${seoMetrics.seo})`,
@@ -268,7 +272,8 @@ router.get('/dashboard', asyncHandler(async (req: Request, res: Response): Promi
     .from(seoMetrics)
     .where(
       sql`${seoMetrics.projectId} = ${projectId} AND ${seoMetrics.measuredAt} >= ${previousStartDate} AND ${seoMetrics.measuredAt} < ${startDate}`
-    );
+    )
+  ]);
 
   const current = currentPeriodMetrics[0] || { avgPerformance: 0, avgAccessibility: 0, avgSeo: 0 };
   const previous = previousPeriodMetrics[0] || { avgPerformance: 0, avgAccessibility: 0, avgSeo: 0 };

@@ -1,4 +1,4 @@
 // SEO Module Schema
-// Moved from src/db/schema/legacy-seo.ts to modular structure
-export * from '@/db/schema/legacy-seo.js';
+// Modern schema with multi-tenancy support
+export * from '@/db/schema/seo.js';
 

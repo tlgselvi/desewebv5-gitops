@@ -1,0 +1,279 @@
+version: '3.8'
+
+services:
+  redis-cluster-0:
+    image: redis:7-alpine
+    container_name: redis-cluster-0
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --masterauth ${REDIS_PASSWORD:-}
+      --port 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_cluster_0_data:/data
+    ports:
+      - "7000:6379"
+    networks:
+      - redis-cluster-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  redis-cluster-1:
+    image: redis:7-alpine
+    container_name: redis-cluster-1
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --masterauth ${REDIS_PASSWORD:-}
+      --port 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_cluster_1_data:/data
+    ports:
+      - "7001:6379"
+    networks:
+      - redis-cluster-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  redis-cluster-2:
+    image: redis:7-alpine
+    container_name: redis-cluster-2
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --masterauth ${REDIS_PASSWORD:-}
+      --port 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_cluster_2_data:/data
+    ports:
+      - "7002:6379"
+    networks:
+      - redis-cluster-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  redis-cluster-3:
+    image: redis:7-alpine
+    container_name: redis-cluster-3
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --masterauth ${REDIS_PASSWORD:-}
+      --port 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_cluster_3_data:/data
+    ports:
+      - "7003:6379"
+    networks:
+      - redis-cluster-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-0
+      - redis-cluster-1
+      - redis-cluster-2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  redis-cluster-4:
+    image: redis:7-alpine
+    container_name: redis-cluster-4
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --masterauth ${REDIS_PASSWORD:-}
+      --port 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_cluster_4_data:/data
+    ports:
+      - "7004:6379"
+    networks:
+      - redis-cluster-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-0
+      - redis-cluster-1
+      - redis-cluster-2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  redis-cluster-5:
+    image: redis:7-alpine
+    container_name: redis-cluster-5
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-}
+      --masterauth ${REDIS_PASSWORD:-}
+      --port 6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis_cluster_5_data:/data
+    ports:
+      - "7005:6379"
+    networks:
+      - redis-cluster-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-0
+      - redis-cluster-1
+      - redis-cluster-2
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  redis-cluster-init:
+    image: redis:7-alpine
+    container_name: redis-cluster-init
+    command: >
+      sh -c "
+      echo 'Waiting for cluster nodes to be ready...'
+      until redis-cli -h redis-cluster-0 -p 6379 ping > /dev/null 2>&1; do
+        echo 'Waiting for redis-cluster-0...'
+        sleep 2
+      done
+      until redis-cli -h redis-cluster-1 -p 6379 ping > /dev/null 2>&1; do
+        echo 'Waiting for redis-cluster-1...'
+        sleep 2
+      done
+      until redis-cli -h redis-cluster-2 -p 6379 ping > /dev/null 2>&1; do
+        echo 'Waiting for redis-cluster-2...'
+        sleep 2
+      done
+      until redis-cli -h redis-cluster-3 -p 6379 ping > /dev/null 2>&1; do
+        echo 'Waiting for redis-cluster-3...'
+        sleep 2
+      done
+      until redis-cli -h redis-cluster-4 -p 6379 ping > /dev/null 2>&1; do
+        echo 'Waiting for redis-cluster-4...'
+        sleep 2
+      done
+      until redis-cli -h redis-cluster-5 -p 6379 ping > /dev/null 2>&1; do
+        echo 'Waiting for redis-cluster-5...'
+        sleep 2
+      done
+      echo 'All nodes are ready. Initializing cluster...'
+      redis-cli --cluster create
+      redis-cluster-0:6379
+      redis-cluster-1:6379
+      redis-cluster-2:6379
+      redis-cluster-3:6379
+      redis-cluster-4:6379
+      redis-cluster-5:6379
+      --cluster-replicas 1
+      --cluster-yes
+      echo 'Cluster initialization completed!'
+      "
+    networks:
+      - redis-cluster-net
+    depends_on:
+      redis-cluster-0:
+        condition: service_healthy
+      redis-cluster-1:
+        condition: service_healthy
+      redis-cluster-2:
+        condition: service_healthy
+      redis-cluster-3:
+        condition: service_healthy
+      redis-cluster-4:
+        condition: service_healthy
+      redis-cluster-5:
+        condition: service_healthy
+    profiles:
+      - redis-cluster-init
+
+networks:
+  redis-cluster-net:
+    driver: bridge
+
+volumes:
+  redis_cluster_0_data:
+  redis_cluster_1_data:
+  redis_cluster_2_data:
+  redis_cluster_3_data:
+  redis_cluster_4_data:
+  redis_cluster_5_data:
+

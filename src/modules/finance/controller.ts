@@ -113,6 +113,7 @@ export class FinanceController {
   async syncBankTransactions(req: Request, res: Response) {
     try {
       const organizationId = (req.user as any)?.organizationId;
+      const userId = (req.user as any)?.id || 'system';
       const { accountId } = req.body;
 
       if (!organizationId) {
@@ -122,7 +123,7 @@ export class FinanceController {
         return res.status(400).json({ error: 'Account ID required' });
       }
 
-      const result = await financeService.syncBankTransactions(organizationId, accountId);
+      const result = await financeService.syncBankTransactions(organizationId, accountId, userId);
       return res.json(result);
     } catch (error: any) {
       console.error('Bank Sync Error:', error);

@@ -200,9 +200,20 @@ Output JSON format:
   /**
    * Predict financial revenue for next month based on history
    * Uses GenAI App Builder for financial insights if enabled
+   * Falls back to simple statistical prediction if no AI available
    */
   async predictFinancials(history: any[]): Promise<FinancialPrediction> {
-     try {
+    try {
+      // If no history provided, return default prediction
+      if (!history || history.length === 0) {
+        logger.info('JARVIS: No financial history provided, using default prediction');
+        return {
+          predictedRevenue: 150000,
+          confidence: 0.5,
+          reasoning: 'Yetersiz geçmiş veri. Tahmin için daha fazla finansal veri gerekiyor.'
+        };
+      }
+
       // Try GenAI App Builder first if enabled
       if (this.useGenAI) {
         try {
@@ -231,7 +242,12 @@ Output JSON format:
 
           const jsonMatch = response.response.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]) as FinancialPrediction;
+            const prediction = JSON.parse(jsonMatch[0]) as FinancialPrediction;
+            logger.info('JARVIS: Financial prediction generated using GenAI', {
+              predictedRevenue: prediction.predictedRevenue,
+              confidence: prediction.confidence,
+            });
+            return prediction;
           }
         } catch (genAIError) {
           logger.warn('GenAI App Builder failed, falling back to OpenAI', {
@@ -241,41 +257,107 @@ Output JSON format:
       }
 
       // Fallback to OpenAI
-      if (!process.env.OPENAI_API_KEY) {
-        return {
-          predictedRevenue: 150000,
-          confidence: 0.85,
-          reasoning: 'Mock prediction based on linear growth.'
-        };
-      }
+      if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'mock-key') {
+        try {
+          // Calculate simple statistics for better prompt
+          const revenues = history
+            .map((h: any) => h.revenue || h.amount || 0)
+            .filter((r: number) => r > 0);
+          
+          const avgRevenue = revenues.length > 0 
+            ? revenues.reduce((a: number, b: number) => a + b, 0) / revenues.length 
+            : 0;
+          const trend = revenues.length >= 2 
+            ? (revenues[revenues.length - 1] - revenues[0]) / revenues.length 
+            : 0;
 
-      const prompt = `
+          const prompt = `
         You are JARVIS, a Financial Analyst. Analyze the historical revenue data and predict next month's revenue.
         
-        History:
-        ${JSON.stringify(history)}
+        Historical Data:
+        ${JSON.stringify(history, null, 2)}
 
+        Statistics:
+        - Average Revenue: ${avgRevenue.toFixed(2)}
+        - Trend: ${trend > 0 ? 'Positive' : trend < 0 ? 'Negative' : 'Neutral'}
+        - Data Points: ${revenues.length}
+
+        Provide a realistic prediction based on the trend and historical patterns.
         Output JSON format:
         {
           "predictedRevenue": number,
           "confidence": number (0-1),
-          "reasoning": "string"
+          "reasoning": "string (in Turkish)"
         }
       `;
 
-      const response = await this.client.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
+          const response = await this.client.chat.completions.create({
+            model: 'gpt-4-turbo-preview',
+            messages: [{ role: 'user', content: prompt }],
+            response_format: { type: 'json_object' },
+            temperature: 0.3, // Lower temperature for more consistent predictions
+          });
+
+          const content = response.choices[0]?.message?.content;
+          if (!content) throw new Error('Empty response from OpenAI');
+
+          const prediction = JSON.parse(content) as FinancialPrediction;
+          logger.info('JARVIS: Financial prediction generated using OpenAI', {
+            predictedRevenue: prediction.predictedRevenue,
+            confidence: prediction.confidence,
+          });
+          return prediction;
+        } catch (openAIError) {
+          logger.warn('OpenAI prediction failed, using statistical fallback', {
+            error: openAIError instanceof Error ? openAIError.message : String(openAIError),
+          });
+        }
+      }
+
+      // Statistical fallback: Simple linear trend prediction
+      const revenues = history
+        .map((h: any) => h.revenue || h.amount || 0)
+        .filter((r: number) => r > 0);
+      
+      if (revenues.length === 0) {
+        return {
+          predictedRevenue: 150000,
+          confidence: 0.3,
+          reasoning: 'Yetersiz veri. Varsayılan tahmin kullanıldı.'
+        };
+      }
+
+      const avgRevenue = revenues.reduce((a: number, b: number) => a + b, 0) / revenues.length;
+      const recentAvg = revenues.length >= 3 
+        ? revenues.slice(-3).reduce((a: number, b: number) => a + b, 0) / 3
+        : avgRevenue;
+      
+      // Simple trend: if recent average is higher, predict slightly higher
+      const trendFactor = recentAvg > avgRevenue ? 1.1 : 0.95;
+      const predictedRevenue = Math.round(recentAvg * trendFactor);
+      const confidence = revenues.length >= 6 ? 0.7 : revenues.length >= 3 ? 0.5 : 0.3;
+
+      logger.info('JARVIS: Financial prediction generated using statistical method', {
+        predictedRevenue,
+        confidence,
+        dataPoints: revenues.length,
       });
 
-      const content = response.choices[0]?.message?.content;
-      if (!content) throw new Error('Empty response from OpenAI');
-
-      return JSON.parse(content) as FinancialPrediction;
+      return {
+        predictedRevenue,
+        confidence,
+        reasoning: revenues.length >= 6 
+          ? `Son ${revenues.length} ay verisine dayalı istatistiksel tahmin. Trend analizi uygulandı.`
+          : `Sınırlı veri seti (${revenues.length} veri noktası) ile basit trend tahmini. Daha fazla veri ile tahmin doğruluğu artacaktır.`
+      };
     } catch (error) {
       logger.error('Jarvis financial prediction failed:', error);
-      throw error;
+      // Return safe fallback
+      return {
+        predictedRevenue: 150000,
+        confidence: 0.2,
+        reasoning: 'Tahmin hesaplanırken bir hata oluştu. Varsayılan değer kullanıldı.'
+      };
     }
   }
 

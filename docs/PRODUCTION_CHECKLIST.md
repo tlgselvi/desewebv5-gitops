@@ -1,267 +1,323 @@
-# ✅ Production Deployment Checklist - Dese EA Plan v6.8.0
+# Production Deployment Checklist - DESE EA PLAN v7.0.0
 
-**Version:** 6.8.0  
-**Last Update:** 2025-01-27  
-**Status:** Pre-Deployment
+**Version:** 7.0.0  
+**Last Updated:** 2025-01-27  
+**Status:** ✅ Ready for Production
 
 ---
 
 ## 📋 Pre-Deployment Checklist
 
-### Environment Setup
+### 1. Environment Configuration
 
-- [ ] `.env` dosyası oluşturuldu (`.env.example`'dan kopyalandı)
-- [ ] Tüm environment variables güncellendi
-- [ ] `JWT_SECRET` güvenli bir değere ayarlandı (min 32 karakter)
-- [ ] `DATABASE_URL` production database'e ayarlandı
-- [ ] `REDIS_URL` production Redis'e ayarlandı
-- [ ] Tüm API keys (OpenAI, Google, Ahrefs) ayarlandı
-- [ ] CORS origin production domain'e ayarlandı
+- [ ] **Environment Variables**
+  - [ ] `NODE_ENV=production`
+  - [ ] `DATABASE_URL` (PostgreSQL connection string)
+  - [ ] `JWT_SECRET` (minimum 32 characters)
+  - [ ] `REDIS_URL` (Redis connection string)
+  - [ ] `PORT` (default: 3000)
+  - [ ] `FRONTEND_URL` (production frontend URL)
+  - [ ] `CORS_ORIGIN` (allowed origins)
 
-### Security
+- [ ] **API Credentials**
+  - [ ] Bank API credentials (if using banking integration)
+  - [ ] E-Fatura credentials (Foriba API)
+  - [ ] WhatsApp Business API credentials (Meta)
+  - [ ] TCMB API key (for exchange rates)
+  - [ ] OpenAI API key (for JARVIS AI)
+  - [ ] GenAI App Builder credentials (if using)
 
-- [ ] JWT secret güçlü ve benzersiz
-- [ ] Database credentials güvenli
-- [ ] Redis password ayarlandı (production)
-- [ ] API keys güvenli şekilde saklanıyor (secrets management)
-- [ ] Rate limiting ayarları production için optimize edildi
-- [ ] HTTPS/SSL sertifikaları hazır
+- [ ] **Database**
+  - [ ] PostgreSQL 14+ installed and running
+  - [ ] Database created (`dese_ea_plan_v5`)
+  - [ ] Database migrations applied (`pnpm db:migrate`)
+  - [ ] RLS policies enabled and tested
+  - [ ] Database backup strategy configured
+  - [ ] Connection pooling configured
 
-### Database
+- [ ] **Redis**
+  - [ ] Redis 6+ installed and running
+  - [ ] Redis persistence configured (AOF or RDB)
+  - [ ] Redis password set (if required)
+  - [ ] Redis memory limits configured
 
-- [ ] PostgreSQL database oluşturuldu
-- [ ] Database migration çalıştırıldı (`pnpm db:migrate`)
-- [ ] RBAC seed çalıştırıldı (`pnpm rbac:seed`)
-- [ ] Database backup stratejisi hazır
-- [ ] Database connection pool ayarları optimize edildi
+### 2. Security Checklist
 
-### Cache (Redis)
+- [ ] **Authentication & Authorization**
+  - [ ] JWT secret is strong (32+ characters)
+  - [ ] JWT expiration time configured (default: 24h)
+  - [ ] RBAC permissions seeded (`pnpm rbac:seed`)
+  - [ ] RLS policies active on all tables
+  - [ ] Super admin user created
 
-- [ ] Redis instance hazır
-- [ ] Redis password ayarlandı (production)
-- [ ] Redis persistence ayarlandı
-- [ ] Redis memory limit ayarlandı
-- [ ] Redis connection test edildi
+- [ ] **API Security**
+  - [ ] CORS configured for production domains only
+  - [ ] Rate limiting enabled
+  - [ ] Request size limits configured
+  - [ ] HTTPS enforced (TLS 1.2+)
+  - [ ] Security headers configured (Helmet.js)
 
-### Build & Test
+- [ ] **Data Protection**
+  - [ ] Encryption at rest enabled (database)
+  - [ ] Encryption in transit (TLS/SSL)
+  - [ ] Sensitive data encrypted (integration credentials)
+  - [ ] PII data handling compliant
+  - [ ] Audit logging enabled
 
-- [ ] Tüm testler geçti (`pnpm test`)
-- [ ] Test coverage %70+ (`pnpm test:coverage`)
-- [ ] Linting geçti (`pnpm lint`)
-- [ ] Build başarılı (`pnpm build`)
-- [ ] Docker image build edildi (`docker build -t dese-ea-plan-v6.8.0 .`)
+- [ ] **Network Security**
+  - [ ] Firewall rules configured
+  - [ ] Database not exposed to public internet
+  - [ ] Redis not exposed to public internet
+  - [ ] VPN or private network for internal services
 
-### Docker
+### 3. Application Health
 
-- [ ] Dockerfile güncel (v6.8.0)
-- [ ] Docker image tag'ı doğru
-- [ ] Docker Compose test edildi (`docker-compose up -d`)
-- [ ] Health checks çalışıyor
-- [ ] Port mapping doğru (3001, 5555-5558)
+- [ ] **Code Quality**
+  - [ ] All tests passing (`pnpm test`)
+  - [ ] Test coverage ≥ 70% (`pnpm test:coverage`)
+  - [ ] Linting passed (`pnpm lint`)
+  - [ ] No critical security vulnerabilities (`pnpm audit`)
 
-### Kubernetes (Opsiyonel)
+- [ ] **Build & Deployment**
+  - [ ] Production build successful (`pnpm build`)
+  - [ ] Docker images built and tagged
+  - [ ] Docker Compose configuration verified
+  - [ ] Health check endpoints tested (`/health`, `/ready`, `/live`)
 
-- [ ] Namespace oluşturuldu
-- [ ] Secrets oluşturuldu ve güvenli
-- [ ] ConfigMap güncel
-- [ ] Deployment yapılandırması doğru
-- [ ] Service yapılandırması doğru
-- [ ] Ingress yapılandırması doğru
-- [ ] ServiceAccount ve RBAC ayarlandı
-- [ ] Resource limits ayarlandı (CPU, Memory)
+- [ ] **Monitoring & Logging**
+  - [ ] Prometheus metrics endpoint configured (`/metrics`)
+  - [ ] Grafana dashboards imported
+  - [ ] Alert rules configured
+  - [ ] Log aggregation configured (if using)
+  - [ ] Error tracking configured (Sentry, etc.)
 
-### Monitoring & Observability
+### 4. Infrastructure
 
-- [ ] Prometheus yapılandırması hazır
-- [ ] Grafana dashboards hazır
-- [ ] Loki log aggregation ayarlandı
-- [ ] Alert rules tanımlandı
-- [ ] ServiceMonitor yapılandırıldı (Kubernetes)
+- [ ] **Server Requirements**
+  - [ ] Minimum 2 CPU cores
+  - [ ] Minimum 4GB RAM
+  - [ ] Minimum 20GB disk space
+  - [ ] Network bandwidth sufficient
 
-### MCP Servers
+- [ ] **Docker & Containers**
+  - [ ] Docker 20.10+ installed
+  - [ ] Docker Compose 2.0+ installed
+  - [ ] Container registry access configured
+  - [ ] Container health checks configured
 
-- [ ] FinBot MCP Server health check çalışıyor
-- [ ] MuBot MCP Server health check çalışıyor
-- [ ] DESE MCP Server health check çalışıyor
-- [ ] Observability MCP Server health check çalışıyor
-- [ ] Tüm MCP servers authentication yapıyor
-- [ ] MCP servers rate limiting aktif
+- [ ] **DNS & SSL**
+  - [ ] Domain name configured
+  - [ ] DNS records (A, CNAME) set
+  - [ ] SSL certificate obtained (Let's Encrypt, etc.)
+  - [ ] SSL certificate auto-renewal configured
+  - [ ] HTTPS redirect configured
+
+### 5. Backup & Recovery
+
+- [ ] **Database Backups**
+  - [ ] Automated daily backups configured
+  - [ ] Backup retention policy (30 days minimum)
+  - [ ] Backup restoration tested
+  - [ ] Point-in-time recovery configured (if available)
+
+- [ ] **Application Backups**
+  - [ ] Configuration files backed up
+  - [ ] Environment variables backed up (securely)
+  - [ ] Docker volumes backed up
+
+- [ ] **Disaster Recovery**
+  - [ ] Recovery plan documented
+  - [ ] Recovery time objective (RTO) defined
+  - [ ] Recovery point objective (RPO) defined
+  - [ ] Disaster recovery tested
 
 ---
 
 ## 🚀 Deployment Steps
 
-### Step 1: Docker Deployment
+### Step 1: Prepare Environment
 
 ```bash
-# 1. Build image
-docker build -t dese-ea-plan-v6.8.0 .
+# Clone repository
+git clone <repository-url>
+cd desewebv5
 
-# 2. Test locally
-docker run -p 3001:3001 -p 5555:5555 -p 5556:5556 -p 5557:5557 -p 5558:5558 \
-  --env-file .env dese-ea-plan-v6.8.0
+# Checkout production branch
+git checkout main
 
-# 3. Health check
-curl http://localhost:3001/health
+# Install dependencies
+pnpm install
 
-# 4. MCP servers health check
-curl http://localhost:5555/finbot/health
-curl http://localhost:5556/mubot/health
-curl http://localhost:5557/dese/health
-curl http://localhost:5558/observability/health
+# Copy environment file
+cp .env.example .env.production
+# Edit .env.production with production values
 ```
 
-### Step 2: Docker Compose Deployment
+### Step 2: Database Setup
 
 ```bash
-# 1. Update docker-compose.yml with production values
-# 2. Start services
-docker-compose up -d
+# Run migrations
+pnpm db:migrate
 
-# 3. Check logs
-docker-compose logs -f app
+# Seed RBAC permissions
+pnpm rbac:seed
 
-# 4. Health checks
-docker-compose exec app curl http://localhost:3001/health
+# Verify RLS policies
+psql -U dese -d dese_ea_plan_v5 -c "SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND rowsecurity = true;"
 ```
 
-### Step 3: Kubernetes Deployment
+### Step 3: Build Application
 
 ```bash
-# 1. Create namespace
-kubectl apply -f k8s/namespace.yaml
+# Build backend
+pnpm build:backend
 
-# 2. Create secrets (update values!)
-kubectl apply -f k8s/secret.yaml
+# Build frontend
+pnpm build:frontend
 
-# 3. Create configmap
-kubectl apply -f k8s/configmap.yaml
+# Or build everything
+pnpm build
+```
 
-# 4. Create service account
-kubectl apply -f k8s/serviceaccount.yaml
+### Step 4: Start Services
 
-# 5. Deploy application
-kubectl apply -f k8s/deployment.yaml
+```bash
+# Using Docker Compose
+docker-compose -f docker-compose.yml up -d
 
-# 6. Create service
-kubectl apply -f k8s/service.yaml
+# Or using PM2 (if not using Docker)
+pm2 start dist/index.js --name dese-ea-plan
+```
 
-# 7. Create ingress
-kubectl apply -f k8s/ingress.yaml
+### Step 5: Verify Deployment
 
-# 8. Check status
-kubectl get pods -n dese-ea-plan-v5
-kubectl get svc -n dese-ea-plan-v5
+```bash
+# Check health
+curl http://localhost:3000/health
+
+# Check readiness
+curl http://localhost:3000/ready
+
+# Check liveness
+curl http://localhost:3000/live
+
+# Check metrics
+curl http://localhost:3000/metrics
 ```
 
 ---
 
 ## ✅ Post-Deployment Verification
 
-### Health Checks
+### 1. Application Health
 
-- [ ] Backend API health: `curl http://your-domain/health`
-- [ ] Backend API ready: `curl http://your-domain/health/ready`
-- [ ] Backend API live: `curl http://your-domain/health/live`
-- [ ] FinBot MCP health: `curl http://your-domain:5555/finbot/health`
-- [ ] MuBot MCP health: `curl http://your-domain:5556/mubot/health`
-- [ ] DESE MCP health: `curl http://your-domain:5557/dese/health`
-- [ ] Observability MCP health: `curl http://your-domain:5558/observability/health`
+- [ ] Health endpoint returns `200 OK`
+- [ ] Ready endpoint returns `200 OK`
+- [ ] Live endpoint returns `200 OK`
+- [ ] Metrics endpoint accessible
+- [ ] Frontend loads correctly
+- [ ] API endpoints respond correctly
 
-### API Endpoints
+### 2. Authentication & Authorization
 
-- [ ] Swagger UI erişilebilir: `http://your-domain/api-docs`
-- [ ] Metrics endpoint: `http://your-domain/metrics`
-- [ ] Health endpoint: `http://your-domain/health`
-- [ ] API endpoints authentication gerektiriyor
+- [ ] User login works
+- [ ] JWT tokens generated correctly
+- [ ] RBAC permissions enforced
+- [ ] RLS policies working (test with different users)
+- [ ] Super admin access verified
 
-### Monitoring
+### 3. Module Functionality
 
-- [ ] Prometheus metrics toplanıyor
-- [ ] Grafana dashboards çalışıyor
-- [ ] Logs Loki'ye gönderiliyor
-- [ ] Alert rules aktif
+- [ ] Finance module accessible
+- [ ] CRM module accessible
+- [ ] Inventory module accessible
+- [ ] HR module accessible
+- [ ] IoT module accessible
+- [ ] SEO module accessible
+- [ ] Service module accessible
 
-### Performance
+### 4. External Integrations
 
-- [ ] Response time < 200ms (average)
-- [ ] Error rate < 0.1%
-- [ ] CPU usage < 70%
-- [ ] Memory usage < 80%
-- [ ] Database connection pool optimal
+- [ ] Bank API connection (if configured)
+- [ ] E-Fatura integration (if configured)
+- [ ] WhatsApp integration (if configured)
+- [ ] TCMB API (exchange rates)
+- [ ] JARVIS AI service
 
-### Security
+### 5. Monitoring & Alerts
 
-- [ ] HTTPS/SSL aktif
-- [ ] JWT authentication çalışıyor
-- [ ] Rate limiting aktif
-- [ ] CORS ayarları doğru
-- [ ] Security headers aktif (Helmet)
-
----
-
-## 🔄 Rollback Plan
-
-### Rollback Steps
-
-1. **Docker Compose:**
-   ```bash
-   docker-compose down
-   docker-compose up -d -f docker-compose.previous.yml
-   ```
-
-2. **Kubernetes:**
-   ```bash
-   kubectl rollout undo deployment/dese-ea-plan-v5 -n dese-ea-plan-v5
-   ```
-
-3. **Helm:**
-   ```bash
-   helm rollback dese-ea-plan-v5
-   ```
+- [ ] Prometheus scraping metrics
+- [ ] Grafana dashboards showing data
+- [ ] Alert rules firing correctly
+- [ ] Logs being collected
+- [ ] Error tracking working
 
 ---
 
-## 📞 Support & Troubleshooting
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Failed**
+   - Check `DATABASE_URL` in `.env`
+   - Verify PostgreSQL is running
+   - Check firewall rules
+   - Verify database exists
+
+2. **Redis Connection Failed**
+   - Check `REDIS_URL` in `.env`
+   - Verify Redis is running
+   - Check Redis password (if set)
+
+3. **JWT Token Invalid**
+   - Verify `JWT_SECRET` is set correctly
+   - Check token expiration time
+   - Verify token format
+
+4. **RLS Policies Not Working**
+   - Verify RLS is enabled on tables
+   - Check session variables are set
+   - Verify `organizationId` in JWT payload
+
+5. **Frontend Not Loading**
+   - Check `FRONTEND_URL` in `.env`
+   - Verify CORS configuration
+   - Check browser console for errors
 
 ### Logs
 
 ```bash
-# Docker
-docker logs dese-ea-plan-v6.8.0
-
-# Kubernetes
-kubectl logs -f deployment/dese-ea-plan-v5 -n dese-ea-plan-v5
-
 # Application logs
-tail -f logs/app.log
+docker-compose logs -f app
+
+# Database logs
+docker-compose logs -f db
+
+# Redis logs
+docker-compose logs -f redis
 ```
 
-### Health Check Script
+---
 
-```bash
-# PowerShell
-pwsh scripts/advanced-health-check.ps1 -Verbose
-```
+## 📞 Support
 
-### Common Issues
-
-- **Database connection failed:** Check `DATABASE_URL` and PostgreSQL status
-- **Redis connection failed:** Check `REDIS_URL` and Redis status
-- **MCP servers not starting:** Check ports 5555-5558 are available
-- **Health check failing:** Check application logs and environment variables
+For issues or questions:
+- Check documentation: `docs/`
+- Review logs: `docker-compose logs`
+- Contact DevOps team
+- Open issue in repository
 
 ---
 
 ## 📝 Notes
 
-- **Version:** 6.8.0
-- **Last Updated:** 2025-01-27
-- **Deployment Type:** Production
-- **Environment:** Production
+- This checklist should be reviewed and updated before each production deployment
+- All items must be checked before marking deployment as complete
+- Keep a record of deployment date, version, and any issues encountered
 
 ---
 
-**Hazırlayan:** Cursor AI Assistant  
-**Onay:** ⏳ Bekleniyor
-
+**Deployment Date:** _______________  
+**Deployed By:** _______________  
+**Version:** 7.0.0  
+**Status:** ☐ Ready ☐ Issues Found

@@ -21,6 +21,10 @@ import {
 import { errorHandler } from "@/middleware/errorHandler.js";
 import { requestLogger } from "@/middleware/requestLogger.js";
 import { prometheusMiddleware } from "@/middleware/prometheus.js";
+import { 
+  startPerformanceMetricsCollection,
+  stopPerformanceMetricsCollection 
+} from "@/services/monitoring/performance-metrics.js";
 import {
   sanitizeInput,
   cspHeaders,
@@ -38,6 +42,7 @@ import {
   stopFinBotConsumer,
 } from "@/bus/streams/finbot-consumer.js";
 import { auditMiddleware } from "@/middleware/audit.js";
+import { setRLSContextMiddleware } from "@/middleware/rls.js";
 
 // Passport stratejisini yükle (sadece import etmek yeterli)
 import "@/services/passport.js";
@@ -165,17 +170,35 @@ app.use(
 
 // Rate limiting - disabled in test environment or when DISABLE_RATE_LIMIT is set
 if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true") {
-  const limiter = rateLimit({
-    windowMs: config.security.rateLimitWindowMs,
-    max: config.security.rateLimitMaxRequests,
-    message: {
-      error: "Too many requests from this IP, please try again later.",
-      retryAfter: Math.ceil(config.security.rateLimitWindowMs / 1000),
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use(limiter);
+  // Use advanced rate limiting if enabled, otherwise fall back to basic rate limiting
+  if (process.env.ADVANCED_RATE_LIMIT_ENABLED === "true") {
+    // Advanced rate limiting will be initialized after routes setup
+    // See below for initialization
+  } else {
+    // Basic rate limiting (backward compatible)
+    const limiter = rateLimit({
+      windowMs: config.security.rateLimitWindowMs,
+      max: config.security.rateLimitMaxRequests,
+      message: {
+        error: "Too many requests from this IP, please try again later.",
+        retryAfter: Math.ceil(config.security.rateLimitWindowMs / 1000),
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
+    app.use(limiter);
+  }
+}
+
+// APM middleware (if enabled)
+if (process.env.APM_ENABLED === "true") {
+  try {
+    const { apmMiddleware } = await import("@/middleware/apm-middleware.js");
+    app.use(apmMiddleware);
+    logger.info("✅ APM middleware enabled");
+  } catch (error) {
+    logger.warn("⚠️ APM middleware not available", { error });
+  }
 }
 
 // Request logging
@@ -189,10 +212,21 @@ if (config.monitoring.prometheus) {
 // API routes
 setupRoutes(app);
 
-// Swagger documentation
-if (!dev) {
-  setupSwagger(app);
+// Advanced rate limiting (if enabled) - must be after routes setup
+if (config.nodeEnv !== "test" && process.env.DISABLE_RATE_LIMIT !== "true" && process.env.ADVANCED_RATE_LIMIT_ENABLED === "true") {
+  try {
+    const { rateLimitManager } = await import("@/services/rate-limit/rate-limit-manager.js");
+    await rateLimitManager.initialize();
+    app.use(rateLimitManager.getMiddleware());
+    logger.info("✅ Advanced rate limiting enabled");
+  } catch (error) {
+    logger.error("❌ Failed to initialize advanced rate limiting", { error });
+    // Fall back to basic rate limiting or continue without rate limiting
+  }
 }
+
+// Swagger documentation (available in all environments)
+setupSwagger(app);
 
 // All other requests that were not handled by the API routes should be passed to Next.js.
 // This must be placed after all API routes and before the final error handler.
@@ -276,11 +310,11 @@ setImmediate(() => {
 
 // Start server with database connection test
 const server = httpServer.listen(config.port, async () => {
-  logger.info(`🚀 Dese EA Plan v6.8.1 server started`, {
+  logger.info(`🚀 Dese EA Plan v7.0.0 server started`, {
     port: config.port,
     environment: config.nodeEnv,
     version:
-      process.env.APP_VERSION || process.env.npm_package_version || "6.8.1",
+      process.env.APP_VERSION || process.env.npm_package_version || "7.0.0",
     domain: "cpt-optimization",
   });
 
@@ -297,6 +331,15 @@ const server = httpServer.listen(config.port, async () => {
     // Don't exit - let the app start but health checks will fail
   }
 
+  // Start performance metrics collection
+  try {
+    startPerformanceMetricsCollection(10000); // Update every 10 seconds
+    logger.info("✅ Performance metrics collection started");
+  } catch (error) {
+    logger.error("❌ Failed to start performance metrics collection", { error });
+    // Don't exit - app can still function without metrics
+  }
+
   // Start FinBot event consumer
   try {
     await startFinBotConsumer();
@@ -305,11 +348,39 @@ const server = httpServer.listen(config.port, async () => {
     logger.error("❌ Failed to start FinBot event consumer", { error });
     // Don't exit - app can continue without consumer
   }
+
+  // Initialize APM service
+  try {
+    const { apmService } = await import("@/services/monitoring/apm-service.js");
+    await apmService.initialize();
+    logger.info("✅ APM service initialized");
+  } catch (error) {
+    logger.error("❌ Failed to initialize APM service", { error });
+    // Don't exit - app can continue without APM
+  }
 });
 
 // Graceful shutdown
 gracefulShutdown(server, async () => {
   logger.info("🔄 Gracefully shutting down server...");
+
+  // Stop rate limit manager
+  try {
+    const { rateLimitManager } = await import("@/services/rate-limit/rate-limit-manager.js");
+    await rateLimitManager.close();
+    logger.info("✅ Rate limit manager stopped");
+  } catch (error) {
+    logger.error("❌ Failed to stop rate limit manager", { error });
+  }
+
+  // Shutdown APM service
+  try {
+    const { apmService } = await import("@/services/monitoring/apm-service.js");
+    await apmService.shutdown();
+    logger.info("✅ APM service stopped");
+  } catch (error) {
+    logger.error("❌ Failed to stop APM service", { error });
+  }
 
   // Stop FinBot consumer
   try {
@@ -325,6 +396,14 @@ gracefulShutdown(server, async () => {
     logger.info("✅ WebSocket gateway closed");
   } catch (error) {
     logger.error("Error closing WebSocket gateway", { error });
+  }
+
+  // Stop performance metrics collection
+  try {
+    stopPerformanceMetricsCollection();
+    logger.info("✅ Performance metrics collection stopped");
+  } catch (error) {
+    logger.error("❌ Error stopping performance metrics collection", { error });
   }
 
   await closeDatabaseConnection();

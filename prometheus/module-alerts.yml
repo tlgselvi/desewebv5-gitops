@@ -1,0 +1,319 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: module-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app: dese-ea-plan-v5
+spec:
+  groups:
+  # ========== Finance Module Alerts ==========
+  - name: finance_module
+    interval: 30s
+    rules:
+      # High Invoice Processing Time
+      - alert: FinanceHighInvoiceProcessingTime
+        expr: |
+          avg(http_request_duration_seconds{route=~"/api/v1/finance/invoices.*", method="POST"}) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: finance
+          module: finance
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High invoice processing time detected"
+          description: "Average invoice processing time is {{ $value }}s (threshold: 2s) for 5 minutes"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/finance-invoice-processing"
+
+      # Failed Invoice Creation
+      - alert: FinanceInvoiceCreationFailed
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/finance/invoices.*", method="POST", status_code=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: finance
+          module: finance
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Invoice creation failures detected"
+          description: "Invoice creation failure rate is {{ $value }} failures/sec (threshold: 0.1)"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/finance-invoice-errors"
+
+      # High Transaction Volume
+      - alert: FinanceHighTransactionVolume
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/finance/transactions.*", method="POST"}[5m]) > 10
+        for: 10m
+        labels:
+          severity: info
+          component: finance
+          module: finance
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High transaction volume detected"
+          description: "Transaction creation rate is {{ $value }} transactions/sec (threshold: 10)"
+
+  # ========== CRM Module Alerts ==========
+  - name: crm_module
+    interval: 30s
+    rules:
+      # High Lead Processing Time
+      - alert: CRMHighLeadProcessingTime
+        expr: |
+          avg(http_request_duration_seconds{route=~"/api/v1/crm/leads.*", method="POST"}) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          component: crm
+          module: crm
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High lead processing time detected"
+          description: "Average lead processing time is {{ $value }}s (threshold: 1.5s) for 5 minutes"
+
+      # Deal Conversion Rate Drop
+      - alert: CRMDealConversionDrop
+        expr: |
+          (
+            rate(http_requests_total{route=~"/api/v1/crm/deals.*", method="PUT", status_code="200"}[1h])
+            /
+            rate(http_requests_total{route=~"/api/v1/crm/deals.*", method="GET"}[1h])
+          ) < 0.1
+        for: 30m
+        labels:
+          severity: warning
+          component: crm
+          module: crm
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Deal conversion rate dropped"
+          description: "Deal conversion rate is {{ $value }} (threshold: 0.1) for 30 minutes"
+
+      # High Contact Creation Rate
+      - alert: CRMHighContactCreationRate
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/crm/contacts.*", method="POST"}[5m]) > 5
+        for: 10m
+        labels:
+          severity: info
+          component: crm
+          module: crm
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High contact creation rate"
+          description: "Contact creation rate is {{ $value }} contacts/sec (threshold: 5)"
+
+  # ========== Inventory Module Alerts ==========
+  - name: inventory_module
+    interval: 30s
+    rules:
+      # Low Stock Alert (via API endpoint)
+      - alert: InventoryLowStock
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/inventory/products.*", method="GET", status_code="200"}[5m]) > 0
+          AND
+          (
+            # This would need a custom metric from the inventory service
+            # For now, we alert on high API usage which might indicate stock checks
+            rate(http_requests_total{route=~"/api/v1/inventory/stock.*", method="GET"}[5m]) > 20
+          )
+        for: 15m
+        labels:
+          severity: warning
+          component: inventory
+          module: inventory
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Potential low stock situation detected"
+          description: "High stock check rate detected ({{ $value }} checks/sec). Check inventory levels."
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/inventory-low-stock"
+
+      # High Stock Movement Rate
+      - alert: InventoryHighStockMovement
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/inventory/movements.*", method="POST"}[5m]) > 10
+        for: 10m
+        labels:
+          severity: info
+          component: inventory
+          module: inventory
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High stock movement rate"
+          description: "Stock movement rate is {{ $value }} movements/sec (threshold: 10)"
+
+      # Inventory API Errors
+      - alert: InventoryAPIErrors
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/inventory.*", status_code=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: inventory
+          module: inventory
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Inventory API errors detected"
+          description: "Inventory API error rate is {{ $value }} errors/sec (threshold: 0.05)"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/inventory-api-errors"
+
+  # ========== HR Module Alerts ==========
+  - name: hr_module
+    interval: 30s
+    rules:
+      # High Payroll Processing Time
+      - alert: HRHighPayrollProcessingTime
+        expr: |
+          avg(http_request_duration_seconds{route=~"/api/v1/hr/payroll.*", method="POST"}) > 3
+        for: 5m
+        labels:
+          severity: warning
+          component: hr
+          module: hr
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High payroll processing time detected"
+          description: "Average payroll processing time is {{ $value }}s (threshold: 3s) for 5 minutes"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/hr-payroll-processing"
+
+      # Employee Data Access Errors
+      - alert: HREmployeeDataErrors
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/hr/employees.*", status_code=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: hr
+          module: hr
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "Employee data access errors detected"
+          description: "Employee API error rate is {{ $value }} errors/sec (threshold: 0.05)"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/hr-employee-errors"
+
+      # High Attendance Check Rate
+      - alert: HRHighAttendanceCheckRate
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/hr/attendance.*", method="GET"}[5m]) > 50
+        for: 10m
+        labels:
+          severity: info
+          component: hr
+          module: hr
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High attendance check rate"
+          description: "Attendance check rate is {{ $value }} checks/sec (threshold: 50)"
+
+  # ========== IoT Module Alerts ==========
+  - name: iot_module
+    interval: 30s
+    rules:
+      # Device Offline Alert
+      - alert: IoTDeviceOffline
+        expr: |
+          # This would need a custom metric: iot_device_last_seen_seconds
+          # For now, we alert on high device API errors which might indicate offline devices
+          rate(http_requests_total{route=~"/api/v1/iot/devices.*", status_code=~"5.."}[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: iot
+          module: iot
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "IoT device connectivity issues detected"
+          description: "IoT device API error rate is {{ $value }} errors/sec (threshold: 0.1). Check device connectivity."
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/iot-device-offline"
+
+      # High Telemetry Processing Time
+      - alert: IoTHighTelemetryProcessingTime
+        expr: |
+          avg(http_request_duration_seconds{route=~"/api/v1/iot/telemetry.*", method="POST"}) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: iot
+          module: iot
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High telemetry processing time detected"
+          description: "Average telemetry processing time is {{ $value }}s (threshold: 1s) for 5 minutes"
+
+      # High Telemetry Volume
+      - alert: IoTHighTelemetryVolume
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/iot/telemetry.*", method="POST"}[5m]) > 100
+        for: 10m
+        labels:
+          severity: info
+          component: iot
+          module: iot
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High telemetry volume detected"
+          description: "Telemetry ingestion rate is {{ $value }} messages/sec (threshold: 100)"
+
+      # IoT Alert Processing Errors
+      - alert: IoTAlertProcessingErrors
+        expr: |
+          rate(http_requests_total{route=~"/api/v1/iot/alerts.*", status_code=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: iot
+          module: iot
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "IoT alert processing errors detected"
+          description: "IoT alert processing error rate is {{ $value }} errors/sec (threshold: 0.05)"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/iot-alert-errors"
+
+  # ========== General Module Alerts ==========
+  - name: module_general
+    interval: 30s
+    rules:
+      # High API Error Rate (Any Module)
+      - alert: ModuleHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{route=~"/api/v1/(finance|crm|inventory|hr|iot).*", status_code=~"5.."}[5m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          component: application
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High error rate across modules"
+          description: "Total module API error rate is {{ $value }} errors/sec (threshold: 1)"
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/module-errors"
+
+      # High API Latency (Any Module)
+      - alert: ModuleHighLatency
+        expr: |
+          avg(http_request_duration_seconds{route=~"/api/v1/(finance|crm|inventory|hr|iot).*"}) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: application
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High latency across modules"
+          description: "Average module API latency is {{ $value }}s (threshold: 1s) for 10 minutes"
+
+      # Database Connection Issues (Module Impact)
+      - alert: ModuleDatabaseConnectionIssues
+        expr: |
+          database_connections_active > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          namespace: dese-ea-plan-v5
+        annotations:
+          summary: "High database connection count"
+          description: "Active database connections: {{ $value }} (threshold: 80). May impact module performance."
+          runbook_url: "https://docs.dese-ea-plan.com/runbook/database-connections"
+

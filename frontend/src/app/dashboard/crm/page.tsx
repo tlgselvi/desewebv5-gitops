@@ -18,9 +18,13 @@ export default function CRMPage() {
       setIsLoading(true);
       const result = await crmService.getKanban();
       setData(result);
+      if (!result || result.deals.length === 0) {
+        toast.info("Henüz fırsat eklenmemiş. Yeni fırsat eklemek için 'Yeni Fırsat' butonunu kullanın.");
+      }
     } catch (error) {
       console.error("Failed to fetch Kanban data", error);
-      toast.error("Veriler yüklenemedi");
+      toast.error("Veriler yüklenemedi. Lütfen tekrar deneyin.");
+      setData(null);
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 import { pgTable, text, timestamp, boolean, integer, decimal, jsonb, uuid, varchar, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { organizations } from './saas.js';
+import { organizations } from './saas/core.js';
 
 // IoT Devices (Cihazlar)
 export const devices = pgTable('devices', {
@@ -47,6 +47,7 @@ export const telemetry = pgTable('telemetry', {
 }, (table) => ({
   deviceTimeIdx: index('telemetry_device_time_idx').on(table.deviceId, table.timestamp),
   orgIdx: index('telemetry_org_idx').on(table.organizationId),
+  orgTimeIdx: index('telemetry_org_time_idx').on(table.organizationId, table.timestamp),
 }));
 
 // Automation Rules (Otomasyon Kuralları)
@@ -83,6 +84,56 @@ export const deviceAlerts = pgTable('device_alerts', {
   orgIdx: index('device_alerts_org_idx').on(table.organizationId),
   deviceIdx: index('device_alerts_device_idx').on(table.deviceId),
   resolvedIdx: index('device_alerts_resolved_idx').on(table.isResolved),
+  severityIdx: index('device_alerts_severity_idx').on(table.severity),
+  orgResolvedIdx: index('device_alerts_org_resolved_idx').on(table.organizationId, table.isResolved),
+}));
+
+// Device Commands (Cihaz Komutları)
+export const deviceCommands = pgTable('device_commands', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
+  deviceId: uuid('device_id').references(() => devices.id).notNull(),
+  
+  commandId: varchar('command_id', { length: 100 }).notNull(), // Unique command identifier
+  command: varchar('command', { length: 100 }).notNull(), // set_pump, set_ph_target, etc.
+  parameters: jsonb('parameters'), // Command-specific parameters
+  
+  status: varchar('status', { length: 20 }).default('pending'), // pending, sent, executed, failed, timeout
+  response: jsonb('response'), // Device response data
+  error: text('error'), // Error message if failed
+  
+  sentAt: timestamp('sent_at'),
+  executedAt: timestamp('executed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  
+  timeoutAt: timestamp('timeout_at'), // Command timeout timestamp
+}, (table) => ({
+  orgIdx: index('device_commands_org_idx').on(table.organizationId),
+  deviceIdx: index('device_commands_device_idx').on(table.deviceId),
+  commandIdIdx: index('device_commands_command_id_idx').on(table.commandId),
+  statusIdx: index('device_commands_status_idx').on(table.status),
+  orgStatusIdx: index('device_commands_org_status_idx').on(table.organizationId, table.status),
+}));
+
+// Device Status History (Cihaz Durum Geçmişi)
+export const deviceStatusHistory = pgTable('device_status_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').references(() => organizations.id).notNull(),
+  deviceId: uuid('device_id').references(() => devices.id).notNull(),
+  
+  status: varchar('status', { length: 20 }).notNull(), // online, offline, error, maintenance
+  batteryLevel: integer('battery_level'), // 0-100
+  signalStrength: integer('signal_strength'), // RSSI in dBm
+  firmwareVersion: varchar('firmware_version', { length: 50 }),
+  
+  metadata: jsonb('metadata'), // Additional status metadata
+  
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+}, (table) => ({
+  deviceTimeIdx: index('device_status_history_device_time_idx').on(table.deviceId, table.timestamp),
+  orgIdx: index('device_status_history_org_idx').on(table.organizationId),
+  orgTimeIdx: index('device_status_history_org_time_idx').on(table.organizationId, table.timestamp),
 }));
 
 // Relations
@@ -94,6 +145,8 @@ export const devicesRelations = relations(devices, ({ one, many }) => ({
   telemetry: many(telemetry),
   rules: many(automationRules),
   alerts: many(deviceAlerts),
+  commands: many(deviceCommands),
+  statusHistory: many(deviceStatusHistory),
 }));
 
 export const telemetryRelations = relations(telemetry, ({ one }) => ({
@@ -114,6 +167,28 @@ export const deviceAlertsRelations = relations(deviceAlerts, ({ one }) => ({
   device: one(devices, {
     fields: [deviceAlerts.deviceId],
     references: [devices.id],
+  }),
+}));
+
+export const deviceCommandsRelations = relations(deviceCommands, ({ one }) => ({
+  device: one(devices, {
+    fields: [deviceCommands.deviceId],
+    references: [devices.id],
+  }),
+  organization: one(organizations, {
+    fields: [deviceCommands.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const deviceStatusHistoryRelations = relations(deviceStatusHistory, ({ one }) => ({
+  device: one(devices, {
+    fields: [deviceStatusHistory.deviceId],
+    references: [devices.id],
+  }),
+  organization: one(organizations, {
+    fields: [deviceStatusHistory.organizationId],
+    references: [organizations.id],
   }),
 }));
 

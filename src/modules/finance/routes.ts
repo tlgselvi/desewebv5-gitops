@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { financeController } from './controller.js';
-import { authenticate } from '@/middleware/auth.js'; // Auth middleware import
+import { authenticate } from '@/middleware/auth.js';
+import { requireModulePermission } from '@/middleware/rbac.js';
+import { setRLSContextMiddleware } from '@/middleware/rls.js';
 
 const router = Router();
 
@@ -55,8 +57,11 @@ const router = Router();
  *                 type: number
  */
 
-// Tüm finans rotaları authentication gerektirir
+// Tüm finans rotaları authentication, RLS context ve module permission gerektirir
 router.use(authenticate);
+router.use(setRLSContextMiddleware); // Set RLS context for tenant isolation
+// Module-based RBAC: Finance modülü için read permission gerekli (route bazında override edilebilir)
+router.use(requireModulePermission('finance', 'read'));
 
 /**
  * @swagger
@@ -78,7 +83,7 @@ router.use(authenticate);
  *             schema:
  *               $ref: '#/components/schemas/Invoice'
  */
-router.post('/invoices', (req, res) => financeController.createInvoice(req, res));
+router.post('/invoices', requireModulePermission('finance', 'write'), (req, res) => financeController.createInvoice(req, res));
 
 /**
  * @swagger
@@ -97,7 +102,7 @@ router.post('/invoices', (req, res) => financeController.createInvoice(req, res)
  *       200:
  *         description: Invoice approved
  */
-router.post('/invoices/:id/approve', (req, res) => financeController.approveInvoice(req, res));
+router.post('/invoices/:id/approve', requireModulePermission('finance', 'write'), (req, res) => financeController.approveInvoice(req, res));
 
 /**
  * @swagger
@@ -151,6 +156,6 @@ router.get('/exchange-rates', (req, res) => financeController.getExchangeRates(r
  *       200:
  *         description: Sync result
  */
-router.post('/bank-sync', (req, res) => financeController.syncBankTransactions(req, res));
+router.post('/bank-sync', requireModulePermission('finance', 'write'), (req, res) => financeController.syncBankTransactions(req, res));
 
 export const financeRoutes: Router = router;

@@ -8,7 +8,9 @@ const connectionString = isDocker
   : 'postgresql://dese:dese123@localhost:5432/dese_ea_plan_v5';
 
 export default defineConfig({
-  schema: './src/db/schema/index.ts',
+  // Use glob pattern to include all schema files directly
+  // This avoids issues with ESM .js imports in index files during migration generation
+  schema: './src/db/schema/**/*.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {

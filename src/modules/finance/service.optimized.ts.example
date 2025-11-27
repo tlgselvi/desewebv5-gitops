@@ -1,0 +1,80 @@
+/**
+ * Example: Optimized Query Patterns
+ * 
+ * This file demonstrates query optimization patterns that can be applied
+ * throughout the codebase.
+ */
+
+import { db } from '@/db/index.js';
+import { invoices, transactions } from '@/db/schema/index.js';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { PaginationParams, PaginatedResult, getPaginationOffset, buildPaginationMeta } from '@/utils/query-optimizer.js';
+
+/**
+ * Example 1: Paginated Query
+ */
+export async function getInvoicesPaginated(
+  organizationId: string,
+  params: PaginationParams
+): Promise<PaginatedResult<any>> {
+  const offset = getPaginationOffset(params.page, params.pageSize);
+  
+  // Get total count and data in parallel
+  const [countResult, data] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .where(eq(invoices.organizationId, organizationId)),
+    db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.organizationId, organizationId))
+      .orderBy(desc(invoices.invoiceDate))
+      .limit(params.pageSize)
+      .offset(offset),
+  ]);
+  
+  const total = Number(countResult[0]?.count || 0);
+  
+  return {
+    data,
+    pagination: buildPaginationMeta(total, params.page, params.pageSize),
+  };
+}
+
+/**
+ * Example 2: Optimized JOIN Query
+ * Instead of multiple queries, use JOIN to fetch related data
+ */
+export async function getInvoiceWithRelations(invoiceId: string) {
+  // Single query with JOINs instead of 3 separate queries
+  const [result] = await db
+    .select({
+      invoice: invoices,
+      // Add other relations as needed
+    })
+    .from(invoices)
+    .leftJoin(/* ... */)
+    .where(eq(invoices.id, invoiceId))
+    .limit(1);
+  
+  return result;
+}
+
+/**
+ * Example 3: Conditional Aggregation
+ * Instead of multiple queries, use CASE statements
+ */
+export async function getFinancialSummaryOptimized(organizationId: string) {
+  const [result] = await db
+    .select({
+      totalRevenue: sql<string>`coalesce(sum(case when type = 'sales' and status = 'paid' then total else 0 end), '0')`,
+      pendingPayments: sql<string>`coalesce(sum(case when type = 'sales' and status = 'sent' then total else 0 end), '0')`,
+      totalExpenses: sql<string>`coalesce(sum(case when type = 'purchase' and status = 'paid' then total else 0 end), '0')`,
+    })
+    .from(invoices)
+    .where(eq(invoices.organizationId, organizationId));
+  
+  return result;
+}
+

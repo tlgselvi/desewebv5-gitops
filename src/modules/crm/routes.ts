@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { crmController } from './controller.js';
 import { authenticate } from '@/middleware/auth.js';
+import { requireModulePermission } from '@/middleware/rbac.js';
+import { setRLSContextMiddleware } from '@/middleware/rls.js';
 
 const router = Router();
 
@@ -45,6 +47,9 @@ const router = Router();
  */
 
 router.use(authenticate);
+router.use(setRLSContextMiddleware); // Set RLS context for tenant isolation
+// Module-based RBAC: CRM modülü için read permission gerekli
+router.use(requireModulePermission('crm', 'read'));
 
 /**
  * @swagger
@@ -74,7 +79,7 @@ router.get('/kanban', (req, res) => crmController.getKanban(req, res));
  *       201:
  *         description: Deal created successfully
  */
-router.post('/deals', (req, res) => crmController.createDeal(req, res));
+router.post('/deals', requireModulePermission('crm', 'write'), (req, res) => crmController.createDeal(req, res));
 
 /**
  * @swagger
@@ -102,7 +107,7 @@ router.post('/deals', (req, res) => crmController.createDeal(req, res));
  *       200:
  *         description: Deal moved successfully
  */
-router.put('/deals/:id/stage', (req, res) => crmController.moveDeal(req, res));
+router.put('/deals/:id/stage', requireModulePermission('crm', 'write'), (req, res) => crmController.moveDeal(req, res));
 
 /**
  * @swagger
@@ -114,7 +119,7 @@ router.put('/deals/:id/stage', (req, res) => crmController.moveDeal(req, res));
  *       201:
  *         description: Activity created
  */
-router.post('/activities', (req, res) => crmController.createActivity(req, res));
+router.post('/activities', requireModulePermission('crm', 'write'), (req, res) => crmController.createActivity(req, res));
 
 /**
  * @swagger
@@ -126,7 +131,18 @@ router.post('/activities', (req, res) => crmController.createActivity(req, res))
  *       200:
  *         description: Message sent
  */
-router.post('/whatsapp/send', (req, res) => crmController.sendWhatsApp(req, res));
+router.post('/whatsapp/send', requireModulePermission('crm', 'write'), (req, res) => crmController.sendWhatsApp(req, res));
+
+/**
+ * WhatsApp Webhook endpoint (no authentication required - Meta verifies via signature)
+ * Meta will send POST requests to this endpoint for incoming messages and status updates
+ */
+router.post('/whatsapp/webhook', (req, res) => crmController.handleWhatsAppWebhook(req, res));
+
+/**
+ * Get WhatsApp message history for a contact
+ */
+router.get('/whatsapp/history/:contactId', (req, res) => crmController.getWhatsAppHistory(req, res));
 
 // Contacts
 // ... contacts controller eklenebilir ...

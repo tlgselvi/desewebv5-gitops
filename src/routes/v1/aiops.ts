@@ -32,6 +32,75 @@ type AlertStats = {
 
 const aiopsRouter: Router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: AIOps
+ *   description: AI Operations - Anomaly Detection and Alerting
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     AIOpsAlert:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         metric:
+ *           type: string
+ *         severity:
+ *           type: string
+ *           enum: [critical, high, medium, low]
+ *         anomalyScore:
+ *           type: number
+ *           minimum: 0
+ *           maximum: 1
+ *         context:
+ *           type: object
+ *           properties:
+ *             cluster:
+ *               type: string
+ *             namespace:
+ *               type: string
+ *             service:
+ *               type: string
+ *             region:
+ *               type: string
+ *         createdAt:
+ *           type: integer
+ *           format: int64
+ *         resolvedAt:
+ *           type: integer
+ *           format: int64
+ *           nullable: true
+ *         resolvedBy:
+ *           type: string
+ *     AIOpsAlertStats:
+ *       type: object
+ *       properties:
+ *         total:
+ *           type: integer
+ *         critical:
+ *           type: integer
+ *         high:
+ *           type: integer
+ *         medium:
+ *           type: integer
+ *         low:
+ *           type: integer
+ *         resolved:
+ *           type: integer
+ *         unresolved:
+ *           type: integer
+ *         timeRange:
+ *           type: string
+ *         generatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
 const mockAlertsTemplate: AlertPayload[] = [
   {
     id: "ALRT-901",
@@ -121,6 +190,52 @@ const calculateStats = (alerts: AlertPayload[]): AlertStats => {
   );
 };
 
+/**
+ * @swagger
+ * /api/v1/aiops/anomalies/alerts:
+ *   get:
+ *     summary: Get AIOps anomaly alerts
+ *     tags: [AIOps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: severity
+ *         schema:
+ *           type: string
+ *           enum: [critical, high, medium, low, all]
+ *           default: all
+ *         description: Filter alerts by severity
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 1000
+ *           default: 50
+ *         description: Maximum number of alerts to return
+ *     responses:
+ *       200:
+ *         description: List of anomaly alerts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 alerts:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AIOpsAlert'
+ *                 generatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                 filters:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 aiopsRouter.get(
   "/anomalies/alerts",
   authenticate,
@@ -157,6 +272,36 @@ aiopsRouter.get(
   },
 );
 
+/**
+ * @swagger
+ * /api/v1/aiops/anomalies/alerts/stats:
+ *   get:
+ *     summary: Get AIOps alert statistics
+ *     tags: [AIOps]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: timeRange
+ *         schema:
+ *           type: string
+ *           default: 24h
+ *         description: Time range for statistics (e.g., "24h", "7d", "30d")
+ *     responses:
+ *       200:
+ *         description: Alert statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 stats:
+ *                   $ref: '#/components/schemas/AIOpsAlertStats'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 aiopsRouter.get(
   "/anomalies/alerts/stats",
   authenticate,

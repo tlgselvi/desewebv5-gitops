@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Loader2 } from "lucide-react";
+import { Plus, RefreshCw, Loader2, Wifi, WifiOff, AlertTriangle } from "lucide-react";
 import { iotService } from "@/services/iot";
 import { Device, TelemetryData } from "@/types/iot";
-import { DeviceCard } from "@/components/iot/device-card";
 import { TelemetryChart } from "@/components/iot/telemetry-chart";
 import { toast } from "sonner";
 import { CreateDeviceDialog } from "@/components/iot/create-device-dialog";
+import { DataTable } from "@/components/ui/data-table/data-table";
+import { columns } from "./columns";
+import { KPICard } from "@/components/dashboard/kpi-card";
 
 export default function IoTPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [telemetry, setTelemetry] = useState<TelemetryData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
 
   const fetchDevices = async () => {
     try {
@@ -55,9 +58,12 @@ export default function IoTPage() {
   }, [selectedDevice]);
 
   // Metrics
-  const activeDevices = devices.filter(d => d.status === 'online').length;
-  const currentTemp = telemetry[0]?.temperature || '--';
-  const currentPh = telemetry[0]?.ph || '--';
+  const totalDevices = devices.length;
+  const onlineDevices = devices.filter(d => d.status === 'online').length;
+  const offlineDevices = devices.filter(d => d.status === 'offline').length;
+  const errorDevices = devices.filter(d => d.status === 'error').length;
+  const currentTemp = selectedDevice && telemetry[0]?.temperature ? `${telemetry[0].temperature} °C` : '--';
+  const currentPh = selectedDevice && telemetry[0]?.ph ? telemetry[0].ph.toString() : '--';
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -69,6 +75,12 @@ export default function IoTPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? 'Tablo Görünümü' : 'Detay Görünümü'}
+          </Button>
           <Button variant="outline" size="icon" onClick={fetchDevices} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
@@ -77,65 +89,78 @@ export default function IoTPage() {
       </div>
       
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Aktif Cihazlar</div>
-          <div className="text-2xl font-bold">{activeDevices} / {devices.length}</div>
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">Anlık Sıcaklık</div>
-          <div className="text-2xl font-bold text-amber-500">{currentTemp} °C</div>
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow p-6">
-          <div className="text-sm font-medium text-muted-foreground">pH Seviyesi</div>
-          <div className="text-2xl font-bold text-blue-500">{currentPh}</div>
-        </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        <KPICard
+          title="Toplam Cihaz"
+          value={totalDevices}
+          icon={<Wifi className="h-4 w-4" />}
+          loading={isLoading}
+        />
+        <KPICard
+          title="Çevrimiçi"
+          value={onlineDevices}
+          icon={<Wifi className="h-4 w-4" />}
+          loading={isLoading}
+          valueClassName="text-green-600"
+        />
+        <KPICard
+          title="Çevrimdışı"
+          value={offlineDevices}
+          icon={<WifiOff className="h-4 w-4" />}
+          loading={isLoading}
+          valueClassName="text-gray-600"
+        />
+        <KPICard
+          title="Hata"
+          value={errorDevices}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          loading={isLoading}
+          valueClassName="text-red-600"
+        />
       </div>
-      
-      {/* Main Content Area */}
-      <div className="grid gap-6 md:grid-cols-12 flex-1">
-        
-        {/* Device List */}
-        <div className="md:col-span-4 lg:col-span-3 space-y-4">
-          <h3 className="text-lg font-semibold">Cihaz Listesi</h3>
-          {isLoading && devices.length === 0 ? (
-             <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
-          ) : devices.length > 0 ? (
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-              {devices.map(device => (
-                <DeviceCard 
-                  key={device.id} 
-                  device={device} 
-                  isSelected={selectedDevice?.id === device.id}
-                  onClick={setSelectedDevice}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground text-center py-8 border border-dashed rounded-lg">
-              Kayıtlı cihaz yok.
-            </div>
-          )}
-        </div>
 
-        {/* Charts & Details */}
-        <div className="md:col-span-8 lg:col-span-9 space-y-6">
-          {selectedDevice ? (
-            <>
-              <TelemetryChart 
-                data={telemetry} 
-                title={`${selectedDevice.name} - Canlı Veriler`} 
-              />
-              
-              {/* More details could go here (Alerts, Map, Controls) */}
-            </>
-          ) : (
-            <div className="h-full flex items-center justify-center border border-dashed rounded-lg text-muted-foreground">
-              Verilerini görmek için bir cihaz seçin.
+      {showDetails && selectedDevice ? (
+        /* Detail View with Charts */
+        <div className="space-y-6 flex-1">
+          <div className="rounded-lg border bg-background shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-4">{selectedDevice.name} - Canlı Veriler</h2>
+            <div className="grid gap-4 md:grid-cols-2 mb-6">
+              <div className="rounded-xl border bg-card text-card-foreground shadow p-4">
+                <div className="text-sm font-medium text-muted-foreground">Anlık Sıcaklık</div>
+                <div className="text-2xl font-bold text-amber-500">{currentTemp}</div>
+              </div>
+              <div className="rounded-xl border bg-card text-card-foreground shadow p-4">
+                <div className="text-sm font-medium text-muted-foreground">pH Seviyesi</div>
+                <div className="text-2xl font-bold text-blue-500">{currentPh}</div>
+              </div>
             </div>
+            <TelemetryChart 
+              data={telemetry} 
+              title={`${selectedDevice.name} - Telemetri Verileri`} 
+            />
+          </div>
+        </div>
+      ) : (
+        /* DataTable View */
+        <div className="flex-1 overflow-hidden rounded-lg border bg-background shadow-sm">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <DataTable 
+              columns={columns} 
+              data={devices} 
+              searchKey="name" 
+              searchPlaceholder="Cihaz adı veya seri no ile ara..."
+              onRowClick={(device) => {
+                setSelectedDevice(device);
+                setShowDetails(true);
+              }}
+            />
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

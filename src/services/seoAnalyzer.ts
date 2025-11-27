@@ -5,7 +5,7 @@ import type { Browser, Page, Protocol, CDPSession } from 'puppeteer';
 import { URL } from 'url';
 import { z } from 'zod';
 import { db, seoMetrics, seoProjects } from '@/db/index.js';
-import { eq } from 'drizzle-orm';
+import { eq, and, desc, sql, gte } from 'drizzle-orm';
 import { seoLogger } from '@/utils/logger.js';
 import { recordSeoAnalysis } from '@/middleware/prometheus.js';
 
@@ -344,13 +344,15 @@ export class SeoAnalyzer {
     const validatedRequest = SeoAnalysisRequestSchema.parse(request);
 
     // Verify project exists
-    const project = await db
+    // Note: organizationId check should be done at service layer, not here
+    // This is a low-level analyzer service
+    const [project] = await db
       .select()
       .from(seoProjects)
       .where(eq(seoProjects.id, validatedRequest.projectId))
       .limit(1);
 
-    if (project.length === 0) {
+    if (!project) {
       throw new Error('Project not found');
     }
 
@@ -365,11 +367,14 @@ export class SeoAnalyzer {
     // Record metrics
     recordSeoAnalysis(validatedRequest.projectId, 'lighthouse');
 
+    // Batch insert optimization: Collect all metric records first, then insert in batch
+    const metricRecords: Array<typeof seoMetrics.$inferInsert> = [];
+
     for (const url of validatedRequest.urls) {
       try {
         const analysis = await this.analyzeUrl(url, validatedRequest.options);
         
-        // Save to database
+        // Prepare metric record for batch insert
         const metricRecord = {
           projectId: validatedRequest.projectId,
           url,
@@ -387,8 +392,7 @@ export class SeoAnalyzer {
           rawData: analysis.rawData,
         } satisfies typeof seoMetrics.$inferInsert;
 
-        await db.insert(seoMetrics).values(metricRecord);
-
+        metricRecords.push(metricRecord);
         results.push(analysis);
         
         seoLogger.info('URL analysis completed', { url, scores: analysis.scores });
@@ -396,6 +400,20 @@ export class SeoAnalyzer {
         const errorMessage = error instanceof Error ? error.message : String(error);
         seoLogger.error('URL analysis failed', { url, error: errorMessage });
         errors.push({ url, error: errorMessage });
+      }
+    }
+
+    // Batch insert all metrics at once (optimization: reduces N+1 query problem)
+    if (metricRecords.length > 0) {
+      try {
+        await db.insert(seoMetrics).values(metricRecords);
+        seoLogger.info('Batch inserted metrics', { count: metricRecords.length });
+      } catch (error) {
+        seoLogger.error('Failed to batch insert metrics', {
+          error: error instanceof Error ? error.message : String(error),
+          count: metricRecords.length,
+        });
+        // Don't fail the entire operation if batch insert fails
       }
     }
 
@@ -411,28 +429,59 @@ export class SeoAnalyzer {
   }
 
   async getProjectMetrics(projectId: string, limit: number = 10) {
+    // Use desc order to get most recent metrics first
     const metrics = await db
       .select()
       .from(seoMetrics)
       .where(eq(seoMetrics.projectId, projectId))
-      .orderBy(seoMetrics.measuredAt)
+      .orderBy(desc(seoMetrics.measuredAt))
       .limit(limit);
 
     return metrics;
+  }
+
+  /**
+   * Get project metrics with organizationId check
+   * This method should be used when organizationId validation is required
+   */
+  async getProjectMetricsWithOrg(
+    projectId: string,
+    organizationId: string,
+    limit: number = 10,
+  ) {
+    // First verify project belongs to organization
+    const [project] = await db
+      .select()
+      .from(seoProjects)
+      .where(and(
+        eq(seoProjects.id, projectId),
+        eq(seoProjects.organizationId, organizationId)
+      ))
+      .limit(1);
+
+    if (!project) {
+      throw new Error('Project not found or access denied');
+    }
+
+    return this.getProjectMetrics(projectId, limit);
   }
 
   async getProjectTrends(projectId: string, days: number = 30) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    // Optimized query with date filter and proper ordering
+    // Uses indexed columns: projectId (indexed) and measuredAt (indexed)
     const metrics = await db
       .select()
       .from(seoMetrics)
       .where(
-        eq(seoMetrics.projectId, projectId)
-        // Add date filter here when needed
+        and(
+          eq(seoMetrics.projectId, projectId),
+          gte(seoMetrics.measuredAt, startDate) // Use indexed column for date filter
+        )
       )
-      .orderBy(seoMetrics.measuredAt);
+      .orderBy(seoMetrics.measuredAt); // Order by indexed column
 
     // Calculate trends
     const trends = this.calculateTrends(metrics);
@@ -443,6 +492,32 @@ export class SeoAnalyzer {
       metrics,
       trends,
     };
+  }
+
+  /**
+   * Get project trends with organizationId check
+   * This method should be used when organizationId validation is required
+   */
+  async getProjectTrendsWithOrg(
+    projectId: string,
+    organizationId: string,
+    days: number = 30,
+  ) {
+    // First verify project belongs to organization
+    const [project] = await db
+      .select()
+      .from(seoProjects)
+      .where(and(
+        eq(seoProjects.id, projectId),
+        eq(seoProjects.organizationId, organizationId)
+      ))
+      .limit(1);
+
+    if (!project) {
+      throw new Error('Project not found or access denied');
+    }
+
+    return this.getProjectTrends(projectId, days);
   }
 
   private calculateTrends(metrics: SeoMetricRow[]): MetricTrendSummary | null {

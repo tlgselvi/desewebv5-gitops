@@ -14,9 +14,16 @@ import { crmRoutes } from '../modules/crm/routes.js';
 import { inventoryRoutes } from '../modules/inventory/routes.js';
 import { iotRoutes } from '../modules/iot/routes.js';
 import hrRoutes from '../modules/hr/routes.js';
+import { organizationRoutes } from '../modules/saas/organization.routes.js';
+import { usageRoutes } from '../modules/saas/usage.routes.js';
+import { billingRoutes } from '../modules/saas/billing.routes.js';
+import { subscriptionRoutes } from '../modules/saas/subscription.routes.js';
+import { integrationRoutes } from '../modules/saas/integration.routes.js';
 import { aiopsMetrics } from '../middleware/aiopsMetrics.js';
 import { config } from '@/config/index.js';
 import { v1Router } from '@/routes/v1/index.js';
+import { rateLimitRoutes } from '@/routes/rate-limit.js';
+import { businessMetricsRoutes } from '@/routes/analytics/business-metrics.js';
 
 export function setupRoutes(app: Application): void {
   const apiPrefix = `/api/${config.apiVersion}`;
@@ -55,6 +62,13 @@ export function setupRoutes(app: Application): void {
   app.use(`${apiPrefix}/inventory`, inventoryRoutes);
   app.use(`${apiPrefix}/iot`, iotRoutes);
   app.use(`${apiPrefix}/hr`, hrRoutes);
+  
+  // SaaS Routes (Subscription & Billing)
+  app.use(`${apiPrefix}/saas/organizations`, organizationRoutes);
+  app.use(`${apiPrefix}/saas/usage`, usageRoutes);
+  app.use(`${apiPrefix}/saas/billing`, billingRoutes);
+  app.use(`${apiPrefix}/saas/subscriptions`, subscriptionRoutes); // Plural to match REST standards
+  app.use(`${apiPrefix}/saas/integrations`, integrationRoutes);
 
   // Most specific API routes first (longest paths first)
   app.use(`${apiPrefix}/mcp/dashboard`, mcpDashboardRoutes);
@@ -66,6 +80,12 @@ export function setupRoutes(app: Application): void {
 
   // v1Router (contains /auth and /aiops routes) - specific routes
   app.use(apiPrefix, v1Router);
+
+  // Rate limiting routes
+  app.use(`${apiPrefix}/rate-limit`, rateLimitRoutes);
+
+  // Business metrics routes
+  app.use(`${apiPrefix}/analytics`, businessMetricsRoutes);
 
   // General API routes (less specific, after v1Router)
   app.use(`${apiPrefix}`, feedbackRoutes);
@@ -90,6 +110,13 @@ export function setupRoutes(app: Application): void {
         inventory: `${apiPrefix}/inventory`,
         iot: `${apiPrefix}/iot`,
         hr: `${apiPrefix}/hr`,
+        saas: {
+          organizations: `${apiPrefix}/saas/organizations`,
+          usage: `${apiPrefix}/saas/usage`,
+          billing: `${apiPrefix}/saas/billing`,
+          subscriptions: `${apiPrefix}/saas/subscriptions`,
+          integrations: `${apiPrefix}/saas/integrations`,
+        },
         metrics: '/metrics',
         aiopsMetrics: '/metrics/aiops',
         health: '/health',

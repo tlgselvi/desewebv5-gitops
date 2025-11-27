@@ -33,12 +33,13 @@ export class CRMService {
    */
   async createDeal(data: CreateDealDTO) {
     // Ensure stage belongs to organization
-    const stage = await db.query.pipelineStages.findFirst({
-      where: and(
+    const [stage] = await db.select()
+      .from(pipelineStages)
+      .where(and(
         eq(pipelineStages.id, data.stageId),
         eq(pipelineStages.organizationId, data.organizationId)
-      )
-    });
+      ))
+      .limit(1);
 
     if (!stage) throw new Error("Invalid stage or organization mismatch");
 
@@ -154,12 +155,13 @@ export class CRMService {
    */
   async updateDealStage(dealId: string, stageId: string, organizationId: string) {
     // Verify stage exists and belongs to org
-    const stage = await db.query.pipelineStages.findFirst({
-        where: and(
-            eq(pipelineStages.id, stageId),
-            eq(pipelineStages.organizationId, organizationId)
-        )
-    });
+    const [stage] = await db.select()
+      .from(pipelineStages)
+      .where(and(
+        eq(pipelineStages.id, stageId),
+        eq(pipelineStages.organizationId, organizationId)
+      ))
+      .limit(1);
 
     if (!stage) throw new Error("Stage not found");
 

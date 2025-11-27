@@ -1,0 +1,243 @@
+# Security & Business Alerting Rules
+# Part of P2-08: Security & Monitoring Enhancements
+
+groups:
+  # ============================================
+  # Security Alerts
+  # ============================================
+  - name: security_alerts
+    interval: 30s
+    rules:
+      # Brute Force Detection
+      - alert: BruteForceAttackDetected
+        expr: increase(business_payment_failures_total{error_type="authentication"}[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Brute force attack detected"
+          description: "More than 10 authentication failures in 5 minutes. Possible brute force attack."
+          runbook_url: "https://docs.dese.io/runbooks/brute-force"
+
+      # Suspicious Activity Spike
+      - alert: SuspiciousActivitySpike
+        expr: rate(http_requests_total{status="403"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Spike in blocked requests"
+          description: "High rate of 403 Forbidden responses detected. Possible attack in progress."
+
+      # SQL Injection Attempts
+      - alert: SQLInjectionAttempts
+        expr: increase(security_suspicious_requests_total{pattern="sql_injection"}[5m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "SQL injection attempts detected"
+          description: "Multiple SQL injection attempts detected from {{ $labels.ip }}"
+
+      # XSS Attempts
+      - alert: XSSAttempts
+        expr: increase(security_suspicious_requests_total{pattern="xss"}[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "XSS attempts detected"
+          description: "Multiple XSS attempts detected"
+
+      # Rate Limit Exhaustion
+      - alert: RateLimitExhaustion
+        expr: increase(rate_limit_exceeded_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate limit violations"
+          description: "More than 100 rate limit violations in 5 minutes"
+
+      # Blocked IPs Increasing
+      - alert: BlockedIPsIncreasing
+        expr: increase(security_blocked_ips_total[1h]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Significant increase in blocked IPs"
+          description: "More than 50 IPs blocked in the last hour"
+
+  # ============================================
+  # Business Alerts
+  # ============================================
+  - name: business_alerts
+    interval: 1m
+    rules:
+      # Payment Failure Rate
+      - alert: HighPaymentFailureRate
+        expr: |
+          (
+            sum(rate(business_payments_processed_total{status="failed"}[15m])) 
+            / 
+            sum(rate(business_payments_processed_total[15m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: business
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is above 10%. Current rate: {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.dese.io/runbooks/payment-failures"
+
+      # Subscription Cancellation Spike
+      - alert: SubscriptionCancellationSpike
+        expr: increase(business_subscription_cancelled_total[24h]) > 10
+        for: 15m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Spike in subscription cancellations"
+          description: "More than 10 subscriptions cancelled in the last 24 hours"
+
+      # MRR Drop
+      - alert: MRRDrop
+        expr: |
+          (
+            business_mrr_cents offset 1d - business_mrr_cents
+          ) / business_mrr_cents offset 1d > 0.05
+        for: 30m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "MRR dropped significantly"
+          description: "Monthly Recurring Revenue dropped by more than 5% compared to yesterday"
+
+      # Low Active Users
+      - alert: LowActiveUsers
+        expr: sum(business_active_users) < 10
+        for: 1h
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Low active user count"
+          description: "Less than 10 active users in the last hour"
+
+      # API Quota Near Limit
+      - alert: APIQuotaNearLimit
+        expr: business_api_quota_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "API quota near limit"
+          description: "Organization {{ $labels.organization_id }} is using {{ $value }}% of API quota"
+
+      # API Quota Exceeded
+      - alert: APIQuotaExceeded
+        expr: business_api_quota_usage_percent > 100
+        for: 1m
+        labels:
+          severity: critical
+          category: business
+        annotations:
+          summary: "API quota exceeded"
+          description: "Organization {{ $labels.organization_id }} has exceeded API quota"
+
+  # ============================================
+  # Performance Alerts
+  # ============================================
+  - name: performance_alerts
+    interval: 30s
+    rules:
+      # High Response Time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile response time is above 2 seconds"
+
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) 
+            / 
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is above 5%. Current rate: {{ $value | humanizePercentage }}"
+
+      # Memory Usage High
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 1024
+        for: 10m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High memory usage"
+          description: "Process memory usage is above 1GB"
+
+      # Database Connection Pool Exhaustion
+      - alert: DBConnectionPoolExhaustion
+        expr: db_pool_active_connections / db_pool_max_connections > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool is {{ $value | humanizePercentage }} full"
+
+  # ============================================
+  # IoT Alerts
+  # ============================================
+  - name: iot_alerts
+    interval: 1m
+    rules:
+      # Device Offline
+      - alert: IoTDeviceOffline
+        expr: time() - iot_device_last_seen_timestamp > 3600
+        for: 5m
+        labels:
+          severity: warning
+          category: iot
+        annotations:
+          summary: "IoT device offline"
+          description: "Device {{ $labels.device_id }} has been offline for more than 1 hour"
+
+      # Sensor Reading Out of Range
+      - alert: SensorReadingOutOfRange
+        expr: |
+          iot_sensor_ph_value < 6.8 or iot_sensor_ph_value > 7.6
+          or iot_sensor_chlorine_ppm < 1 or iot_sensor_chlorine_ppm > 3
+        for: 10m
+        labels:
+          severity: warning
+          category: iot
+        annotations:
+          summary: "Sensor reading out of normal range"
+          description: "Sensor reading for device {{ $labels.device_id }} is out of expected range"
+

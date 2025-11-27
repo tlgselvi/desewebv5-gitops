@@ -1,0 +1,38 @@
+[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+
+; Build flags
+build_flags = 
+    -DCORE_DEBUG_LEVEL=3
+    -DARDUINO_USB_CDC_ON_BOOT=1
+    -DBOARD_HAS_PSRAM
+    -mfix-esp32-psram-cache-issue
+
+; Serial monitor
+monitor_speed = 115200
+monitor_filters = esp32_exception_decoder
+
+; Library dependencies
+lib_deps = 
+    bblanchon/ArduinoJson@^7.0.0
+    knolleary/PubSubClient@^2.8
+    tzapu/WiFiManager@^2.0.16-rc.2
+    marvinroger/AsyncMqttClient@^0.9.0
+    ayushsharma82/AsyncTCP@^1.1.1
+    links2004/WebSockets@^2.4.1
+    https://github.com/espressif/arduino-esp32.git#2.0.14
+
+; Upload settings
+upload_speed = 921600
+
+; Partition scheme (for OTA)
+board_build.partitions = default.csv
+board_build.filesystem = littlefs
+
+; Example: Override MQTT broker for your environment
+; build_flags = 
+;     -DMQTT_BROKER="mqtt.yourdomain.com"
+;     -DMQTT_PORT=1883
+

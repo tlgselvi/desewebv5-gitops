@@ -2,13 +2,11 @@ import { authenticatedGet, authenticatedPost } from "@/lib/api";
 import { Device, TelemetryData, Alert } from "@/types/iot";
 
 export const iotService = {
+  /**
+   * Tüm IoT cihazlarını getir
+   */
   getDevices: async (): Promise<Device[]> => {
-    try {
-      return await authenticatedGet<Device[]>("/api/v1/iot/devices");
-    } catch (error) {
-      console.warn("IoT API unreachable, using mock data");
-      return [];
-    }
+    return await authenticatedGet<Device[]>("/api/v1/iot/devices");
   },
 
   createDevice: async (data: { name: string; serialNumber: string; type: string }): Promise<Device> => {

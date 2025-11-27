@@ -369,6 +369,48 @@ const options = {
           required: ["success", "message"],
         },
       },
+      responses: {
+        UnauthorizedError: {
+          description: "Authentication required or token invalid",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/Error",
+              },
+            },
+          },
+        },
+        ForbiddenError: {
+          description: "Insufficient permissions",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/Error",
+              },
+            },
+          },
+        },
+        BadRequestError: {
+          description: "Invalid request data",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/Error",
+              },
+            },
+          },
+        },
+        NotFoundError: {
+          description: "Resource not found",
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/Error",
+              },
+            },
+          },
+        },
+      },
     },
     security: [
       {

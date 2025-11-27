@@ -2,11 +2,14 @@ import { IEInvoiceProvider, EInvoiceUser, EInvoiceDocument } from './types.js';
 import { logger } from '@/utils/logger.js';
 import { v4 as uuidv4 } from 'uuid';
 import { UBLGenerator } from './ubl-generator.js';
+import { retry, isRetryableHttpError } from '@/utils/retry.js';
+import * as cheerio from 'cheerio';
 
 export class ForibaProvider implements IEInvoiceProvider {
   name = 'Foriba';
   private baseUrl: string;
   private isSandbox: boolean;
+  private authHeader: string;
 
   constructor(
     private username: string, 
@@ -17,6 +20,7 @@ export class ForibaProvider implements IEInvoiceProvider {
     this.baseUrl = options?.baseUrl ?? (this.isSandbox
       ? 'https://earsivtest.foriba.com/EarsivServices'
       : 'https://earsiv.foriba.com/EarsivServices');
+    this.authHeader = `Basic ${Buffer.from(`${this.username}:${this.password}`).toString('base64')}`;
   }
 
   /**
@@ -41,38 +45,56 @@ export class ForibaProvider implements IEInvoiceProvider {
       return null;
     }
 
-    // Production mode: Real API call
-    try {
-      const response = await fetch(`${this.baseUrl}/QueryUsers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${this.username}:${this.password}`).toString('base64')}`,
-        },
-        body: JSON.stringify({
-          identifier: vkn,
-        }),
-      });
+    // Production mode: Real API call with retry
+    return await retry(
+      async () => {
+        const response = await fetch(`${this.baseUrl}/QueryUsers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': this.authHeader,
+          },
+          body: JSON.stringify({
+            identifier: vkn,
+          }),
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // User not found
+        if (!response.ok) {
+          if (response.status === 404) {
+            return null; // User not found
+          }
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Foriba API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
         }
-        throw new Error(`Foriba API error: ${response.status} ${response.statusText}`);
-      }
 
-      const data = await response.json();
-      return {
-        identifier: data.identifier,
-        alias: data.alias,
-        title: data.title,
-        type: data.type,
-        firstCreationTime: new Date(data.firstCreationTime),
-      };
-    } catch (error) {
-      logger.error('[Foriba] Failed to check user', error);
+        const data = await response.json();
+        logger.info(`[Foriba] User found: ${data.title}`);
+        return {
+          identifier: data.identifier,
+          alias: data.alias,
+          title: data.title,
+          type: data.type,
+          firstCreationTime: new Date(data.firstCreationTime),
+        };
+      },
+      {
+        maxRetries: 3,
+        delayMs: 1000,
+        retryableErrors: (error) => {
+          // Don't retry on 404 or 401 (authentication errors)
+          if (error instanceof Error) {
+            if (error.message.includes('404') || error.message.includes('401')) {
+              return false;
+            }
+          }
+          return isRetryableHttpError(error);
+        },
+      }
+    ).catch((error) => {
+      logger.error('[Foriba] Failed to check user after retries', { error, vkn });
       throw error;
-    }
+    });
   }
 
   /**
@@ -90,48 +112,75 @@ export class ForibaProvider implements IEInvoiceProvider {
         id: `GIB2025${Math.floor(Math.random() * 1000000000)}`,
         payableAmount: invoiceData.payableAmount,
         currency: invoiceData.currency || 'TRY',
-        profileId: 'TICARIFATURA',
-        typeCode: 'SATIS',
+        profileId: invoiceData.profileId || 'TICARIFATURA',
+        typeCode: invoiceData.typeCode || 'SATIS',
         status: 'queued'
       };
     }
 
-    // Production mode: Real API call
-    try {
-      // Convert invoice data to UBL-TR format (simplified - real implementation needs full UBL structure)
-      const ublInvoice = this.convertToUBL(invoiceData);
+    // Production mode: Real API call with retry
+    return await retry(
+      async () => {
+        // Convert invoice data to UBL-TR format
+        const ublInvoice = this.convertToUBL(invoiceData);
 
-      const response = await fetch(`${this.baseUrl}/SendInvoice`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/xml',
-          'Authorization': `Basic ${Buffer.from(`${this.username}:${this.password}`).toString('base64')}`,
+        const response = await fetch(`${this.baseUrl}/SendInvoice`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/xml',
+            'Authorization': this.authHeader,
+          },
+          body: ublInvoice, // XML string
+          signal: AbortSignal.timeout(60000), // 60 second timeout for invoice sending
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error('[Foriba] Invoice send failed', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText,
+          });
+          throw new Error(`Foriba API error: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
+        }
+
+        const data = await response.text(); // XML response
+        const parsed = this.parseUBLResponse(data);
+
+        logger.info(`[Foriba] Invoice sent successfully`, {
+          uuid: parsed.uuid,
+          id: parsed.id,
+        });
+
+        return {
+          uuid: parsed.uuid,
+          issueDate: new Date(parsed.issueDate),
+          id: parsed.id,
+          payableAmount: invoiceData.payableAmount,
+          currency: invoiceData.currency || 'TRY',
+          profileId: invoiceData.profileId || 'TICARIFATURA',
+          typeCode: invoiceData.typeCode || 'SATIS',
+          status: parsed.status,
+          envelopeId: parsed.envelopeId,
+        };
+      },
+      {
+        maxRetries: 3,
+        delayMs: 2000, // Longer delay for invoice sending
+        retryableErrors: (error) => {
+          // Don't retry on 400 (bad request) or 401 (auth errors)
+          if (error instanceof Error) {
+            if (error.message.includes('400') || error.message.includes('401')) {
+              return false;
+            }
+          }
+          return isRetryableHttpError(error);
         },
-        body: ublInvoice, // XML string
-      });
-
-      if (!response.ok) {
-        throw new Error(`Foriba API error: ${response.status} ${response.statusText}`);
       }
-
-      const data = await response.text(); // XML response
-      const parsed = this.parseUBLResponse(data);
-
-      return {
-        uuid: parsed.uuid,
-        issueDate: new Date(parsed.issueDate),
-        id: parsed.id,
-        payableAmount: invoiceData.payableAmount,
-        currency: invoiceData.currency || 'TRY',
-        profileId: invoiceData.profileId || 'TICARIFATURA',
-        typeCode: invoiceData.typeCode || 'SATIS',
-        status: parsed.status,
-        envelopeId: parsed.envelopeId,
-      };
-    } catch (error) {
-      logger.error('[Foriba] Failed to send invoice', error);
+    ).catch((error) => {
+      logger.error('[Foriba] Failed to send invoice after retries', { error, invoiceData });
       throw error;
-    }
+    });
   }
 
   /**
@@ -146,27 +195,37 @@ export class ForibaProvider implements IEInvoiceProvider {
       return Math.random() > 0.5 ? 'approved' : 'processing';
     }
 
-    // Production mode: Real API call
-    try {
-      const response = await fetch(`${this.baseUrl}/GetInvoiceStatus`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${Buffer.from(`${this.username}:${this.password}`).toString('base64')}`,
-        },
-        body: JSON.stringify({ uuid }),
-      });
+    // Production mode: Real API call with retry
+    return await retry(
+      async () => {
+        const response = await fetch(`${this.baseUrl}/GetInvoiceStatus`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': this.authHeader,
+          },
+          body: JSON.stringify({ uuid }),
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
 
-      if (!response.ok) {
-        throw new Error(`Foriba API error: ${response.status} ${response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Foriba API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+        }
+
+        const data = await response.json();
+        logger.debug(`[Foriba] Invoice status retrieved: ${data.status}`, { uuid });
+        return data.status;
+      },
+      {
+        maxRetries: 3,
+        delayMs: 1000,
+        retryableErrors: isRetryableHttpError,
       }
-
-      const data = await response.json();
-      return data.status;
-    } catch (error) {
-      logger.error('[Foriba] Failed to get invoice status', error);
+    ).catch((error) => {
+      logger.error('[Foriba] Failed to get invoice status after retries', { error, uuid });
       throw error;
-    }
+    });
   }
 
   /**
@@ -178,15 +237,66 @@ export class ForibaProvider implements IEInvoiceProvider {
 
   /**
    * Parse UBL response from Foriba
+   * Parses XML response to extract invoice details
    */
-  private parseUBLResponse(xml: string): any {
-    // TODO: Implement XML parsing
-    // For now, return mock structure
-    return {
-      uuid: uuidv4(),
-      issueDate: new Date().toISOString(),
-      id: `GIB2025${Math.floor(Math.random() * 1000000000)}`,
-      status: 'queued',
-    };
+  private parseUBLResponse(xml: string): {
+    uuid: string;
+    issueDate: string;
+    id: string;
+    status: string;
+    envelopeId?: string;
+  } {
+    try {
+      const $ = cheerio.load(xml, { xmlMode: true });
+
+      // Extract UUID
+      const uuid = $('UUID').first().text() || uuidv4();
+      
+      // Extract Invoice ID
+      const id = $('ID').first().text() || `GIB2025${Math.floor(Math.random() * 1000000000)}`;
+      
+      // Extract Issue Date
+      const issueDateStr = $('IssueDate').first().text();
+      const issueTimeStr = $('IssueTime').first().text();
+      const issueDate = issueDateStr && issueTimeStr 
+        ? new Date(`${issueDateStr}T${issueTimeStr}`).toISOString()
+        : new Date().toISOString();
+
+      // Extract status from response (may vary by API response format)
+      // Common statuses: queued, processing, sent, approved, rejected
+      let status = 'queued';
+      const statusText = $('Status').first().text()?.toLowerCase() || '';
+      if (statusText.includes('approved') || statusText.includes('onaylandı')) {
+        status = 'approved';
+      } else if (statusText.includes('rejected') || statusText.includes('reddedildi')) {
+        status = 'rejected';
+      } else if (statusText.includes('sent') || statusText.includes('gönderildi')) {
+        status = 'sent';
+      } else if (statusText.includes('processing') || statusText.includes('işleniyor')) {
+        status = 'processing';
+      }
+
+      // Extract envelope ID if present
+      const envelopeId = $('EnvelopeID').first().text() || 
+                        $('EnvelopeId').first().text() ||
+                        $('envelopeId').first().text();
+
+      return {
+        uuid,
+        issueDate,
+        id,
+        status,
+        envelopeId: envelopeId || undefined,
+      };
+    } catch (error) {
+      logger.warn('[Foriba] Failed to parse UBL response, using fallback', { error, xml: xml.substring(0, 500) });
+      // Fallback to basic structure
+      return {
+        uuid: uuidv4(),
+        issueDate: new Date().toISOString(),
+        id: `GIB2025${Math.floor(Math.random() * 1000000000)}`,
+        status: 'queued',
+      };
+    }
   }
 }

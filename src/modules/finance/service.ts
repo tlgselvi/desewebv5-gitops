@@ -125,45 +125,63 @@ export class FinanceService {
 
   /**
    * E-Fatura Gönder (GIB Entegrasyonu)
+   * Optimized: Uses JOIN to fetch all related data in a single query
    */
   async sendEInvoice(invoiceId: string, organizationId?: string, einvoiceProvider: string = 'foriba'): Promise<EInvoiceDocument> {
-    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
-    if (!invoice) throw new Error('Invoice not found');
+    // Optimized: Fetch invoice with related data using JOIN
+    const [invoiceWithRelations] = await db
+      .select({
+        invoice: invoices,
+        account: accounts,
+        organization: organizations,
+      })
+      .from(invoices)
+      .leftJoin(accounts, eq(accounts.id, invoices.accountId))
+      .leftJoin(organizations, eq(organizations.id, invoices.organizationId))
+      .where(eq(invoices.id, invoiceId))
+      .limit(1);
 
+    if (!invoiceWithRelations?.invoice) throw new Error('Invoice not found');
+
+    const invoice = invoiceWithRelations.invoice;
+    const account = invoiceWithRelations.account;
+    const organization = invoiceWithRelations.organization;
     const orgId = organizationId || invoice.organizationId;
 
-    // Get invoice items
+    // Get invoice items (separate query as it's a one-to-many relationship)
     const items = await db.select()
       .from(invoiceItems)
       .where(eq(invoiceItems.invoiceId, invoiceId));
 
-    // Get account (customer) data
-    const [account] = await db.select()
-      .from(accounts)
-      .where(eq(accounts.id, invoice.accountId))
-      .limit(1);
-
-    // Get organization taxId (accounts don't have taxId, get from organization)
-    const [organization] = await db.select()
-      .from(organizations)
-      .where(eq(organizations.id, orgId))
-      .limit(1);
-
     // Prepare invoice data for E-Invoice
+    // Sender: Organization (fatrayı gönderen)
+    // Receiver: Account/Customer (fatrayı alan)
     const invoiceData = {
+      uuid: invoice.id, // Use invoice ID as UUID for tracking
+      id: invoice.invoiceNumber,
+      sender: {
+        vkn: organization?.taxId || '1111111111', // Organization VKN (sender)
+        name: organization?.name || 'Organizasyon',
+        city: organization?.city || 'İstanbul',
+        district: organization?.district || 'Merkez',
+      },
       receiver: {
-        vkn: organization?.taxId || '1111111111', // Fallback to test VKN
+        vkn: account?.taxId || '1111111111', // Account/Customer VKN/TCKN (receiver)
         name: account?.name || 'Test Müşteri',
+        city: account?.city || 'İstanbul',
+        district: account?.district || 'Merkez',
       },
       payableAmount: parseFloat(invoice.total),
       currency: invoice.currency || 'TRY',
       profileId: 'TICARIFATURA',
       typeCode: invoice.type === 'sales' ? 'SATIS' : 'IADE',
+      note: invoice.notes || '',
       items: items.map(item => ({
         description: item.description,
         quantity: parseFloat(item.quantity),
         unitPrice: parseFloat(item.unitPrice),
         taxRate: parseFloat(item.taxRate.toString()),
+        unit: 'NIU', // Unit of measure
       })),
     };
 
@@ -171,34 +189,136 @@ export class FinanceService {
       const provider = await integrationService.getEInvoiceProvider(orgId, einvoiceProvider);
       const result = await provider.sendInvoice(invoiceData);
 
-      // DB güncelle
+      // Update DB with e-invoice result
       await db.update(invoices)
           .set({ 
               gibStatus: result.status, 
-              invoiceNumber: result.id, // GIB'den gelen resmi numara
+              invoiceNumber: result.id || invoice.invoiceNumber, // GIB'den gelen resmi numara
               updatedAt: new Date() 
           })
           .where(eq(invoices.id, invoiceId));
+
+      logger.info('[FinanceService] E-Invoice sent successfully', {
+        invoiceId,
+        uuid: result.uuid,
+        status: result.status,
+        invoiceNumber: result.id,
+      });
 
       return result;
     } catch (error) {
-      // If integration not found, fallback to mock (for development)
-      logger.warn('[FinanceService] E-Invoice integration not found, using mock', error);
-      const { ForibaProvider } = await import('@/integrations/einvoice/foriba.js');
-      const mockProvider = new ForibaProvider('mock-user', 'mock-pass', { sandbox: true });
-      const result = await mockProvider.sendInvoice(invoiceData);
-
-      // DB güncelle
+      logger.error('[FinanceService] Failed to send e-invoice', {
+        error,
+        invoiceId,
+        organizationId: orgId,
+      });
+      
+      // Update status to failed
       await db.update(invoices)
           .set({ 
-              gibStatus: result.status, 
-              invoiceNumber: result.id,
+              gibStatus: 'failed',
               updatedAt: new Date() 
           })
           .where(eq(invoices.id, invoiceId));
 
-      return result;
+      throw error;
     }
+  }
+
+  /**
+   * E-Fatura Durum Kontrolü
+   * Belirli bir e-faturanın GIB'deki durumunu kontrol eder
+   */
+  async checkEInvoiceStatus(invoiceId: string, organizationId?: string, einvoiceProvider: string = 'foriba'): Promise<string> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
+    if (!invoice) throw new Error('Invoice not found');
+    if (!invoice.gibStatus) throw new Error('Invoice has not been sent to GIB yet');
+
+    const orgId = organizationId || invoice.organizationId;
+
+    try {
+      const provider = await integrationService.getEInvoiceProvider(orgId, einvoiceProvider);
+      
+      // Get UUID from invoice (if stored separately, otherwise use invoice ID)
+      // In real implementation, we might store GIB UUID separately
+      const uuid = invoice.id; // Simplified: using invoice ID as UUID
+      
+      const status = await provider.getInvoiceStatus(uuid);
+
+      // Update DB with latest status
+      if (status !== invoice.gibStatus) {
+        await db.update(invoices)
+          .set({ 
+            gibStatus: status,
+            updatedAt: new Date() 
+          })
+          .where(eq(invoices.id, invoiceId));
+      }
+
+      return status;
+    } catch (error) {
+      logger.error('[FinanceService] Failed to check e-invoice status', {
+        error,
+        invoiceId,
+        organizationId: orgId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * E-Fatura Geçmişi Sorgulama
+   * Organizasyona ait e-fatura gönderim geçmişini getirir
+   */
+  async getEInvoiceHistory(
+    organizationId: string,
+    filters?: {
+      fromDate?: Date;
+      toDate?: Date;
+      status?: string;
+      type?: 'sales' | 'purchase';
+    }
+  ) {
+    const queryConditions = [eq(invoices.organizationId, organizationId)];
+    
+    // Filter by GIB status (only invoices that have been sent)
+    queryConditions.push(sql`${invoices.gibStatus} IS NOT NULL`);
+
+    if (filters?.fromDate) {
+      queryConditions.push(sql`${invoices.invoiceDate} >= ${filters.fromDate}`);
+    }
+
+    if (filters?.toDate) {
+      queryConditions.push(sql`${invoices.invoiceDate} <= ${filters.toDate}`);
+    }
+
+    if (filters?.status) {
+      queryConditions.push(eq(invoices.gibStatus, filters.status));
+    }
+
+    if (filters?.type) {
+      queryConditions.push(eq(invoices.type, filters.type));
+    }
+
+    const einvoices = await db.select({
+      id: invoices.id,
+      invoiceNumber: invoices.invoiceNumber,
+      invoiceDate: invoices.invoiceDate,
+      type: invoices.type,
+      total: invoices.total,
+      currency: invoices.currency,
+      gibStatus: invoices.gibStatus,
+      status: invoices.status,
+      accountId: invoices.accountId,
+      createdAt: invoices.createdAt,
+      updatedAt: invoices.updatedAt,
+    })
+      .from(invoices)
+      .where(and(...queryConditions))
+      .orderBy(desc(invoices.invoiceDate))
+      .limit(100); // Limit to prevent large queries
+
+    return einvoices;
   }
 
   /**
@@ -366,32 +486,19 @@ export class FinanceService {
 
   /**
    * Dashboard için Finansal Özet Getir
+   * Optimized: Uses conditional aggregation to fetch all totals in a single query
    */
   async getFinancialSummary(organizationId: string) {
     try {
-      // Toplam Ciro (Satış Faturaları)
-      const [salesResult] = await db
-        .select({ 
-          total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
+      // Optimized: Fetch all invoice totals in a single query using conditional aggregation
+      const [summaryResult] = await db
+        .select({
+          totalRevenue: sql<string>`coalesce(sum(case when ${invoices.type} = 'sales' and ${invoices.status} = 'paid' then ${invoices.total} else 0 end), '0')`,
+          pendingPayments: sql<string>`coalesce(sum(case when ${invoices.type} = 'sales' and ${invoices.status} = 'sent' then ${invoices.total} else 0 end), '0')`,
+          totalExpenses: sql<string>`coalesce(sum(case when ${invoices.type} = 'purchase' and ${invoices.status} = 'paid' then ${invoices.total} else 0 end), '0')`,
         })
         .from(invoices)
-        .where(and(
-          eq(invoices.organizationId, organizationId),
-          eq(invoices.type, 'sales'),
-          eq(invoices.status, 'paid') // Sadece ödenmişler cirodur
-        ));
-
-      // Bekleyen Ödemeler (Tahsil Edilecek)
-      const [pendingResult] = await db
-        .select({ 
-          total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
-        })
-        .from(invoices)
-        .where(and(
-          eq(invoices.organizationId, organizationId),
-          eq(invoices.type, 'sales'),
-          eq(invoices.status, 'sent') // Gönderilmiş ama ödenmemiş
-        ));
+        .where(eq(invoices.organizationId, organizationId));
 
       // Son 5 İşlem
       const recentTransactions = await db.select()
@@ -399,18 +506,6 @@ export class FinanceService {
         .where(eq(transactions.organizationId, organizationId))
         .orderBy(desc(transactions.date))
         .limit(5);
-
-      // Calculate total expenses (purchase invoices)
-      const [expensesResult] = await db
-        .select({ 
-          total: sql<string>`coalesce(sum(${invoices.total}), '0')` 
-        })
-        .from(invoices)
-        .where(and(
-          eq(invoices.organizationId, organizationId),
-          eq(invoices.type, 'purchase'),
-          eq(invoices.status, 'paid')
-        ));
 
       // Monthly Revenue Trend (Last 6 months)
       const monthlyRevenue = await db.execute(sql`
@@ -428,9 +523,9 @@ export class FinanceService {
       `);
 
       return {
-        totalRevenue: parseFloat(salesResult?.total || '0'),
-        totalExpenses: parseFloat(expensesResult?.total || '0'),
-        pendingPayments: parseFloat(pendingResult?.total || '0'),
+        totalRevenue: parseFloat(summaryResult?.totalRevenue || '0'),
+        totalExpenses: parseFloat(summaryResult?.totalExpenses || '0'),
+        pendingPayments: parseFloat(summaryResult?.pendingPayments || '0'),
         recentTransactions: recentTransactions || [],
         monthlyRevenue: monthlyRevenue.map((row: any) => ({
           name: row.name,
@@ -451,8 +546,10 @@ export class FinanceService {
 
   /**
    * Banka Hareketlerini Senkronize Et
+   * İşlem eşleştirme algoritması ile mevcut işlemleri tekrar eklemez
+   * Optimized: Uses batch operations to avoid N+1 queries
    */
-  async syncBankTransactions(organizationId: string, accountId: string, bankProvider: string = 'isbank') {
+  async syncBankTransactions(organizationId: string, accountId: string, userId: string, bankProvider: string = 'isbank') {
     // Get banking provider from integration service
     const provider = await integrationService.getBankingProvider(organizationId, bankProvider);
     
@@ -475,28 +572,186 @@ export class FinanceService {
     // Use account code as account number (accounts table doesn't have iban/accountNumber fields)
     const accountNumber = account.code || '1234567890';
     const bankTransactions = await provider.getTransactions(accountNumber, fromDate);
-    const results = [];
     
-    for (const tx of bankTransactions) {
-      const [newTx] = await db.insert(transactions).values({
+    // Get existing transactions for matching
+    const existingTransactions = await db.select()
+      .from(transactions)
+      .where(and(
+        eq(transactions.organizationId, organizationId),
+        eq(transactions.accountId, accountId),
+        eq(transactions.referenceType, 'bank_transaction'),
+        sql`${transactions.date} >= ${fromDate}`
+      ));
+
+    // Create a map of existing transactions by external ID and amount+date
+    const existingTxMap = new Map<string, boolean>();
+    existingTransactions.forEach(tx => {
+      // Extract external ID from description (format: "Description (EXTERNAL_ID)")
+      const match = tx.description.match(/\(([^)]+)\)$/);
+      if (match) {
+        existingTxMap.set(match[1], true);
+      } else {
+        // Fallback: match by amount and date (within 1 day tolerance)
+        const key = `${tx.amount}_${tx.date.toISOString().split('T')[0]}`;
+        existingTxMap.set(key, true);
+      }
+    });
+
+    // Optimized: Batch match all transactions to invoices in a single query
+    const newTransactionsToProcess = bankTransactions.filter(tx => {
+      const isExisting = existingTxMap.has(tx.externalId) || 
+                        existingTxMap.has(`${tx.amount.toFixed(2)}_${tx.date.toISOString().split('T')[0]}`);
+      return !isExisting;
+    });
+
+    // Batch match transactions to invoices (optimized to avoid N+1)
+    const matchedInvoices = await this.batchMatchTransactionsToInvoices(
+      organizationId,
+      newTransactionsToProcess
+    );
+
+    // Prepare all new transactions for batch insert
+    const transactionsToInsert = newTransactionsToProcess.map(tx => {
+      const matchedInvoice = matchedInvoices.get(tx.externalId);
+      return {
         id: uuidv4(),
         organizationId,
         accountId, 
         date: tx.date,
         amount: tx.amount.toFixed(2),
         description: `${tx.description} (${tx.externalId})`,
-        category: 'bank_sync',
-        referenceType: 'bank_transaction',
-        referenceId: uuidv4(),
-      }).returning();
-      
-      results.push(newTx);
-    }
+        category: matchedInvoice ? 'invoice_payment' : 'bank_sync',
+        referenceType: matchedInvoice ? 'invoice' : 'bank_transaction',
+        referenceId: matchedInvoice || uuidv4(),
+        createdBy: userId || uuidv4(), // Add createdBy field
+      };
+    });
+
+    // Batch insert all new transactions
+    const results = transactionsToInsert.length > 0
+      ? await db.insert(transactions).values(transactionsToInsert).returning()
+      : [];
+
+    const matched = bankTransactions.filter(tx => {
+      const isExisting = existingTxMap.has(tx.externalId) || 
+                        existingTxMap.has(`${tx.amount.toFixed(2)}_${tx.date.toISOString().split('T')[0]}`);
+      return isExisting;
+    });
+
+    logger.info('[FinanceService] Bank transactions synced', {
+      organizationId,
+      accountId,
+      total: bankTransactions.length,
+      new: results.length,
+      matched: matched.length,
+      skipped: bankTransactions.length - results.length - matched.length,
+    });
 
     return {
       syncedCount: results.length,
+      matchedCount: matched.length,
       transactions: results
     };
+  }
+
+  /**
+   * Batch match bank transactions to invoices (optimized to avoid N+1)
+   * Matches multiple transactions in a single query
+   */
+  private async batchMatchTransactionsToInvoices(
+    organizationId: string,
+    bankTransactions: BankTransaction[]
+  ): Promise<Map<string, string>> {
+    if (bankTransactions.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const amountTolerance = 0.01;
+      const dateTolerance = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+      // Get all potential matching invoices in a single query
+      const minDate = new Date(Math.min(...bankTransactions.map(tx => tx.date.getTime())) - dateTolerance);
+      const maxDate = new Date(Math.max(...bankTransactions.map(tx => tx.date.getTime())) + dateTolerance);
+      const minAmount = Math.min(...bankTransactions.map(tx => tx.amount)) - amountTolerance;
+      const maxAmount = Math.max(...bankTransactions.map(tx => tx.amount)) + amountTolerance;
+
+      // Fetch all potential matching invoices
+      const potentialInvoices = await db.select()
+        .from(invoices)
+        .where(and(
+          eq(invoices.organizationId, organizationId),
+          eq(invoices.status, 'sent'),
+          sql`${invoices.total}::numeric >= ${minAmount}`,
+          sql`${invoices.total}::numeric <= ${maxAmount}`,
+          sql`${invoices.invoiceDate} >= ${minDate}`,
+          sql`${invoices.invoiceDate} <= ${maxDate}`
+        ));
+
+      // Match transactions to invoices in memory
+      const matches = new Map<string, string>();
+      const invoicesToUpdate: string[] = [];
+
+      for (const tx of bankTransactions) {
+        const matchDateFrom = new Date(tx.date.getTime() - dateTolerance);
+        const matchDateTo = new Date(tx.date.getTime() + dateTolerance);
+        const amountMin = tx.amount - amountTolerance;
+        const amountMax = tx.amount + amountTolerance;
+
+        const matchingInvoice = potentialInvoices.find(inv => {
+          const invAmount = parseFloat(inv.total);
+          const invDate = inv.invoiceDate;
+          return (
+            invAmount >= amountMin &&
+            invAmount <= amountMax &&
+            invDate >= matchDateFrom &&
+            invDate <= matchDateTo
+          );
+        });
+
+        if (matchingInvoice) {
+          matches.set(tx.externalId, matchingInvoice.id);
+          if (!invoicesToUpdate.includes(matchingInvoice.id)) {
+            invoicesToUpdate.push(matchingInvoice.id);
+          }
+        }
+      }
+
+      // Batch update matched invoices to paid status
+      if (invoicesToUpdate.length > 0) {
+        await db.update(invoices)
+          .set({
+            status: 'paid',
+            updatedAt: new Date(),
+          })
+          .where(sql`${invoices.id} = ANY(${invoicesToUpdate})`);
+
+        logger.info('[FinanceService] Batch matched bank transactions to invoices', {
+          matchedCount: matches.size,
+          invoiceIds: invoicesToUpdate,
+        });
+      }
+
+      return matches;
+    } catch (error) {
+      logger.warn('[FinanceService] Failed to batch match transactions to invoices', {
+        error,
+        transactionCount: bankTransactions.length,
+      });
+      return new Map();
+    }
+  }
+
+  /**
+   * Match bank transaction to invoice (legacy method, kept for backward compatibility)
+   * @deprecated Use batchMatchTransactionsToInvoices for better performance
+   */
+  private async matchTransactionToInvoice(
+    organizationId: string,
+    bankTx: BankTransaction
+  ): Promise<string | null> {
+    const matches = await this.batchMatchTransactionsToInvoices(organizationId, [bankTx]);
+    return matches.get(bankTx.externalId) || null;
   }
 }
 

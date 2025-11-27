@@ -1,0 +1,230 @@
+# DESE EA PLAN - Android Fastlane Configuration
+#
+# Usage:
+#   fastlane internal  - Upload to Internal Testing
+#   fastlane beta      - Promote to Beta
+#   fastlane release   - Deploy to Production
+
+default_platform(:android)
+
+platform :android do
+  before_all do
+    # Ensure we have the Play Store JSON key
+    unless ENV['PLAY_STORE_JSON_KEY_PATH'] || File.exist?("play-store-key.json")
+      UI.user_error!("Missing Play Store JSON key file")
+    end
+  end
+
+  # ==================== BUILD ====================
+  
+  desc "Build debug APK"
+  lane :build_debug do
+    gradle(
+      task: "assemble",
+      build_type: "Debug"
+    )
+  end
+
+  desc "Build release AAB"
+  lane :build_release do
+    # Increment version code
+    increment_version_code(
+      gradle_file_path: "app/build.gradle"
+    )
+    
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV['KEYSTORE_PATH'] || "upload-key.jks",
+        "android.injected.signing.store.password" => ENV['KEYSTORE_PASSWORD'],
+        "android.injected.signing.key.alias" => "upload",
+        "android.injected.signing.key.password" => ENV['KEY_PASSWORD']
+      }
+    )
+  end
+
+  desc "Build release APK"
+  lane :build_apk do
+    gradle(
+      task: "assemble",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV['KEYSTORE_PATH'] || "upload-key.jks",
+        "android.injected.signing.store.password" => ENV['KEYSTORE_PASSWORD'],
+        "android.injected.signing.key.alias" => "upload",
+        "android.injected.signing.key.password" => ENV['KEY_PASSWORD']
+      }
+    )
+  end
+
+  # ==================== TESTING ====================
+  
+  desc "Run unit tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Run instrumented tests"
+  lane :connected_test do
+    gradle(task: "connectedAndroidTest")
+  end
+
+  # ==================== DEPLOYMENT ====================
+  
+  desc "Deploy to Internal Testing track"
+  lane :internal do
+    build_release
+    
+    upload_to_play_store(
+      track: "internal",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: json_key_path,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    slack_notification("Android Internal build uploaded")
+  end
+
+  desc "Promote Internal to Closed Beta"
+  lane :beta do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "beta",
+      json_key: json_key_path,
+      skip_upload_changelogs: false
+    )
+    
+    slack_notification("Android promoted to Beta track")
+  end
+
+  desc "Deploy to Production (staged rollout)"
+  lane :release do
+    # Ensure we're on main branch
+    ensure_git_branch(branch: "main")
+    
+    build_release
+    
+    upload_to_play_store(
+      track: "production",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      json_key: json_key_path,
+      rollout: "0.1",  # Start with 10% rollout
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+    
+    # Tag release
+    version_name = get_version_name
+    version_code = get_version_code
+    git_add_tag(tag: "android-v#{version_name}-#{version_code}")
+    push_git_tags
+    
+    slack_notification("Android #{version_name} (#{version_code}) released to 10% of users")
+  end
+
+  desc "Increase rollout percentage"
+  lane :increase_rollout do |options|
+    percentage = options[:percentage] || 0.5
+    
+    upload_to_play_store(
+      track: "production",
+      rollout: percentage.to_s,
+      json_key: json_key_path,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    slack_notification("Android rollout increased to #{(percentage * 100).to_i}%")
+  end
+
+  desc "Full rollout to all users"
+  lane :full_rollout do
+    upload_to_play_store(
+      track: "production",
+      rollout: "1.0",
+      json_key: json_key_path,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+    
+    slack_notification("Android fully rolled out to all users")
+  end
+
+  # ==================== METADATA ====================
+  
+  desc "Upload metadata to Play Store"
+  lane :metadata do
+    upload_to_play_store(
+      json_key: json_key_path,
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false
+    )
+  end
+
+  desc "Fetch current metadata from Play Store"
+  lane :fetch_metadata do
+    download_from_play_store(
+      json_key: json_key_path
+    )
+  end
+
+  # ==================== HELPERS ====================
+  
+  def json_key_path
+    ENV['PLAY_STORE_JSON_KEY_PATH'] || "play-store-key.json"
+  end
+  
+  def get_version_name
+    # Read from build.gradle
+    gradle_file = File.read("app/build.gradle")
+    version_name = gradle_file.match(/versionName\s+"(.+)"/)[1]
+    version_name
+  end
+  
+  def get_version_code
+    gradle_file = File.read("app/build.gradle")
+    version_code = gradle_file.match(/versionCode\s+(\d+)/)[1]
+    version_code
+  end
+  
+  def increment_version_code(gradle_file_path:)
+    gradle_file = File.read(gradle_file_path)
+    current_version_code = gradle_file.match(/versionCode\s+(\d+)/)[1].to_i
+    new_version_code = current_version_code + 1
+    
+    new_content = gradle_file.gsub(/versionCode\s+\d+/, "versionCode #{new_version_code}")
+    File.write(gradle_file_path, new_content)
+    
+    UI.message("Version code incremented to #{new_version_code}")
+    new_version_code
+  end
+  
+  def slack_notification(message)
+    if ENV['SLACK_WEBHOOK_URL']
+      slack(
+        message: message,
+        success: true,
+        slack_url: ENV['SLACK_WEBHOOK_URL'],
+        default_payloads: [:git_branch, :git_author]
+      )
+    end
+  end
+
+  # ==================== ERROR HANDLING ====================
+  
+  error do |lane, exception|
+    slack_notification("Android build failed: #{exception.message}") if ENV['SLACK_WEBHOOK_URL']
+  end
+end
+
