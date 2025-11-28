@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState, useEffect, useRef } from "react"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { Toaster } from "sonner"
+import { CommandMenu } from "@/components/ui/command-menu"
 
 /**
  * Browser extension attributes that cause hydration mismatches
@@ -114,6 +115,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
@@ -124,6 +127,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       >
         {children}
         <Toaster richColors closeButton position="top-right" />
+        <CommandMenu open={commandMenuOpen} onOpenChange={setCommandMenuOpen} />
       </ThemeProvider>
     </QueryClientProvider>
   )
