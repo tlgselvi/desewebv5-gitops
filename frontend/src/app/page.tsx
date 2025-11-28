@@ -27,6 +27,7 @@ import { Card } from "@/components/ui/card";
 import { useEffect, useState, useRef } from "react";
 import { getHomeDashboardData, HomeDashboardDto } from "@/lib/dashboard-service";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
 import type { LucideIcon } from "lucide-react";
 
 // Map icon strings to components - properly typed
@@ -224,6 +225,14 @@ export default function Home() {
             description: "ArgoCD senkronizasyonu ile helm test hook devre dışı bırakıldı. CRD hatası ortadan kaldırıldı.",
             level: "info"
           },
+          revenueChart: [
+            { date: "Ocak", value: 120000 },
+            { date: "Şubat", value: 185000 },
+            { date: "Mart", value: 240000 },
+            { date: "Nisan", value: 310000 },
+            { date: "Mayıs", value: 450000 },
+            { date: "Haziran", value: 680000 },
+          ],
           generatedAt: new Date().toISOString()
         });
       } finally {
@@ -400,6 +409,15 @@ export default function Home() {
             })
           )}
         </div>
+      </section>
+
+      {/* Revenue Chart Section */}
+      <section>
+        {loading ? (
+          <Skeleton className="h-[450px] w-full rounded-xl" />
+        ) : data?.revenueChart && data.revenueChart.length > 0 ? (
+          <RevenueChart data={data.revenueChart} />
+        ) : null}
       </section>
 
       {/* Modules Section */}

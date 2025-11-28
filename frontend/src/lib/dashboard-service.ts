@@ -29,75 +29,111 @@ export type ActiveEventDto = {
   level: "info" | "warning" | "critical";
 };
 
+export type RevenueChartDataPoint = {
+  date: string;
+  value: number;
+};
+
 export type HomeDashboardDto = {
   kpis: DashboardKpiDto[];
   recentActivities: RecentActivityDto[];
   activeEvent: ActiveEventDto;
+  revenueChart: RevenueChartDataPoint[];
   generatedAt: string;
+};
+
+/**
+ * Format number as Turkish Lira currency
+ */
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency: "TRY",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 };
 
 /**
  * Mock data for development mode bypass
  * This prevents infinite loops by avoiding API calls and token checks
+ * Rich enterprise dashboard data with financial metrics and transactions
  */
 const getMockDashboardData = (): HomeDashboardDto => {
   return {
     kpis: [
       {
-        title: "MCP Uptime",
-        value: "99.97%",
-        description: "FinBot, MuBot, Observability MCP servislerinin 30 günlük ortalaması",
-        icon: "Activity",
-        trend: { value: 1.5, direction: "up" },
+        title: "Toplam Ciro",
+        value: formatCurrency(1250000), // ₺1.250.000
+        description: "Bu ay toplam gelir (Aylık %15 artış)",
+        icon: "TrendingUp",
+        trend: { value: 15, direction: "up" },
         variant: "primary",
       },
       {
-        title: "Kyverno Policy Health",
-        value: "24/24",
-        description: "Kyverno policy senkronizasyonu ve ArgoCD drift kontrolü",
-        icon: "ShieldCheck",
-        trend: { value: 0.4, direction: "up" },
+        title: "Aktif Kullanıcı",
+        value: "842",
+        description: "Aktif kullanıcı sayısı (Son 30 günde %12 artış)",
+        icon: "Users",
+        trend: { value: 12, direction: "up" },
+        variant: "success",
       },
       {
-        title: "ArgoCD Deploy Pipeline",
-        value: "12m",
-        description: "Staging → Production CI/CD ortalama yürütme süresi",
-        icon: "Zap",
-        trend: { value: 12, direction: "down" },
+        title: "Bekleyen Tahsilat",
+        value: formatCurrency(45000), // ₺45.000
+        description: "Ödeme bekleyen faturalar ve tahsilatlar",
+        icon: "ShoppingCart",
+        trend: { value: 8, direction: "down" },
+        variant: "warning",
       },
       {
-        title: "FinBot Forecast Accuracy",
-        value: "±3.2%",
-        description: "Son 4 sprint gelir/gider tahmin sapması",
-        icon: "BarChart3",
-        trend: { value: 2.1, direction: "up" },
+        title: "Sistem Sağlığı",
+        value: "99.98%",
+        description: "Tüm servislerin uptime ortalaması (Son 30 gün)",
+        icon: "Activity",
+        trend: { value: 0.02, direction: "up" },
+        variant: "success",
       },
     ],
     recentActivities: [
       {
-        title: "FinBot MCP",
-        description: "Redis cache refresh",
-        time: "12:04",
+        title: "Acme Corp - Enterprise Lisans",
+        description: "₺150.000 - Tamamlandı",
+        time: "14:23",
         status: "success",
       },
       {
-        title: "MuBot ingestion queue",
-        description: "8 yeni kayıt",
-        time: "11:52",
+        title: "TechStart - Danışmanlık",
+        description: "₺25.000 - Bekliyor",
+        time: "13:45",
         status: "warning",
       },
       {
-        title: "Prometheus alertmanager",
-        description: "0 aktif alarm",
-        time: "11:30",
+        title: "GlobalTech - Premium Abonelik",
+        description: "₺75.000 - Tamamlandı",
+        time: "12:18",
+        status: "success",
+      },
+      {
+        title: "StartupHub - Temel Paket",
+        description: "₺12.500 - İşleniyor",
+        time: "11:32",
         status: "info",
       },
     ],
     activeEvent: {
-      title: "Kyverno CRD güncellemesi uygulandı",
-      description: "ArgoCD senkronizasyonu ile helm test hook devre dışı bırakıldı. CRD hatası ortadan kaldırıldı.",
+      title: "Sistem Performansı Optimal Seviyede",
+      description: "Tüm MCP servisleri normal çalışıyor. FinBot ve MuBot senkronizasyonu başarılı. Son 24 saatte 0 kritik hata.",
       level: "info",
     },
+    revenueChart: [
+      { date: "Ocak", value: 120000 },
+      { date: "Şubat", value: 185000 },
+      { date: "Mart", value: 240000 },
+      { date: "Nisan", value: 310000 },
+      { date: "Mayıs", value: 450000 },
+      { date: "Haziran", value: 680000 },
+    ],
     generatedAt: new Date().toISOString(),
   };
 };
