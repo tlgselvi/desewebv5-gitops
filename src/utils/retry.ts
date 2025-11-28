@@ -3,12 +3,34 @@ import { logger } from './logger.js';
 export interface RetryOptions {
   maxRetries?: number;
   delayMs?: number;
+  maxDelayMs?: number;
   backoffMultiplier?: number;
+  /** Add random jitter to prevent thundering herd problem */
+  jitter?: boolean;
+  /** Jitter type: 'full' (0 to delay) or 'equal' (-delay/2 to +delay/2) */
+  jitterType?: 'full' | 'equal';
   retryableErrors?: (error: unknown) => boolean;
+  /** Callback before each retry attempt */
+  onRetry?: (attempt: number, error: unknown, delayMs: number) => void;
+  /** Callback when all retries are exhausted */
+  onExhausted?: (error: unknown, attempts: number) => void;
 }
 
 /**
- * Retry utility for async operations with exponential backoff
+ * Retry utility for async operations with exponential backoff and jitter
+ * 
+ * Features:
+ * - Exponential backoff with configurable multiplier
+ * - Jitter to prevent thundering herd problem
+ * - Configurable max delay cap
+ * - Custom retryable error detection
+ * - Retry callbacks for monitoring
+ * 
+ * Based on proven patterns from:
+ * - AWS SDK retry strategies
+ * - Google Cloud retry policies
+ * - Exponential backoff with jitter (RFC 7231)
+ * 
  * @param fn Async function to retry
  * @param options Retry configuration options
  * @returns Result of the function call
@@ -20,8 +42,13 @@ export async function retry<T>(
   const {
     maxRetries = 3,
     delayMs = 1000,
+    maxDelayMs = 30000, // 30 seconds max
     backoffMultiplier = 2,
+    jitter = true,
+    jitterType = 'full',
     retryableErrors = () => true,
+    onRetry,
+    onExhausted,
   } = options;
 
   let lastError: unknown;
@@ -35,7 +62,10 @@ export async function retry<T>(
 
       // Check if error is retryable
       if (!retryableErrors(error)) {
-        logger.warn('[Retry] Error is not retryable', { error, attempt });
+        logger.warn('[Retry] Error is not retryable', { 
+          error: error instanceof Error ? error.message : String(error),
+          attempt: attempt + 1,
+        });
         throw error;
       }
 
@@ -45,19 +75,46 @@ export async function retry<T>(
           attempts: attempt + 1,
           error: error instanceof Error ? error.message : String(error),
         });
+        if (onExhausted) {
+          onExhausted(error, attempt + 1);
+        }
         break;
+      }
+
+      // Calculate delay with exponential backoff
+      const baseDelay = Math.min(currentDelay, maxDelayMs);
+      
+      // Add jitter to prevent thundering herd
+      let delay = baseDelay;
+      if (jitter) {
+        if (jitterType === 'full') {
+          // Full jitter: random between 0 and baseDelay
+          delay = Math.floor(Math.random() * baseDelay);
+        } else {
+          // Equal jitter: random between -baseDelay/2 and +baseDelay/2
+          const jitterAmount = Math.floor(Math.random() * baseDelay) - baseDelay / 2;
+          delay = Math.max(0, baseDelay + jitterAmount);
+        }
       }
 
       logger.warn('[Retry] Attempt failed, retrying', {
         attempt: attempt + 1,
-        maxRetries,
-        delayMs: currentDelay,
+        maxRetries: maxRetries + 1,
+        delayMs: delay,
+        baseDelayMs: baseDelay,
+        jitter: jitter ? jitterType : false,
         error: error instanceof Error ? error.message : String(error),
       });
 
-      // Wait before retry with exponential backoff
-      await new Promise((resolve) => setTimeout(resolve, currentDelay));
-      currentDelay *= backoffMultiplier;
+      if (onRetry) {
+        onRetry(attempt + 1, error, delay);
+      }
+
+      // Wait before retry
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      
+      // Calculate next delay with exponential backoff
+      currentDelay = Math.min(currentDelay * backoffMultiplier, maxDelayMs);
     }
   }
 
