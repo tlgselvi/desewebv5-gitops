@@ -1,245 +1,192 @@
 "use client";
 
-import React, { useState } from 'react';
-import {
-  DndContext,
-  DragOverlay,
-  closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragOverEvent,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { Deal, PipelineStage } from '@/types/crm';
-import { toast } from 'sonner';
-import { crmService } from '@/services/crm';
+import React, { useState, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Deal, DealStage } from "@/lib/dtos/crm.dto";
+import { crmService } from "@/lib/crm-service";
+import { toast } from "sonner";
 
 interface KanbanBoardProps {
-  initialStages: PipelineStage[];
-  initialDeals: Deal[];
+  deals: Deal[];
+  onDealUpdate?: () => void;
 }
 
-// --- Components ---
+const STAGES: { id: DealStage; name: string; color: string }[] = [
+  { id: "Lead", name: "Yeni Aday", color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800" },
+  { id: "Contacted", name: "Görüşülüyor", color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800" },
+  { id: "Proposal", name: "Teklif Aşamasında", color: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800" },
+  { id: "Closed", name: "Satış Kapandı", color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800" },
+];
 
-function SortableDealItem({ deal }: { deal: Deal }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: deal.id, data: { type: 'Deal', deal } });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={cn(
-        "mb-3 cursor-grab active:cursor-grabbing hover:border-blue-400 transition-colors",
-        isDragging && "opacity-50 ring-2 ring-blue-500"
-      )}
-    >
-      <CardContent className="p-3 space-y-2">
-        <div className="font-medium text-sm">{deal.title}</div>
-        {deal.companyName && (
-          <div className="text-xs text-muted-foreground">{deal.companyName}</div>
-        )}
-        <div className="flex items-center justify-between pt-2">
-          <Badge variant="outline" className="text-xs font-normal">
-            {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: deal.currency }).format(deal.value)}
-          </Badge>
-          {deal.probability && (
-             <span className="text-[10px] text-muted-foreground">%{deal.probability}</span>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function KanbanColumn({ stage, deals }: { stage: PipelineStage; deals: Deal[] }) {
-  const { setNodeRef } = useSortable({
-    id: stage.id,
-    data: { type: 'Stage', stage },
-    disabled: true, // Columns are not draggable in this version
+export function KanbanBoard({ deals, onDealUpdate }: KanbanBoardProps) {
+  const [dealsByStage, setDealsByStage] = useState<Record<DealStage, Deal[]>>({
+    Lead: [],
+    Contacted: [],
+    Proposal: [],
+    Closed: [],
   });
 
-  const totalValue = deals.reduce((acc, deal) => acc + deal.value, 0);
+  useEffect(() => {
+    // Group deals by stage
+    const grouped: Record<DealStage, Deal[]> = {
+      Lead: [],
+      Contacted: [],
+      Proposal: [],
+      Closed: [],
+    };
 
-  return (
-    <div className="flex flex-col h-full w-72 min-w-[280px] bg-muted/30 rounded-lg border">
-      <div className="p-3 border-b bg-muted/50 flex items-center justify-between rounded-t-lg">
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-3 h-3 rounded-full" 
-            style={{ backgroundColor: stage.color }} 
-          />
-          <span className="font-medium text-sm">{stage.name}</span>
-          <Badge variant="secondary" className="h-5 px-1.5 min-w-[1.25rem] text-[10px]">
-            {deals.length}
-          </Badge>
-        </div>
-      </div>
-      
-      <div className="p-2 bg-background/50 border-b text-xs text-muted-foreground text-right">
-        Toplam: {new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(totalValue)}
-      </div>
+    deals.forEach((deal) => {
+      if (grouped[deal.stage]) {
+        grouped[deal.stage].push(deal);
+      }
+    });
 
-      <ScrollArea className="flex-1 p-2">
-        <div ref={setNodeRef} className="min-h-[100px]">
-          <SortableContext items={deals.map(d => d.id)} strategy={verticalListSortingStrategy}>
-            {deals.map((deal) => (
-              <SortableDealItem key={deal.id} deal={deal} />
-            ))}
-          </SortableContext>
-        </div>
-      </ScrollArea>
-    </div>
-  );
-}
+    setDealsByStage(grouped);
+  }, [deals]);
 
-// --- Main Board ---
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
 
-export function KanbanBoard({ initialStages, initialDeals }: KanbanBoardProps) {
-  const [stages] = useState<PipelineStage[]>(initialStages.sort((a, b) => a.order - b.order));
-  const [deals, setDeals] = useState<Deal[]>(initialDeals);
-  const [activeDragItem, setActiveDragItem] = useState<Deal | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Start dragging after 8px movement
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const deal = deals.find(d => d.id === active.id);
-    if (deal) setActiveDragItem(deal);
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    // Find the container (stage) we are over
-    const activeId = active.id;
-    const overId = over.id;
-
-    // If hovering over a stage container directly
-    const isOverStage = stages.some(s => s.id === overId);
-    
-    if (isOverStage) {
-       // This is handled in dragEnd usually for stage changes
-    }
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveDragItem(null);
-
-    if (!over) return;
-
-    const activeDealId = active.id as string;
-    const overId = over.id as string;
-
-    // Find the deal being dragged
-    const activeDeal = deals.find(d => d.id === activeDealId);
-    if (!activeDeal) return;
-
-    // Identify the target stage
-    let targetStageId = "";
-
-    // Case 1: Dropped over another deal
-    const overDeal = deals.find(d => d.id === overId);
-    if (overDeal) {
-      targetStageId = overDeal.stageId;
-    }
-    
-    // Case 2: Dropped over a stage column
-    const overStage = stages.find(s => s.id === overId);
-    if (overStage) {
-      targetStageId = overStage.id;
-    }
-
-    // If stage hasn't changed, maybe reorder? (Reordering not implemented in backend yet)
-    if (targetStageId === activeDeal.stageId || !targetStageId) {
+    // If dropped outside a droppable area
+    if (!destination) {
       return;
     }
 
-    // Optimistic Update
-    const previousDeals = [...deals];
-    setDeals(deals.map(d => 
-      d.id === activeDealId ? { ...d, stageId: targetStageId } : d
-    ));
+    // If dropped in the same position
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
 
+    const sourceStage = source.droppableId as DealStage;
+    const destStage = destination.droppableId as DealStage;
+
+    // Find the deal being moved
+    const deal = dealsByStage[sourceStage][source.index];
+
+    if (!deal) {
+      return;
+    }
+
+    // Optimistic update
+    const newDealsByStage = { ...dealsByStage };
+    newDealsByStage[sourceStage] = Array.from(newDealsByStage[sourceStage]);
+    newDealsByStage[sourceStage].splice(source.index, 1);
+
+    if (sourceStage === destStage) {
+      // Moving within the same column
+      newDealsByStage[destStage] = Array.from(newDealsByStage[destStage]);
+      newDealsByStage[destStage].splice(destination.index, 0, deal);
+    } else {
+      // Moving to a different column
+      newDealsByStage[destStage] = Array.from(newDealsByStage[destStage]);
+      newDealsByStage[destStage].splice(destination.index, 0, {
+        ...deal,
+        stage: destStage,
+      });
+    }
+
+    setDealsByStage(newDealsByStage);
+
+    // Update in backend
     try {
-      // API Call
-      await crmService.updateDealStage(activeDealId, targetStageId);
-      toast.success("Deal taşındı");
+      await crmService.updateDealStage(deal.id, destStage);
+      toast.success("Fırsat güncellendi");
+      if (onDealUpdate) {
+        onDealUpdate();
+      }
     } catch (error) {
-      // Rollback
-      setDeals(previousDeals);
-      toast.error("Taşıma başarısız oldu");
+      // Revert on error
+      setDealsByStage(dealsByStage);
+      toast.error("Fırsat güncellenirken hata oluştu");
     }
   };
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("tr-TR", {
+      style: "currency",
+      currency: "TRY",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex h-[calc(100vh-200px)] gap-4 overflow-x-auto pb-4">
-        {stages.map((stage) => (
-          <KanbanColumn
-            key={stage.id}
-            stage={stage}
-            deals={deals.filter((d) => d.stageId === stage.id)}
-          />
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-full">
+        {STAGES.map((stage) => (
+          <div key={stage.id} className="flex flex-col h-full">
+            <Card className="h-full flex flex-col">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold">{stage.name}</CardTitle>
+                  <Badge variant="outline" className={stage.color}>
+                    {dealsByStage[stage.id].length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-y-auto p-2">
+                <Droppable droppableId={stage.id}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`h-full min-h-[200px] space-y-2 transition-colors ${
+                        snapshot.isDraggingOver
+                          ? "bg-muted/50 rounded-lg"
+                          : ""
+                      }`}
+                    >
+                      {dealsByStage[stage.id].map((deal, index) => (
+                        <Draggable
+                          key={deal.id}
+                          draggableId={deal.id}
+                          index={index}
+                        >
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`p-3 bg-background border rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing ${
+                                snapshot.isDragging
+                                  ? "shadow-lg ring-2 ring-primary"
+                                  : ""
+                              }`}
+                            >
+                              <div className="space-y-2">
+                                <div className="font-semibold text-sm">
+                                  {deal.customer.company || deal.customer.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {deal.title}
+                                </div>
+                                <div className="flex items-center justify-between pt-2 border-t">
+                                  <span className="text-sm font-bold text-primary">
+                                    {formatCurrency(deal.value)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {deal.contactPerson}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </CardContent>
+            </Card>
+          </div>
         ))}
       </div>
-
-      <DragOverlay>
-        {activeDragItem ? (
-          <Card className="w-64 opacity-80 shadow-xl rotate-2 cursor-grabbing">
-            <CardContent className="p-3 space-y-2">
-              <div className="font-medium text-sm">{activeDragItem.title}</div>
-              <div className="text-xs text-muted-foreground">Taşınıyor...</div>
-            </CardContent>
-          </Card>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    </DragDropContext>
   );
 }
-

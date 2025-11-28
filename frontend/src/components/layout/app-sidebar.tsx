@@ -42,8 +42,8 @@ export function AppSidebar({ className, onNavigate, ...props }: AppSidebarProps)
       roles: ["admin", "accountant", "manager"],
     },
     {
-      href: "/dashboard/crm",
-      title: "CRM & Satış",
+      href: "/crm",
+      title: "Satış & CRM",
       icon: Users,
       roles: ["admin", "sales", "manager"],
     },
