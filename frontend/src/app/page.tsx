@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/ui/kpi-card";
 // Note: KpiCard is in @/components/ui/kpi-card.tsx
 import { Card } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getHomeDashboardData, HomeDashboardDto } from "@/lib/dashboard-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LucideIcon } from "lucide-react";
@@ -136,14 +136,36 @@ const MODULES = [
 export default function Home() {
   const [data, setData] = useState<HomeDashboardDto | null>(null);
   const [loading, setLoading] = useState(true);
+  // Guard ref to prevent multiple simultaneous fetch calls
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
+    // Guard: Prevent multiple simultaneous fetch calls
+    if (isFetchingRef.current) {
+      return;
+    }
+
     const fetchData = async () => {
+      // Set guard flag
+      isFetchingRef.current = true;
+
       try {
         const dashboardData = await getHomeDashboardData();
         setData(dashboardData);
       } catch (err) {
         console.error("Dashboard data fetch failed, using fallback", err);
+        
+        // Check if it's an authentication error
+        const isAuthError = err instanceof Error && 
+          (err.message.includes("Kimlik doğrulama") || 
+           err.message.includes("401") ||
+           err.message.includes("Unauthorized"));
+        
+        if (isAuthError) {
+          // In mock mode, we should have a token, but if not, log a warning
+          console.warn("Authentication required. If in development, ensure ENABLE_MOCK_LOGIN=true in backend .env");
+        }
+        
         // Fallback data if API fails or auth is missing
         setData({
           kpis: [
@@ -206,6 +228,8 @@ export default function Home() {
         });
       } finally {
         setLoading(false);
+        // Reset guard flag after fetch completes
+        isFetchingRef.current = false;
       }
     };
 

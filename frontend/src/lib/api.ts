@@ -211,22 +211,126 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 // =============================================================================
+// MOCK MODE SUPPORT
+// =============================================================================
+
+/**
+ * Guard flag to prevent infinite loops when creating mock tokens
+ * This ensures ensureMockToken() only attempts to create a token once per session
+ */
+let mockTokenCreationAttempted = false;
+
+/**
+ * Check if mock login is enabled
+ * Checks both environment variable and localStorage flag
+ */
+function isMockModeEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  
+  // Check environment variable (set at build time)
+  if (process.env.NEXT_PUBLIC_ENABLE_MOCK_LOGIN === "true") {
+    return true;
+  }
+  
+  // Check localStorage flag (can be set dynamically)
+  if (localStorage.getItem("mock_mode") === "true") {
+    return true;
+  }
+  
+  // In development mode, default to true if no explicit setting
+  if (process.env.NODE_ENV === "development") {
+    // Check if backend mock login is likely enabled by checking if we're in dev
+    // This is a heuristic - in dev, we assume mock mode is available
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Create a mock token for development/testing
+ * This token is a simple JWT-like structure that the backend can accept in mock mode
+ */
+function createMockToken(): string {
+  // Create a simple mock JWT token
+  // Format: header.payload.signature (base64 encoded)
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload = btoa(JSON.stringify({
+    sub: "mock-user@dese.ai",
+    email: "mock-user@dese.ai",
+    role: "admin",
+    organizationId: "mock-org-id",
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+  }));
+  const signature = btoa("mock-signature");
+  return `${header}.${payload}.${signature}`;
+}
+
+/**
+ * Ensure mock token exists in localStorage if mock mode is enabled
+ * Uses a guard flag to prevent infinite loops - only attempts once per session
+ */
+function ensureMockToken(): string | null {
+  if (typeof window === "undefined") return null;
+  
+  // Guard: If we've already attempted to create a token, don't try again
+  // This prevents infinite loops when token creation triggers re-renders
+  if (mockTokenCreationAttempted) {
+    // Just return existing token if available, don't create new one
+    return getToken();
+  }
+  
+  if (isMockModeEnabled()) {
+    let token = getToken();
+    
+    // If no token exists, create and store a mock token (only once)
+    if (!token) {
+      // Set guard flag BEFORE creating token to prevent re-entry
+      mockTokenCreationAttempted = true;
+      
+      token = createMockToken();
+      localStorage.setItem("token", token);
+      // Also set cookie for middleware
+      document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      logger.info("Mock token created and stored");
+    } else {
+      // Token exists, mark as attempted so we don't try again
+      mockTokenCreationAttempted = true;
+    }
+    
+    return token;
+  }
+  
+  return null;
+}
+
+// =============================================================================
 // AUTHENTICATED FETCH
 // =============================================================================
 
 /**
  * Authenticated fetch wrapper
  * Adds Authorization header and organization ID
+ * In mock mode, automatically creates a mock token if none exists
  */
 export async function authenticatedFetch(
   url: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const token = getToken();
-
+  // Try to get existing token or create mock token if in mock mode
+  let token = getToken();
+  
   if (!token) {
-    logger.warn('No authentication token found');
-    throw new ApiError('Kimlik doğrulama gerekli.', 401);
+    // If mock mode is enabled, create and use a mock token
+    const mockToken = ensureMockToken();
+    if (mockToken) {
+      token = mockToken;
+      logger.debug('Using mock token for authenticated request');
+    } else {
+      logger.warn('No authentication token found and mock mode is disabled');
+      throw new ApiError('Kimlik doğrulama gerekli.', 401);
+    }
   }
 
   const fullUrl = resolveUrl(url);
