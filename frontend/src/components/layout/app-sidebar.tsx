@@ -60,6 +60,12 @@ export function AppSidebar({ className, onNavigate, ...props }: AppSidebarProps)
       roles: ["admin", "hr"],
     },
     {
+      href: "/users",
+      title: "Kullanıcı Yönetimi",
+      icon: Users,
+      roles: ["admin"],
+    },
+    {
       href: "/dashboard/iot",
       title: "IoT & Cihazlar",
       icon: Wifi,
